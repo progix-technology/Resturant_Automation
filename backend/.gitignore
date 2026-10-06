@@ -1,0 +1,21 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+*.env
+
+# Dependencies
+node_modules/
+npm-debug.log*
+
+# Build and logs
+dist/
+build/
+*.log
+
+# Local Database & Tenant Data (Never push live client data/orders to Git)
+src/data/tenants/
+src/data/whatsapp_auth/
+src/data/db.json
+src/data/*.json
+!src/data/mock*.json

@@ -1,0 +1,216 @@
+export const ADMIN_ROLES = {
+  SUPER_ADMIN: 'SUPER_ADMIN',
+  ADMIN: 'ADMIN',
+  MANAGER: 'MANAGER',
+  STAFF: 'STAFF',
+};
+
+export const ROLE_PERMISSIONS = {
+  [ADMIN_ROLES.SUPER_ADMIN]: [
+    'dashboard',
+    'orders',
+    'tables',
+    'menu',
+    'customers',
+    'notifications',
+    'staff',
+    'payments',
+    'reports',
+    'settings',
+  ],
+  [ADMIN_ROLES.ADMIN]: [
+    'dashboard',
+    'orders',
+    'tables',
+    'menu',
+    'customers',
+    'notifications',
+    'staff',
+    'payments',
+    'reports',
+    'settings',
+  ],
+
+  [ADMIN_ROLES.MANAGER]: [
+    'dashboard',
+    'orders',
+    'tables',
+    'menu',
+    'customers',
+    'notifications',
+    'payments',
+    'reports',
+  ],
+  [ADMIN_ROLES.STAFF]: [
+    'dashboard',
+    'orders',
+    'tables',
+  ],
+};
+
+export const mockAdmins = [
+  {
+    id: 'adm-001',
+    name: 'Vikram Malhotra',
+    email: 'admin@restaurant.com',
+    password: 'Admin@123',
+    role: ADMIN_ROLES.SUPER_ADMIN,
+    title: 'General Manager & Owner',
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80',
+    restaurantId: 'rest-001',
+  },
+  {
+    id: 'adm-002',
+    name: 'Ananya Roy',
+    email: 'ananya@restaurant.com',
+    password: 'Admin@123',
+    role: ADMIN_ROLES.ADMIN,
+    title: 'Operations Admin',
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80',
+    restaurantId: 'rest-001',
+  },
+  {
+    id: 'adm-003',
+    name: 'Suresh Pillai',
+    email: 'suresh@restaurant.com',
+    password: 'Admin@123',
+    role: ADMIN_ROLES.MANAGER,
+    title: 'Floor & Kitchen Manager',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
+    restaurantId: 'rest-001',
+  },
+  {
+    id: 'adm-004',
+    name: 'Rohan Verma',
+    email: 'rohan@restaurant.com',
+    password: 'Admin@123',
+    role: ADMIN_ROLES.STAFF,
+    title: 'Senior Table Captain',
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80',
+    restaurantId: 'rest-001',
+  },
+];
+
+export const mockTables = [
+  { id: 'tbl-1', number: '1', capacity: 2, section: 'Indoor Ground', status: 'AVAILABLE', currentOrderId: null, customerName: null, occupiedSince: null, amount: 0 },
+  { id: 'tbl-2', number: '2', capacity: 2, section: 'Indoor Ground', status: 'AVAILABLE', currentOrderId: null, customerName: null, occupiedSince: null, amount: 0 },
+  { id: 'tbl-3', number: '3', capacity: 4, section: 'Indoor Ground', status: 'AVAILABLE', currentOrderId: null, customerName: null, occupiedSince: null, amount: 0 },
+  { id: 'tbl-4', number: '4', capacity: 4, section: 'Indoor Ground', status: 'AVAILABLE', currentOrderId: null, customerName: null, occupiedSince: null, amount: 0 },
+  { id: 'tbl-5', number: '5', capacity: 6, section: 'Garden Terrace', status: 'AVAILABLE', currentOrderId: null, customerName: null, occupiedSince: null, amount: 0 },
+  { id: 'tbl-6', number: '6', capacity: 6, section: 'Garden Terrace', status: 'AVAILABLE', currentOrderId: null, customerName: null, occupiedSince: null, amount: 0 },
+  { id: 'tbl-7', number: '7', capacity: 4, section: 'Garden Terrace', status: 'AVAILABLE', currentOrderId: null, customerName: null, occupiedSince: null, amount: 0 },
+  { id: 'tbl-8', number: '8', capacity: 2, section: 'Garden Terrace', status: 'AVAILABLE', currentOrderId: null, customerName: null, occupiedSince: null, amount: 0 },
+  { id: 'tbl-9', number: '9', capacity: 8, section: 'Family Lounge', status: 'AVAILABLE', currentOrderId: null, customerName: null, occupiedSince: null, amount: 0 },
+  { id: 'tbl-10', number: '10', capacity: 8, section: 'Family Lounge', status: 'AVAILABLE', currentOrderId: null, customerName: null, occupiedSince: null, amount: 0 },
+  { id: 'tbl-11', number: '11', capacity: 4, section: 'Family Lounge', status: 'AVAILABLE', currentOrderId: null, customerName: null, occupiedSince: null, amount: 0 },
+  { id: 'tbl-12', number: '12', capacity: 4, section: 'Indoor Ground', status: 'AVAILABLE', currentOrderId: null, customerName: null, occupiedSince: null, amount: 0 },
+];
+
+export const mockInitialOrders = [];
+
+export const mockStaffList = [
+  { id: 'stf-1', name: 'Vikram Malhotra', email: 'admin@restaurant.com', phone: '+91 98765 00001', role: ADMIN_ROLES.SUPER_ADMIN, status: 'ACTIVE', joinedDate: 'Jan 2024', shift: 'All Shifts' },
+  { id: 'stf-2', name: 'Ananya Roy', email: 'ananya@restaurant.com', phone: '+91 98765 00002', role: ADMIN_ROLES.ADMIN, status: 'ACTIVE', joinedDate: 'Mar 2024', shift: 'Morning Shift' },
+  { id: 'stf-3', name: 'Suresh Pillai', email: 'suresh@restaurant.com', phone: '+91 98765 00003', role: ADMIN_ROLES.MANAGER, status: 'ACTIVE', joinedDate: 'Jun 2024', shift: 'Evening Shift' },
+  { id: 'stf-4', name: 'Rohan Verma', email: 'rohan@restaurant.com', phone: '+91 98765 00004', role: ADMIN_ROLES.STAFF, status: 'ACTIVE', joinedDate: 'Aug 2024', shift: 'Evening Shift' },
+  { id: 'stf-5', name: 'Pooja Nair', email: 'pooja@restaurant.com', phone: '+91 98765 00005', role: ADMIN_ROLES.STAFF, status: 'ACTIVE', joinedDate: 'Sep 2024', shift: 'Morning Shift' },
+  { id: 'stf-6', name: 'Deepak Yadav', email: 'deepak@restaurant.com', phone: '+91 98765 00006', role: ADMIN_ROLES.STAFF, status: 'INACTIVE', joinedDate: 'Feb 2024', shift: 'Night Shift' },
+];
+
+export const mockNotificationTemplates = [
+  {
+    id: 'tpl-1',
+    event: 'ORDER_ACCEPTED',
+    name: 'Order Accepted & Kitchen Confirmed',
+    category: 'Orders',
+    template: 'Hello {{customerName}}! 🍽️ Your order #{{orderId}} at Table {{tableNumber}} has been accepted and is queued with our chefs.',
+    variables: ['customerName', 'orderId', 'tableNumber'],
+  },
+  {
+    id: 'tpl-2',
+    event: 'PAYMENT_REQUEST',
+    name: 'Payment Request with UPI QR',
+    category: 'Payments',
+    template: 'Order #{{orderId}} update: Total payable is ₹{{amount}}. Please complete your contactless UPI payment at your table.',
+    variables: ['customerName', 'orderId', 'amount'],
+  },
+  {
+    id: 'tpl-3',
+    event: 'PAYMENT_SUCCESS',
+    name: 'Payment Confirmation Receipt',
+    category: 'Payments',
+    template: 'Payment of ₹{{amount}} confirmed for Order #{{orderId}}! Thank you. Your digital receipt is ready.',
+    variables: ['customerName', 'orderId', 'amount'],
+  },
+  {
+    id: 'tpl-4',
+    event: 'PREPARING',
+    name: 'Cooking in Kitchen (ETA)',
+    category: 'Kitchen',
+    template: 'Chefs are preparing your meal for Order #{{orderId}}. Estimated cooking time: {{eta}} minutes. Fresh & sizzling! 🔥',
+    variables: ['customerName', 'orderId', 'eta'],
+  },
+  {
+    id: 'tpl-5',
+    event: 'READY',
+    name: 'Order Ready for Pickup/Serving',
+    category: 'Kitchen',
+    template: 'Good news {{customerName}}! Order #{{orderId}} is hot & plated. Your table server is heading to Table {{tableNumber}} now. 🔔',
+    variables: ['customerName', 'orderId', 'tableNumber'],
+  },
+  {
+    id: 'tpl-6',
+    event: 'SERVED',
+    name: 'Meal Served & Feedback',
+    category: 'Service',
+    template: 'Hope you enjoy your meal at Table {{tableNumber}}! Thank you for dining with Spice Garden. ✨',
+    variables: ['customerName', 'tableNumber'],
+  },
+  {
+    id: 'tpl-7',
+    event: 'REJECTED',
+    name: 'Order Rejected / Unavailable',
+    category: 'Orders',
+    template: 'We apologize {{customerName}}, Order #{{orderId}} could not be fulfilled due to ingredient stock. Our captain is visiting Table {{tableNumber}}.',
+    variables: ['customerName', 'orderId', 'tableNumber'],
+  },
+];
+
+export const mockRestaurantSettings = {
+  profile: {
+    name: 'Spice Garden',
+    slug: 'spice-garden',
+    tagline: 'Authentic flavors, freshly prepared.',
+    cuisine: 'North Indian • Chinese • Tandoor',
+    phone: '+91 80 4123 4567',
+    email: 'contact@spicegarden.in',
+    address: '14, Palm Grove Road, Indiranagar, Bengaluru, Karnataka 560038',
+    gstNumber: '29ABCDE1234F1Z5',
+    fssaiNumber: '11223344556677',
+    openTime: '11:30 AM',
+    closeTime: '11:00 PM',
+  },
+  order: {
+    acceptingOrders: true,
+    autoAcceptOrders: false,
+    defaultPrepTimeMinutes: 20,
+    allowCustomerCancellation: false,
+    tableOrderingEnabled: true,
+  },
+  payment: {
+    upiId: 'spicegarden@upi',
+    merchantName: 'Spice Garden Hospitality Pvt Ltd',
+    gstPercentage: 5,
+    serviceChargePercentage: 0,
+    acceptCashAtTable: true,
+    acceptCardAtCounter: true,
+  },
+  notifications: {
+    whatsAppEnabled: true,
+    sendOnOrderPlaced: true,
+    sendOnOrderAccepted: true,
+    sendOnPreparing: true,
+    sendOnReady: true,
+    sendOnServed: true,
+  },
+};

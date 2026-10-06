@@ -1,0 +1,11 @@
+export { AdminLoginPage } from './AdminLoginPage';
+export { AdminDashboardPage } from './AdminDashboardPage';
+export { AdminOrdersPage } from './AdminOrdersPage';
+export { AdminTablesPage } from './AdminTablesPage';
+export { AdminMenuPage } from './AdminMenuPage';
+export { AdminCustomersPage } from './AdminCustomersPage';
+export { AdminNotificationsPage } from './AdminNotificationsPage';
+export { AdminStaffPage } from './AdminStaffPage';
+export { AdminPaymentsPage } from './AdminPaymentsPage';
+export { AdminReportsPage } from './AdminReportsPage';
+export { AdminSettingsPage } from './AdminSettingsPage';

@@ -1,0 +1,53 @@
+# ==========================================
+# SENSITIVE CREDENTIALS & ENVIRONMENT FILES
+# ==========================================
+.env
+*.env
+.env.*
+!.env.example
+!.env.template
+backend/.env
+frontend/.env
+*.pem
+*.key
+*.cert
+*.crt
+
+# ==========================================
+# WHATSAPP SESSIONS & TENANT PRIVATE DATA
+# ==========================================
+backend/src/data/tenants/
+backend/src/data/whatsapp_auth/
+**/whatsapp_auth/
+**/baileys_auth/
+*.auth
+*.session
+
+# ==========================================
+# LOCAL DATABASE & FILE DUMPS
+# ==========================================
+backend/src/data/db.json
+backend/src/data/*.json
+!backend/src/data/mock*.json
+
+# ==========================================
+# DEPENDENCIES & BUILD OUTPUTS
+# ==========================================
+node_modules/
+**/node_modules/
+dist/
+build/
+.cache/
+.parcel-cache/
+.next/
+.vercel/
+
+# ==========================================
+# LOGS & OS SYSTEM FILES
+# ==========================================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db

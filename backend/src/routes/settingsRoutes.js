@@ -1,0 +1,109 @@
+import express from 'express';
+import { RestaurantSettings } from '../models/RestaurantSettings.js';
+import { deleteMenuImage } from '../services/cloudinaryService.js';
+
+const router = express.Router();
+
+const DEFAULT_SLUG = 'spice-garden';
+
+// Helper to get or create default settings
+async function getOrCreateSettings(slug = DEFAULT_SLUG) {
+  let settings = await RestaurantSettings.findOne({ slug: slug.toLowerCase() });
+  if (!settings) {
+    settings = await RestaurantSettings.create({
+      slug: slug.toLowerCase(),
+      name: 'Spice Garden',
+      restaurantName: 'Spice Garden',
+      tagline: 'Authentic flavors, freshly prepared.',
+      cuisine: 'North Indian • Chinese • Tandoor',
+      rating: 4.8,
+      reviewCount: 320,
+      address: '14, Palm Grove Road, Indiranagar, Bengaluru',
+      logo: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=200&q=80',
+      banner: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80',
+      openTime: '11:30 AM',
+      closeTime: '11:00 PM',
+      isKitchenOpen: true,
+      isAcceptingOrders: true,
+    });
+  }
+  return settings;
+}
+
+/**
+ * GET /api/settings/:slug?
+ * Fetches restaurant settings
+ */
+router.get('/:slug?', async (req, res) => {
+  try {
+    const slug = req.params.slug || req.query.slug || DEFAULT_SLUG;
+    const settings = await getOrCreateSettings(slug);
+    res.status(200).json({
+      success: true,
+      settings,
+    });
+  } catch (error) {
+    console.error('Error fetching settings:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to fetch settings',
+    });
+  }
+});
+
+/**
+ * PUT /api/settings/:slug?
+ * Updates restaurant settings and cleans up replaced Cloudinary images
+ */
+router.put('/:slug?', async (req, res) => {
+  try {
+    const slug = req.params.slug || req.body.slug || DEFAULT_SLUG;
+    const current = await getOrCreateSettings(slug);
+
+    const updateData = { ...req.body };
+
+    // Normalize name / restaurantName
+    if (updateData.name && !updateData.restaurantName) {
+      updateData.restaurantName = updateData.name;
+    } else if (updateData.restaurantName && !updateData.name) {
+      updateData.name = updateData.restaurantName;
+    }
+
+    // Auto-cleanup old logo if replaced
+    if (updateData.logo && current.logo && updateData.logo !== current.logo) {
+      if (current.logo.includes('res.cloudinary.com')) {
+        console.log('[SETTINGS] Old logo replaced, deleting from Cloudinary:', current.logo);
+        deleteMenuImage(current.logo).catch((err) =>
+          console.warn('[SETTINGS WARNING] Failed to delete old logo:', err.message)
+        );
+      }
+    }
+
+    // Auto-cleanup old banner if replaced
+    if (updateData.banner && current.banner && updateData.banner !== current.banner) {
+      if (current.banner.includes('res.cloudinary.com')) {
+        console.log('[SETTINGS] Old banner replaced, deleting from Cloudinary:', current.banner);
+        deleteMenuImage(current.banner).catch((err) =>
+          console.warn('[SETTINGS WARNING] Failed to delete old banner:', err.message)
+        );
+      }
+    }
+
+    Object.assign(current, updateData);
+    const saved = await current.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Restaurant settings updated successfully',
+      settings: saved,
+    });
+  } catch (error) {
+    console.error('Error updating settings:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to update settings',
+    });
+  }
+});
+
+export default router;

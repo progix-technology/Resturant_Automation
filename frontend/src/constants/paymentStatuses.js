@@ -1,0 +1,13 @@
+export const PAYMENT_STATUS = {
+  PENDING: 'PENDING',
+  PROCESSING: 'PROCESSING',
+  COMPLETED: 'COMPLETED',
+  FAILED: 'FAILED',
+};
+
+export const PAYMENT_STATUS_LABELS = {
+  [PAYMENT_STATUS.PENDING]: 'Payment Pending',
+  [PAYMENT_STATUS.PROCESSING]: 'Processing Payment...',
+  [PAYMENT_STATUS.COMPLETED]: 'Payment Successful',
+  [PAYMENT_STATUS.FAILED]: 'Payment Failed',
+};

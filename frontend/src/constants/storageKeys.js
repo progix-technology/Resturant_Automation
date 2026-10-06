@@ -1,0 +1,18 @@
+export const STORAGE_KEYS = {
+  GUEST_SESSION: 'spice_garden_guest_session',
+  CART: 'spice_garden_cart',
+  ACTIVE_ORDER: 'spice_garden_active_order',
+  ORDER_HISTORY: 'spice_garden_orders_history',
+  ADMIN_SESSION: 'restaurant_admin_session',
+  ADMIN_SETTINGS: 'restaurant_admin_settings',
+  ADMIN_MENU_OVERRIDE: 'restaurant_admin_menu',
+  ADMIN_MENU_CATEGORIES: 'restaurant_admin_menu_categories',
+  ADMIN_TABLES: 'restaurant_admin_tables',
+  ADMIN_STAFF: 'restaurant_admin_staff',
+  SUPERADMIN_SESSION: 'platform_superadmin_session',
+  SUPERADMIN_TENANTS: 'platform_superadmin_tenants',
+  SUPERADMIN_PLANS: 'platform_superadmin_plans',
+  SUPERADMIN_INVOICES: 'platform_superadmin_invoices',
+  SUPERADMIN_SETTINGS: 'platform_superadmin_settings',
+  RESTAURANT_ACTIVE_SAAS_PLAN: 'restaurant_active_saas_plan',
+};
