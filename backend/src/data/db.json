@@ -1,0 +1,964 @@
+{
+  "superAdmins": [
+    {
+      "id": "sa-progix-01",
+      "name": "Progix Technology",
+      "email": "progixtechnology@gmail.com",
+      "passwordHash": "$2a$10$8ddpZ81C18CnslyB2R0yu.Dque1gjLIVTUc88UWRp7TAjtgBMhUzu",
+      "role": "PLATFORM_SUPERADMIN",
+      "title": "Platform Founder & Owner",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+      "company": "Progix Technology Pvt Ltd"
+    },
+    {
+      "id": "sa-owner-02",
+      "name": "Alexander Vance",
+      "email": "owner@orderflow.io",
+      "passwordHash": "$2a$10$jDM5zTwozsC/xmfQBafnDecUDO3jjKyPnq8popt3lGUn4JAie45Am",
+      "role": "PLATFORM_SUPERADMIN",
+      "title": "Platform Co-Founder",
+      "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=200&q=80",
+      "company": "OrderFlow HQ"
+    }
+  ],
+  "restaurantAdmins": [
+    {
+      "id": "adm-rest-01",
+      "name": "Restaurant 1 Manager",
+      "email": "resturant1@gmail.com",
+      "passwordHash": "$2a$10$xobrR/jXaXi5bzbgJeIdDOnNTU9tlcOzqj0239cr1bn3BGk/lHSvG",
+      "role": "SUPER_ADMIN",
+      "title": "Head of Operations",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
+      "restaurantId": "rest-001",
+      "restaurantSlug": "spice-garden"
+    },
+    {
+      "id": "adm-vikram-02",
+      "name": "Vikram Malhotra",
+      "email": "admin@restaurant.com",
+      "passwordHash": "$2a$10$/qJiizbNhfnTe0/HzOIcUe/ncnXZSkVhvJBNcm5StDvkKqiCK.bGi",
+      "role": "SUPER_ADMIN",
+      "title": "General Manager",
+      "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80",
+      "restaurantId": "rest-001",
+      "restaurantSlug": "spice-garden"
+    },
+    {
+      "id": "adm-staff-03",
+      "name": "Rohan Verma",
+      "email": "rohan@restaurant.com",
+      "passwordHash": "$2a$10$5cMFvAkPvuNoRsYfdGCys.1dzXTxVX623ZnmRSV10pBfwukMwDYiq",
+      "role": "STAFF",
+      "title": "Floor Lead",
+      "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80",
+      "restaurantId": "rest-001",
+      "restaurantSlug": "spice-garden"
+    },
+    {
+      "id": "adm-royal-biryani",
+      "name": "Tariq Sheikh",
+      "email": "tariq@royalbiryani.in",
+      "passwordHash": "$2a$10$185KV9arVjZL5JC2a3W5xuMr62/YCMwIw6uFhiKcZmB2Vs0BZ3/Wu",
+      "passwordPlain": "Admin@123",
+      "role": "ADMIN",
+      "title": "Head of Operations",
+      "avatar": "",
+      "restaurantId": "tenant-002",
+      "restaurantSlug": "royal-biryani"
+    }
+  ],
+  "restaurants": [
+    {
+      "id": "rest-001",
+      "name": "The Spice Garden",
+      "slug": "spice-garden",
+      "logo": "🌿",
+      "tagline": "Authentic Indian Flavours & Contemporary Tandoor",
+      "city": "Bengaluru",
+      "address": "Shop 14, High Street Avenue, Indiranagar, Bengaluru, 560038",
+      "phone": "+91 98765 43210",
+      "email": "contact@spicegarden.com",
+      "gstNumber": "29ABCDE1234F1Z5",
+      "currency": "INR",
+      "taxPercentage": 5,
+      "serviceChargePercentage": 0,
+      "isAcceptingOrders": true,
+      "defaultPrepTime": 25,
+      "upiId": "spicegarden@okhdfcbank"
+    },
+    {
+      "id": "rest-002",
+      "name": "Royal Biryani Darbar",
+      "slug": "royal-biryani",
+      "logo": "👑",
+      "tagline": "Royal Awadhi Dum Biryanis & Mughlai Delicacies",
+      "city": "New Delhi",
+      "address": "Inner Circle, Connaught Place",
+      "phone": "+91 98111 22334",
+      "email": "tariq@royalbiryani.in",
+      "currency": "INR",
+      "taxPercentage": 5,
+      "isAcceptingOrders": true,
+      "defaultPrepTime": 30,
+      "upiId": "royalbiryani@upi"
+    }
+  ],
+  "menuCategories": [
+    {
+      "id": "starters",
+      "name": "Starters",
+      "icon": "Flame",
+      "sortOrder": 1
+    },
+    {
+      "id": "main-course",
+      "name": "Main Course",
+      "icon": "Utensils",
+      "sortOrder": 2
+    },
+    {
+      "id": "chinese",
+      "name": "Chinese",
+      "icon": "Soup",
+      "sortOrder": 3
+    },
+    {
+      "id": "rice",
+      "name": "Rice & Biryani",
+      "icon": "Bowl",
+      "sortOrder": 5
+    },
+    {
+      "id": "beverages",
+      "name": "Beverages",
+      "icon": "Coffee",
+      "sortOrder": 6
+    },
+    {
+      "id": "desserts",
+      "name": "Desserts",
+      "icon": "Cake",
+      "sortOrder": 7
+    },
+    {
+      "id": "soups",
+      "name": "Soups",
+      "icon": "Soup",
+      "sortOrder": 8
+    },
+    {
+      "id": "indian-breads",
+      "name": "Indian Breads",
+      "icon": "Flame",
+      "sortOrder": 9
+    },
+    {
+      "id": "south-indian",
+      "name": "South Indian",
+      "icon": "Utensils",
+      "sortOrder": 10
+    }
+  ],
+  "menuItems": [
+    {
+      "id": "item-970190",
+      "name": "Rasmalai",
+      "categoryId": "south-indian",
+      "price": 140,
+      "description": "Soft cottage-cheese dumplings served in chilled saffron-cardamom milk.",
+      "image": "https://res.cloudinary.com/dbp97xecb/image/upload/v1791201969/restaurant-menu/5z1uh4cqpis-dxlka4kq3c0kntwh1k-1791201965954.jpg",
+      "isVeg": true,
+      "isAvailable": true,
+      "preparationTime": "5 mins",
+      "itemId": "item-970190",
+      "restaurantSlug": "spice-garden"
+    },
+    {
+      "id": "item-779978",
+      "name": "Idli Sambar",
+      "categoryId": "south-indian",
+      "price": 120,
+      "description": "Soft steamed rice cakes served with hot sambar and coconut chutney.",
+      "image": "https://res.cloudinary.com/dbp97xecb/image/upload/v1791201778/restaurant-menu/tn7zhk-lkmzxwcfj-nvtk8xeipuouu-1791201775181.jpg",
+      "isVeg": true,
+      "isAvailable": true,
+      "preparationTime": "10 mins",
+      "itemId": "item-779978",
+      "restaurantSlug": "spice-garden"
+    },
+    {
+      "id": "item-743409",
+      "name": "Masala Dosa",
+      "categoryId": "south-indian",
+      "price": 160,
+      "description": "Crispy fermented dosa filled with spiced potato masala, served with sambar and chutneys.",
+      "image": "https://res.cloudinary.com/dbp97xecb/image/upload/v1791201742/restaurant-menu/ypmunxm7wmxpz82nvifnsscxihhdzo-1791201738785.jpg",
+      "isVeg": true,
+      "isAvailable": true,
+      "preparationTime": "15 mins",
+      "itemId": "item-743409",
+      "restaurantSlug": "spice-garden"
+    },
+    {
+      "id": "item-664896",
+      "name": "Butter Roti",
+      "categoryId": "indian-breads",
+      "price": 20,
+      "description": "Freshly baked whole-wheat roti finished with a light coating of butter.",
+      "image": "https://res.cloudinary.com/dbp97xecb/image/upload/v1791201663/restaurant-menu/jn4eofi7pmd4x1ly8relnhyrkz0sk2-1791201660479.jpg",
+      "isVeg": true,
+      "isAvailable": true,
+      "preparationTime": "5 m",
+      "itemId": "item-664896",
+      "restaurantSlug": "spice-garden"
+    },
+    {
+      "id": "item-619553",
+      "name": "Garlic Naan",
+      "categoryId": "indian-breads",
+      "price": 40,
+      "description": "Soft tandoori naan topped with fresh garlic, coriander and butter.",
+      "image": "https://res.cloudinary.com/dbp97xecb/image/upload/v1791201610/restaurant-menu/kcyloldxdnasxeldagioh-zbhqa7kt-1791201607446.jpg",
+      "isVeg": true,
+      "isAvailable": true,
+      "preparationTime": "10 mins",
+      "itemId": "item-619553",
+      "restaurantSlug": "spice-garden"
+    },
+    {
+      "id": "item-540878",
+      "name": "Veg Manchurian",
+      "categoryId": "starters",
+      "price": 210,
+      "description": "Crispy vegetable dumplings tossed in a spicy, tangy Manchurian sauce.",
+      "image": "https://res.cloudinary.com/dbp97xecb/image/upload/v1791201539/restaurant-menu/-zytel0iwwlbuw6209h--e1blikeah-1791201535659.jpg",
+      "isVeg": true,
+      "isAvailable": true,
+      "preparationTime": "15 mins",
+      "itemId": "item-540878",
+      "restaurantSlug": "spice-garden"
+    },
+    {
+      "id": "item-499079",
+      "name": "Veg Hakka Noodles",
+      "categoryId": "chinese",
+      "price": 220,
+      "description": "Stir-fried noodles tossed with cabbage, carrots, capsicum and Indo-Chinese sauces.",
+      "image": "https://res.cloudinary.com/dbp97xecb/image/upload/v1791201498/restaurant-menu/tasr8acry6kkgd0-jdg9xtelgb60an-1791201494911.jpg",
+      "isVeg": true,
+      "isAvailable": true,
+      "preparationTime": "15 mins",
+      "itemId": "item-499079",
+      "restaurantSlug": "spice-garden"
+    },
+    {
+      "id": "item-453900",
+      "name": "Jeera Rice",
+      "categoryId": "rice",
+      "price": 160,
+      "description": "Long-grain basmati rice tempered with cumin seeds and mild spices.",
+      "image": "https://res.cloudinary.com/dbp97xecb/image/upload/v1791201452/restaurant-menu/1kpvv-s3-su1-plep6blwy1-ybfd02-1791201448573.jpg",
+      "isVeg": true,
+      "isAvailable": true,
+      "preparationTime": "30 mins",
+      "itemId": "item-453900",
+      "restaurantSlug": "spice-garden"
+    },
+    {
+      "id": "item-403260",
+      "name": "Veg Biryani",
+      "categoryId": "rice",
+      "price": 260,
+      "description": "Fragrant basmati rice cooked with seasonal vegetables, saffron and aromatic spices.",
+      "image": "https://res.cloudinary.com/dbp97xecb/image/upload/v1791201401/restaurant-menu/fmtwiwxmiovzjffydawnzq3dkgdacx-1791201398599.jpg",
+      "isVeg": true,
+      "isAvailable": true,
+      "preparationTime": "20 mins",
+      "itemId": "item-403260",
+      "restaurantSlug": "spice-garden"
+    },
+    {
+      "id": "item-347963",
+      "name": "Dal Makhani",
+      "categoryId": "main-course",
+      "price": 220,
+      "description": "Slow-cooked black lentils finished with butter, cream and aromatic spices.",
+      "image": "https://res.cloudinary.com/dbp97xecb/image/upload/v1791201347/restaurant-menu/zyi9hhk1th--94ixsvcncnldbtgnbw-1791201343574.jpg",
+      "isVeg": true,
+      "isAvailable": true,
+      "preparationTime": "20 mins",
+      "itemId": "item-347963",
+      "restaurantSlug": "spice-garden"
+    },
+    {
+      "id": "item-311436",
+      "name": "Paneer Butter Masala",
+      "categoryId": "main-course",
+      "price": 280,
+      "description": "Soft paneer cooked in a rich tomato, butter and cream gravy.",
+      "image": "https://res.cloudinary.com/dbp97xecb/image/upload/v1791201310/restaurant-menu/vf4skj28n02-4gevknyapshj9eo-y5-1791201307266.jpg",
+      "isVeg": true,
+      "isAvailable": true,
+      "preparationTime": "20 mins",
+      "itemId": "item-311436",
+      "restaurantSlug": "spice-garden"
+    },
+    {
+      "id": "item-274145",
+      "name": "Sweet Corn Veg Soup",
+      "categoryId": "soups",
+      "price": 150,
+      "description": "Creamy-style sweet corn soup loaded with vegetables and mild seasoning.",
+      "image": "https://res.cloudinary.com/dbp97xecb/image/upload/v1791201272/restaurant-menu/mboguvruj-z6q4kndhdkjpqxwr6pp1-1791201269116.jpg",
+      "isVeg": true,
+      "isAvailable": true,
+      "preparationTime": "10 mins",
+      "itemId": "item-274145",
+      "restaurantSlug": "spice-garden"
+    },
+    {
+      "id": "item-242520",
+      "name": "Manchow Veg Soup",
+      "categoryId": "soups",
+      "price": 160,
+      "description": "Spicy Indo-Chinese soup with fresh vegetables, garlic, ginger and crispy noodles.",
+      "image": "https://res.cloudinary.com/dbp97xecb/image/upload/v1791201240/restaurant-menu/q2yxyvqopmert7hbmjisu-lj-2xvkd-1791201237603.jpg",
+      "isVeg": true,
+      "isAvailable": true,
+      "preparationTime": "10 mins",
+      "itemId": "item-242520",
+      "restaurantSlug": "spice-garden"
+    },
+    {
+      "id": "item-176250",
+      "name": "Hara Bhara Kebab",
+      "categoryId": "starters",
+      "price": 220,
+      "description": "Crispy spinach, peas and potato kebabs seasoned with aromatic Indian spices.",
+      "image": "https://res.cloudinary.com/dbp97xecb/image/upload/v1791201174/restaurant-menu/oh1yhxw3gyukbspk-gokarvxpm3abm-1791201171065.jpg",
+      "isVeg": true,
+      "isAvailable": true,
+      "preparationTime": "15 mins",
+      "itemId": "item-176250",
+      "restaurantSlug": "spice-garden"
+    },
+    {
+      "id": "item-136900",
+      "name": "Paneer Tikka",
+      "categoryId": "starters",
+      "price": 240,
+      "description": "Yogurt-marinated paneer cubes with capsicum and onion, grilled in tandoor and served with mint chutney.",
+      "image": "https://res.cloudinary.com/dbp97xecb/image/upload/v1791201133/restaurant-menu/4iwn6cyc0mlotbyumzygirvmphuici-1791201129629.jpg",
+      "isVeg": true,
+      "isAvailable": true,
+      "preparationTime": "10 mins",
+      "itemId": "item-136900",
+      "restaurantSlug": "spice-garden"
+    },
+    {
+      "id": "item-720838",
+      "name": "Chilli  Baby Corn",
+      "categoryId": "chinese",
+      "price": 80,
+      "description": "",
+      "image": "https://res.cloudinary.com/dbp97xecb/image/upload/v1791200717/restaurant-menu/pdd4ui4-chilli-baby-corn-625x3-1791200715049.jpg",
+      "isVeg": true,
+      "isAvailable": true,
+      "preparationTime": "10 mins",
+      "itemId": "item-720838",
+      "restaurantSlug": "spice-garden"
+    },
+    {
+      "id": "item-629541",
+      "name": "Chilli Chap",
+      "categoryId": "chinese",
+      "price": 200,
+      "description": "",
+      "image": "https://res.cloudinary.com/dbp97xecb/image/upload/v1791200614/restaurant-menu/eqhmjpag-chilli-chaap-625x300--1791200611348.jpg",
+      "isVeg": true,
+      "isAvailable": true,
+      "preparationTime": "10 mins",
+      "itemId": "item-629541",
+      "restaurantSlug": "spice-garden"
+    },
+    {
+      "id": "item-101",
+      "restaurantSlug": "spice-garden",
+      "name": "Crispy Corn Chilli Pepper",
+      "category": "Starters & Appetizers",
+      "price": 240,
+      "description": "Golden sweet corn kernels tossed with crunchy bell peppers, spring onion, and crushed black pepper.",
+      "image": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=500&q=80",
+      "isVeg": true,
+      "isSpicy": true,
+      "isPopular": true,
+      "isAvailable": true,
+      "preparationTime": 15
+    },
+    {
+      "id": "item-102",
+      "restaurantSlug": "spice-garden",
+      "name": "Paneer Tikka Angara",
+      "category": "Starters & Appetizers",
+      "price": 320,
+      "description": "Smoky char-grilled cottage cheese cubes marinated in fiery red spices and hung curd.",
+      "image": "https://res.cloudinary.com/dbp97xecb/image/upload/v1791200185/restaurant-menu/download--29--1791200182604.jpg",
+      "isVeg": true,
+      "isSpicy": true,
+      "isPopular": true,
+      "isAvailable": true,
+      "preparationTime": 20,
+      "categoryId": "main-course"
+    },
+    {
+      "id": "item-201",
+      "restaurantSlug": "spice-garden",
+      "name": "Paneer Butter Masala",
+      "category": "Main Course Specialties",
+      "price": 340,
+      "description": "Succulent malai paneer simmered in a velvety, rich tomato cashew butter gravy.",
+      "image": "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=500&q=80",
+      "isVeg": true,
+      "isSpicy": false,
+      "isPopular": true,
+      "isAvailable": true,
+      "preparationTime": 20
+    },
+    {
+      "id": "item-202",
+      "restaurantSlug": "spice-garden",
+      "name": "Dal Makhani Bukhara",
+      "category": "Main Course Specialties",
+      "price": 290,
+      "description": "Slow-cooked black lentils simmered overnight with tomatoes, churned butter, and fresh cream.",
+      "image": "https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=500&q=80",
+      "isVeg": true,
+      "isSpicy": false,
+      "isPopular": true,
+      "isAvailable": true,
+      "preparationTime": 15
+    },
+    {
+      "id": "item-301",
+      "restaurantSlug": "spice-garden",
+      "name": "Butter Garlic Naan",
+      "category": "Breads & Rice",
+      "price": 75,
+      "description": "Tandoor-baked leavened flatbread topped with roasted garlic flakes and melted salted butter.",
+      "image": "https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=500&q=80",
+      "isVeg": true,
+      "isSpicy": false,
+      "isPopular": true,
+      "isAvailable": true,
+      "preparationTime": 10
+    },
+    {
+      "id": "item-401",
+      "restaurantSlug": "spice-garden",
+      "name": "Fresh Mint Lime Mojito",
+      "category": "Beverages & Mocktails",
+      "price": 150,
+      "description": "Refreshing sparkling cooler muddled with fresh garden mint sprigs, lime wedges, and cane syrup.",
+      "image": "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=500&q=80",
+      "isVeg": true,
+      "isSpicy": false,
+      "isPopular": true,
+      "isAvailable": true,
+      "preparationTime": 8
+    },
+    {
+      "id": "item-501",
+      "restaurantSlug": "spice-garden",
+      "name": "Gulab Jamun with Rabri",
+      "category": "Desserts & Sweets",
+      "price": 180,
+      "description": "Warm melt-in-the-mouth khoya dumplings served over chilled saffron-infused rabri.",
+      "image": "https://res.cloudinary.com/dbp97xecb/image/upload/v1791200302/restaurant-menu/download--30--1791200299364.jpg",
+      "isVeg": true,
+      "isSpicy": false,
+      "isPopular": true,
+      "isAvailable": true,
+      "preparationTime": 10,
+      "categoryId": "desserts"
+    },
+    {
+      "id": "item-royal-biryani-101",
+      "restaurantSlug": "royal-biryani",
+      "name": "Crispy Corn Chilli Pepper",
+      "category": "Starters & Appetizers",
+      "price": 240,
+      "description": "Golden sweet corn kernels tossed with crunchy bell peppers, spring onion, and crushed black pepper.",
+      "image": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=500&q=80",
+      "isVeg": true,
+      "isSpicy": true,
+      "isPopular": true,
+      "isAvailable": true,
+      "preparationTime": 15
+    },
+    {
+      "id": "item-royal-biryani-102",
+      "restaurantSlug": "royal-biryani",
+      "name": "Paneer Tikka Angara",
+      "category": "Starters & Appetizers",
+      "price": 320,
+      "description": "Smoky char-grilled cottage cheese cubes marinated in fiery red spices and hung curd.",
+      "image": "https://images.unsplash.com/photo-1599488615731-7e5c2823ff28?auto=format&fit=crop&w=500&q=80",
+      "isVeg": true,
+      "isSpicy": true,
+      "isPopular": true,
+      "isAvailable": true,
+      "preparationTime": 20
+    },
+    {
+      "id": "item-royal-biryani-201",
+      "restaurantSlug": "royal-biryani",
+      "name": "Paneer Butter Masala",
+      "category": "Main Course Specialties",
+      "price": 340,
+      "description": "Succulent malai paneer simmered in a velvety, rich tomato cashew butter gravy.",
+      "image": "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=500&q=80",
+      "isVeg": true,
+      "isSpicy": false,
+      "isPopular": true,
+      "isAvailable": true,
+      "preparationTime": 20
+    },
+    {
+      "id": "item-royal-biryani-301",
+      "restaurantSlug": "royal-biryani",
+      "name": "Butter Garlic Naan",
+      "category": "Breads & Rice",
+      "price": 75,
+      "description": "Tandoor-baked leavened flatbread topped with roasted garlic flakes and melted salted butter.",
+      "image": "https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=500&q=80",
+      "isVeg": true,
+      "isSpicy": false,
+      "isPopular": true,
+      "isAvailable": true,
+      "preparationTime": 10
+    },
+    {
+      "id": "item-royal-biryani-401",
+      "restaurantSlug": "royal-biryani",
+      "name": "Fresh Mint Lime Mojito",
+      "category": "Beverages & Mocktails",
+      "price": 150,
+      "description": "Refreshing sparkling cooler muddled with fresh garden mint sprigs, lime wedges, and cane syrup.",
+      "image": "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=500&q=80",
+      "isVeg": true,
+      "isSpicy": false,
+      "isPopular": true,
+      "isAvailable": true,
+      "preparationTime": 8
+    }
+  ],
+  "tables": [
+    {
+      "id": "tbl-01",
+      "number": "01",
+      "capacity": 2,
+      "status": "AVAILABLE",
+      "section": "Main Dining",
+      "currentOrderId": null,
+      "customerName": null,
+      "amount": 0,
+      "occupiedSince": null
+    },
+    {
+      "id": "tbl-02",
+      "number": "02",
+      "capacity": 4,
+      "status": "AVAILABLE",
+      "section": "Main Dining",
+      "currentOrderId": null,
+      "customerName": null,
+      "amount": 0,
+      "occupiedSince": null
+    },
+    {
+      "id": "tbl-03",
+      "number": "03",
+      "capacity": 4,
+      "status": "AVAILABLE",
+      "section": "Main Dining",
+      "currentOrderId": null,
+      "customerName": null,
+      "amount": 0,
+      "occupiedSince": null
+    },
+    {
+      "id": "tbl-04",
+      "number": "04",
+      "capacity": 6,
+      "status": "AVAILABLE",
+      "section": "Family Corner",
+      "currentOrderId": null,
+      "customerName": null,
+      "amount": 0,
+      "occupiedSince": null
+    },
+    {
+      "id": "tbl-05",
+      "number": "05",
+      "capacity": 2,
+      "status": "AVAILABLE",
+      "section": "Terrace",
+      "currentOrderId": null,
+      "customerName": null,
+      "amount": 0,
+      "occupiedSince": null
+    },
+    {
+      "id": "tbl-06",
+      "number": "06",
+      "capacity": 8,
+      "status": "AVAILABLE",
+      "section": "Family Corner",
+      "currentOrderId": null,
+      "customerName": null,
+      "amount": 0,
+      "occupiedSince": null
+    },
+    {
+      "id": "tbl-1851",
+      "number": "07",
+      "capacity": 4,
+      "section": "Indoor Ground",
+      "status": "AVAILABLE",
+      "currentOrderId": null,
+      "customerName": null,
+      "amount": 0,
+      "occupiedSince": null
+    },
+    {
+      "id": "tbl-3913",
+      "number": "08",
+      "capacity": 2,
+      "section": "Garden Terrace",
+      "status": "AVAILABLE",
+      "currentOrderId": null,
+      "customerName": null,
+      "amount": 0,
+      "occupiedSince": null
+    }
+  ],
+  "orders": [
+    {
+      "orderId": "ORD-2975",
+      "id": "ORD-2975",
+      "restaurantSlug": "spice-garden",
+      "customerName": "Vivang Mishra",
+      "mobile": "9569881374",
+      "tableNumber": "01",
+      "items": [
+        {
+          "id": "item-101",
+          "name": "Crispy Corn Chilli Pepper",
+          "price": 240,
+          "quantity": 1,
+          "isVeg": true
+        },
+        {
+          "id": "item-102",
+          "name": "Paneer Tikka Angara",
+          "price": 320,
+          "quantity": 1,
+          "isVeg": true
+        }
+      ],
+      "subtotal": 560,
+      "taxes": 28,
+      "total": 588,
+      "orderStatus": "SERVED",
+      "paymentStatus": "COMPLETED",
+      "paymentMethod": "UPI",
+      "etaMinutes": 15,
+      "notes": "",
+      "createdAt": "2026-10-06T08:17:30.191Z",
+      "updatedAt": "2026-10-06T08:18:37.179Z",
+      "paidAt": "2026-10-06T08:19:09.034Z"
+    },
+    {
+      "orderId": "ORD-4564",
+      "id": "ORD-4564",
+      "restaurantSlug": "spice-garden",
+      "customerName": "Ajay Rastogi",
+      "mobile": "9999999999",
+      "tableNumber": "06",
+      "items": [
+        {
+          "id": "food-001",
+          "name": "Paneer Tikka",
+          "price": 220,
+          "quantity": 1,
+          "isVeg": true
+        },
+        {
+          "id": "food-002",
+          "name": "Chicken Wings (Peri-Peri)",
+          "price": 240,
+          "quantity": 1,
+          "isVeg": false
+        }
+      ],
+      "subtotal": 460,
+      "taxes": 23,
+      "total": 483,
+      "orderStatus": "CANCELLED",
+      "paymentStatus": "PENDING",
+      "paymentMethod": "UPI",
+      "etaMinutes": 25,
+      "notes": "",
+      "createdAt": "2026-10-06T06:32:43.224Z",
+      "updatedAt": "2026-10-06T07:01:18.582Z"
+    },
+    {
+      "orderId": "ORD-4725",
+      "id": "ORD-4725",
+      "restaurantSlug": "spice-garden",
+      "customerName": "Ajay Rastogi",
+      "mobile": "9999999999",
+      "tableNumber": "01",
+      "items": [
+        {
+          "id": "item-101",
+          "name": "Crispy Corn Chilli Pepper",
+          "price": 240,
+          "quantity": 1,
+          "isVeg": true
+        }
+      ],
+      "subtotal": 240,
+      "taxes": 12,
+      "total": 252,
+      "orderStatus": "CANCELLED",
+      "paymentStatus": "PENDING",
+      "paymentMethod": "UPI",
+      "etaMinutes": 25,
+      "notes": "",
+      "createdAt": "2026-10-06T06:32:43.186Z",
+      "updatedAt": "2026-10-06T07:01:26.244Z"
+    },
+    {
+      "orderId": "ORD-2281",
+      "id": "ORD-2281",
+      "restaurantSlug": "spice-garden",
+      "customerName": "Vivang Mishra",
+      "mobile": "9569881374",
+      "tableNumber": "07",
+      "items": [
+        {
+          "id": "item-101",
+          "name": "Crispy Corn Chilli Pepper",
+          "price": 240,
+          "quantity": 1,
+          "isVeg": true
+        },
+        {
+          "id": "item-102",
+          "name": "Paneer Tikka Angara",
+          "price": 320,
+          "quantity": 1,
+          "isVeg": true
+        }
+      ],
+      "subtotal": 560,
+      "taxes": 28,
+      "total": 588,
+      "orderStatus": "SERVED",
+      "paymentStatus": "COMPLETED",
+      "paymentMethod": "UPI",
+      "etaMinutes": 15,
+      "notes": "",
+      "createdAt": "2026-10-05T07:08:47.200Z",
+      "updatedAt": "2026-10-05T09:48:51.231Z",
+      "paidAt": "2026-10-05T09:05:31.468Z"
+    },
+    {
+      "orderId": "ORD-7694",
+      "id": "ORD-7694",
+      "restaurantSlug": "spice-garden",
+      "customerName": "Ajay Rastogi",
+      "mobile": "9999999999",
+      "tableNumber": "01",
+      "items": [
+        {
+          "id": "item-101",
+          "name": "Crispy Corn Chilli Pepper",
+          "price": 240,
+          "quantity": 1,
+          "isVeg": true
+        }
+      ],
+      "subtotal": 240,
+      "taxes": 12,
+      "total": 252,
+      "orderStatus": "SERVED",
+      "paymentStatus": "COMPLETED",
+      "paymentMethod": "UPI",
+      "etaMinutes": 15,
+      "notes": "",
+      "createdAt": "2026-10-03T07:37:06.362Z",
+      "updatedAt": "2026-10-03T08:21:44.317Z",
+      "paidAt": "2026-10-03T08:21:47.449Z"
+    },
+    {
+      "orderId": "ORD-6704",
+      "id": "ORD-6704",
+      "restaurantSlug": "spice-garden",
+      "customerName": "Ajay Rastogi",
+      "mobile": "9999999999",
+      "tableNumber": "06",
+      "items": [
+        {
+          "id": "food-001",
+          "name": "Paneer Tikka",
+          "price": 220,
+          "quantity": 1,
+          "isVeg": true
+        },
+        {
+          "id": "food-002",
+          "name": "Chicken Wings (Peri-Peri)",
+          "price": 240,
+          "quantity": 1,
+          "isVeg": false
+        }
+      ],
+      "subtotal": 460,
+      "taxes": 23,
+      "total": 483,
+      "orderStatus": "CANCELLED",
+      "paymentStatus": "COMPLETED",
+      "paymentMethod": "Cash",
+      "etaMinutes": 25,
+      "notes": "",
+      "createdAt": "2026-10-03T07:02:50.357Z",
+      "paidAt": "2026-10-03T07:14:59.429Z",
+      "updatedAt": "2026-10-03T07:15:23.864Z"
+    },
+    {
+      "orderId": "ORD-2498",
+      "id": "ORD-2498",
+      "restaurantSlug": "spice-garden",
+      "customerName": "Ajay Rastogi",
+      "mobile": "9999999999",
+      "tableNumber": "01",
+      "items": [
+        {
+          "id": "item-101",
+          "name": "Crispy Corn Chilli Pepper",
+          "price": 240,
+          "quantity": 1,
+          "isVeg": true
+        }
+      ],
+      "subtotal": 240,
+      "taxes": 12,
+      "total": 252,
+      "orderStatus": "SERVED",
+      "paymentStatus": "COMPLETED",
+      "paymentMethod": "UPI",
+      "etaMinutes": 20,
+      "notes": "",
+      "createdAt": "2026-10-03T07:02:50.343Z",
+      "updatedAt": "2026-10-03T07:35:10.875Z",
+      "paidAt": "2026-10-03T07:34:47.919Z"
+    }
+  ],
+  "pricingPlans": [
+    {
+      "id": "plan-starter",
+      "name": "Starter QR",
+      "badge": "Basic",
+      "tagline": "Ideal for small cafes, food trucks & dessert stalls",
+      "monthlyPrice": 999,
+      "annualPrice": 9990,
+      "maxTables": 15,
+      "maxOrdersPerMonth": 500,
+      "staffAccounts": 2,
+      "popular": false
+    },
+    {
+      "id": "plan-growth",
+      "name": "Growth Pro",
+      "badge": "Most Popular",
+      "tagline": "Best for bustling casual dining, bistros & fine dining restaurants",
+      "monthlyPrice": 2499,
+      "annualPrice": 24990,
+      "maxTables": 40,
+      "maxOrdersPerMonth": "Unlimited",
+      "staffAccounts": 8,
+      "popular": true
+    },
+    {
+      "id": "plan-enterprise",
+      "name": "Enterprise Scale",
+      "badge": "High Volume",
+      "tagline": "For large multi-floor restaurants, breweries & franchise outlets",
+      "monthlyPrice": 4999,
+      "annualPrice": 49990,
+      "maxTables": 120,
+      "maxOrdersPerMonth": "Unlimited",
+      "staffAccounts": "Unlimited",
+      "popular": false
+    }
+  ],
+  "platformTenants": [
+    {
+      "id": "tenant-001",
+      "name": "The Spice Garden",
+      "slug": "spice-garden",
+      "logo": "🌿",
+      "ownerName": "Vikram Malhotra",
+      "ownerEmail": "resturant1@gmail.com",
+      "ownerPhone": "+91 98765 43210",
+      "city": "Bengaluru",
+      "planId": "plan-growth",
+      "planName": "Growth Pro",
+      "billingCycle": "MONTHLY",
+      "planAmount": 2499,
+      "status": "ACTIVE",
+      "renewalDate": "2026-10-15",
+      "activeTables": 24,
+      "monthlyOrders": 1420,
+      "monthlyGMV": 482500
+    },
+    {
+      "id": "tenant-002",
+      "name": "Royal Biryani Darbar",
+      "slug": "royal-biryani",
+      "logo": "👑",
+      "ownerName": "Tariq Sheikh",
+      "ownerEmail": "tariq@royalbiryani.in",
+      "ownerPhone": "+91 98111 22334",
+      "city": "New Delhi",
+      "planId": "plan-enterprise",
+      "planName": "Enterprise Scale",
+      "billingCycle": "ANNUAL",
+      "planAmount": 49990,
+      "status": "ACTIVE",
+      "renewalDate": "2027-01-20",
+      "activeTables": 48,
+      "monthlyOrders": 2850,
+      "monthlyGMV": 920000
+    }
+  ],
+  "invoices": [
+    {
+      "id": "INV-2026-0091",
+      "tenantId": "tenant-001",
+      "restaurantName": "The Spice Garden",
+      "planName": "Growth Pro",
+      "cycle": "Monthly (Sep 15 - Oct 14)",
+      "amount": 2499,
+      "tax": 449.82,
+      "total": 2948.82,
+      "status": "PAID",
+      "issuedDate": "2026-09-15",
+      "dueDate": "2026-09-22",
+      "paymentMethod": "Auto-Debit (UPI)"
+    }
+  ]
+}

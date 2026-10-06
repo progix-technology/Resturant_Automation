@@ -26,7 +26,8 @@ backend/src/data/whatsapp_auth/
 # ==========================================
 # LOCAL DATABASE & FILE DUMPS
 # ==========================================
-backend/src/data/db.json
+# backend/src/data/db.json
+!backend/src/data/db.json
 backend/src/data/*.json
 !backend/src/data/mock*.json
 

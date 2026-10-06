@@ -34,6 +34,8 @@ export const connectMongoDB = async () => {
   }
 };
 
+import { RestaurantSettings } from '../models/RestaurantSettings.js';
+
 /**
  * Seeds and hardcodes protected credentials into MongoDB Atlas
  */
@@ -136,16 +138,16 @@ export const seedAndProtectDatabase = async () => {
               itemId: i.id || i.itemId,
               restaurantSlug: i.restaurantSlug || 'spice-garden',
               name: i.name,
-              category: i.category || 'Specialties',
-              categoryId: i.categoryId,
-              price: i.price,
+              category: i.category || i.categoryId || 'Specialties',
+              categoryId: i.categoryId || 'starters',
+              price: Number(i.price) || 0,
               description: i.description || '',
-              image: i.image,
+              image: i.image || '',
               isVeg: i.isVeg !== false,
               isSpicy: i.isSpicy || false,
               isPopular: i.isPopular || false,
               isAvailable: i.isAvailable !== false,
-              preparationTime: i.preparationTime || 15,
+              preparationTime: typeof i.preparationTime === 'number' ? i.preparationTime : parseInt(String(i.preparationTime || 15).replace(/\D/g, '')) || 15,
             },
           },
           upsert: true,
@@ -155,83 +157,124 @@ export const seedAndProtectDatabase = async () => {
       console.log(`📋 Synchronized ${items.length} Menu Items to MongoDB Atlas Cloud.`);
     }
 
-
-    // 4. Seed Tables if empty
-    const tableCount = await Table.countDocuments();
-    if (tableCount === 0) {
-      const tables = db.get('tables');
-      if (tables && tables.length > 0) {
-        await Table.insertMany(
-          tables.map((t) => ({
-            tableId: t.id,
-            number: t.number,
-            capacity: t.capacity,
-            status: t.status,
-            section: t.section,
-            currentOrderId: t.currentOrderId,
-            customerName: t.customerName,
-            amount: t.amount,
-            occupiedSince: t.occupiedSince,
-          }))
-        );
-        console.log(`🪑 Seeded ${tables.length} Tables to MongoDB Atlas.`);
-      }
+    // 4. Sync Tables
+    const tables = db.get('tables');
+    if (tables && tables.length > 0) {
+      const tableOps = tables.map((t) => ({
+        updateOne: {
+          filter: { tableId: t.id },
+          update: {
+            $set: {
+              tableId: t.id,
+              number: t.number,
+              capacity: t.capacity,
+              status: t.status || 'AVAILABLE',
+              section: t.section || 'Main Dining',
+              currentOrderId: t.currentOrderId || null,
+              customerName: t.customerName || null,
+              amount: t.amount || 0,
+              occupiedSince: t.occupiedSince || null,
+            },
+          },
+          upsert: true,
+        },
+      }));
+      await Table.bulkWrite(tableOps);
+      console.log(`🪑 Synchronized ${tables.length} Tables to MongoDB Atlas.`);
     }
 
-    // 5. Seed Tenants if empty
-    const tenantCount = await Tenant.countDocuments();
-    if (tenantCount === 0) {
-      const tenants = db.get('platformTenants');
-      if (tenants && tenants.length > 0) {
-        await Tenant.insertMany(
-          tenants.map((t) => ({
-            tenantId: t.id,
-            name: t.name,
-            slug: t.slug,
-            logo: t.logo,
-            ownerName: t.ownerName,
-            ownerEmail: t.ownerEmail,
-            ownerPhone: t.ownerPhone,
-            city: t.city,
-            planId: t.planId,
-            planName: t.planName,
-            billingCycle: t.billingCycle,
-            planAmount: t.planAmount,
-            status: t.status,
-            renewalDate: t.renewalDate,
-            activeTables: t.activeTables,
-            monthlyOrders: t.monthlyOrders,
-            monthlyGMV: t.monthlyGMV,
-          }))
-        );
-        console.log(`🏢 Seeded ${tenants.length} Tenants to MongoDB Atlas.`);
-      }
+    // 5. Sync Tenants
+    const tenants = db.get('platformTenants');
+    if (tenants && tenants.length > 0) {
+      const tenantOps = tenants.map((t) => ({
+        updateOne: {
+          filter: { tenantId: t.id },
+          update: {
+            $set: {
+              tenantId: t.id,
+              name: t.name,
+              slug: t.slug,
+              logo: t.logo,
+              ownerName: t.ownerName,
+              ownerEmail: t.ownerEmail,
+              ownerPhone: t.ownerPhone,
+              city: t.city,
+              planId: t.planId,
+              planName: t.planName,
+              billingCycle: t.billingCycle,
+              planAmount: t.planAmount,
+              status: t.status,
+              renewalDate: t.renewalDate,
+              activeTables: t.activeTables,
+              monthlyOrders: t.monthlyOrders,
+              monthlyGMV: t.monthlyGMV,
+            },
+          },
+          upsert: true,
+        },
+      }));
+      await Tenant.bulkWrite(tenantOps);
+      console.log(`🏢 Synchronized ${tenants.length} Tenants to MongoDB Atlas.`);
     }
 
-    // 6. Seed Orders if empty
-    const orderCount = await Order.countDocuments();
-    if (orderCount === 0) {
-      const orders = db.get('orders');
-      if (orders && orders.length > 0) {
-        await Order.insertMany(
-          orders.map((o) => ({
-            orderId: o.orderId || o.id,
-            restaurantSlug: o.restaurantSlug || 'spice-garden',
-            customerName: o.customerName,
-            mobile: o.mobile || '',
-            tableNumber: o.tableNumber,
-            items: o.items,
-            subtotal: o.subtotal,
-            taxes: o.taxes,
-            total: o.total,
-            orderStatus: o.orderStatus,
-            paymentStatus: o.paymentStatus,
-            paymentMethod: o.paymentMethod,
-            etaMinutes: o.etaMinutes || 20,
-          }))
+    // 6. Sync Orders
+    const orders = db.get('orders');
+    if (orders && orders.length > 0) {
+      const orderOps = orders.map((o) => ({
+        updateOne: {
+          filter: { orderId: o.orderId || o.id },
+          update: {
+            $set: {
+              orderId: o.orderId || o.id,
+              restaurantSlug: o.restaurantSlug || 'spice-garden',
+              customerName: o.customerName,
+              mobile: o.mobile || '',
+              tableNumber: o.tableNumber,
+              items: o.items || [],
+              subtotal: o.subtotal || 0,
+              taxes: o.taxes || 0,
+              total: o.total || 0,
+              orderStatus: o.orderStatus || 'PENDING',
+              paymentStatus: o.paymentStatus || 'PENDING',
+              paymentMethod: o.paymentMethod || 'UPI',
+              etaMinutes: o.etaMinutes || 20,
+            },
+          },
+          upsert: true,
+        },
+      }));
+      await Order.bulkWrite(orderOps);
+      console.log(`🧾 Synchronized ${orders.length} Sample Orders to MongoDB Atlas.`);
+    }
+
+    // 7. Sync Restaurant Settings
+    const restaurants = db.get('restaurants');
+    if (restaurants && restaurants.length > 0) {
+      for (const r of restaurants) {
+        await RestaurantSettings.findOneAndUpdate(
+          { slug: r.slug },
+          {
+            $set: {
+              slug: r.slug,
+              name: r.name,
+              restaurantName: r.name,
+              tagline: r.tagline || 'Authentic Indian Flavours',
+              city: r.city || 'Bengaluru',
+              address: r.address || '',
+              phone: r.phone || '',
+              email: r.email || '',
+              gstin: r.gstNumber || r.gstin || '',
+              currency: r.currency || 'INR',
+              taxPercentage: r.taxPercentage || 5,
+              isAcceptingOrders: r.isAcceptingOrders !== false,
+              defaultPreparationTimeMinutes: r.defaultPrepTime || 25,
+              upiId: r.upiId || 'spicegarden@okhdfcbank',
+            },
+          },
+          { upsert: true, new: true }
         );
-        console.log(`🧾 Seeded ${orders.length} Sample Orders to MongoDB Atlas.`);
       }
+      console.log(`⚙️ Synchronized ${restaurants.length} Restaurant Settings to MongoDB Atlas.`);
     }
 
     console.log('✨ MongoDB Atlas initialization & seeding completed successfully!');
@@ -239,3 +282,4 @@ export const seedAndProtectDatabase = async () => {
     console.error('Seeding error:', seedErr);
   }
 };
+
