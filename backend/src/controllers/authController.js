@@ -19,18 +19,21 @@ export const authController = {
       }
 
       const cleanEmail = email.trim().toLowerCase();
+      let superAdmin = null;
 
-      // 1. Try local store first (instant 0ms)
-      const localAdmins = db.get('superAdmins') || [];
-      let superAdmin = localAdmins.find((sa) => sa.email.toLowerCase() === cleanEmail);
-
-      // 2. If not found locally and Atlas is connected, check Atlas
-      if (!superAdmin && mongoose.connection && mongoose.connection.readyState === 1) {
+      // 1. Try Live MongoDB Atlas FIRST if connected
+      if (mongoose.connection && mongoose.connection.readyState === 1) {
         try {
           superAdmin = await SuperAdmin.findOne({ email: cleanEmail }).lean();
         } catch (dbErr) {
-          // Fallback
+          console.warn('[AUTH] Live MongoDB SuperAdmin lookup warning:', dbErr.message);
         }
+      }
+
+      // 2. Fallback to local store ONLY if not found in MongoDB
+      if (!superAdmin) {
+        const localAdmins = db.get('superAdmins') || [];
+        superAdmin = localAdmins.find((sa) => sa.email.toLowerCase() === cleanEmail);
       }
 
       if (!superAdmin) {
@@ -102,41 +105,44 @@ export const authController = {
       }
 
       const cleanEmail = email.trim().toLowerCase();
+      let admin = null;
 
-      // 1. Try local store first (instant 0ms)
-      const localAdmins = db.get('restaurantAdmins') || [];
-      let admin = localAdmins.find((a) => a.email.toLowerCase() === cleanEmail);
-
-      // 1b. Check platformTenants if not found in restaurantAdmins
-      if (!admin) {
-        const tenants = db.get('platformTenants') || [];
-        const tenantMatch = tenants.find(
-          (t) => (t.ownerEmail && t.ownerEmail.toLowerCase() === cleanEmail) ||
-            (t.slug && `${t.slug.toLowerCase()}@restaurant.com` === cleanEmail)
-        );
-
-        if (tenantMatch) {
-          const ownerPass = tenantMatch.ownerPassword || 'Admin@123';
-          admin = {
-            id: `adm-${tenantMatch.id}`,
-            name: tenantMatch.ownerName || tenantMatch.name,
-            email: tenantMatch.ownerEmail || `${tenantMatch.slug}@restaurant.com`,
-            passwordHash: hashPassword(ownerPass),
-            passwordPlain: ownerPass,
-            role: 'ADMIN',
-            title: 'Restaurant Owner & Admin',
-            restaurantId: tenantMatch.id,
-            restaurantSlug: tenantMatch.slug,
-          };
-        }
-      }
-
-      // 2. If not found locally and Atlas is connected, check Atlas
-      if (!admin && mongoose.connection && mongoose.connection.readyState === 1) {
+      // 1. Try Live MongoDB Atlas FIRST if connected
+      if (mongoose.connection && mongoose.connection.readyState === 1) {
         try {
           admin = await RestaurantAdmin.findOne({ email: cleanEmail }).lean();
         } catch (dbErr) {
-          // Fallback
+          console.warn('[AUTH] Live MongoDB RestaurantAdmin lookup warning:', dbErr.message);
+        }
+      }
+
+      // 2. Fallback to local store ONLY if not found in MongoDB
+      if (!admin) {
+        const localAdmins = db.get('restaurantAdmins') || [];
+        admin = localAdmins.find((a) => a.email.toLowerCase() === cleanEmail);
+
+        // Check platformTenants if not found in restaurantAdmins
+        if (!admin) {
+          const tenants = db.get('platformTenants') || [];
+          const tenantMatch = tenants.find(
+            (t) => (t.ownerEmail && t.ownerEmail.toLowerCase() === cleanEmail) ||
+              (t.slug && `${t.slug.toLowerCase()}@restaurant.com` === cleanEmail)
+          );
+
+          if (tenantMatch) {
+            const ownerPass = tenantMatch.ownerPassword || 'Admin@123';
+            admin = {
+              id: `adm-${tenantMatch.id}`,
+              name: tenantMatch.ownerName || tenantMatch.name,
+              email: tenantMatch.ownerEmail || `${tenantMatch.slug}@restaurant.com`,
+              passwordHash: hashPassword(ownerPass),
+              passwordPlain: ownerPass,
+              role: 'ADMIN',
+              title: 'Restaurant Owner & Admin',
+              restaurantId: tenantMatch.id,
+              restaurantSlug: tenantMatch.slug,
+            };
+          }
         }
       }
 
@@ -215,12 +221,29 @@ export const authController = {
       }
 
       const cleanEmail = email.trim().toLowerCase();
-      const localAdmins = db.get('restaurantAdmins') || [];
-      let admin = localAdmins.find((a) => a.email.toLowerCase() === cleanEmail);
+      let admin = null;
 
+      // 1. Try Live MongoDB Atlas FIRST if connected
+      if (mongoose.connection && mongoose.connection.readyState === 1) {
+        try {
+          admin = await RestaurantAdmin.findOne({ email: cleanEmail }).lean();
+          if (!admin) {
+            admin = await SuperAdmin.findOne({ email: cleanEmail }).lean();
+          }
+        } catch (dbErr) {
+          console.warn('[AUTH] Live MongoDB verifyAdminPassword lookup warning:', dbErr.message);
+        }
+      }
+
+      // 2. Fallback to local store
       if (!admin) {
-        const superAdmins = db.get('superAdmins') || [];
-        admin = superAdmins.find((sa) => sa.email.toLowerCase() === cleanEmail);
+        const localAdmins = db.get('restaurantAdmins') || [];
+        admin = localAdmins.find((a) => a.email.toLowerCase() === cleanEmail);
+
+        if (!admin) {
+          const superAdmins = db.get('superAdmins') || [];
+          admin = superAdmins.find((sa) => sa.email.toLowerCase() === cleanEmail);
+        }
       }
 
       if (!admin) {

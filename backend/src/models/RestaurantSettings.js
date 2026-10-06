@@ -126,6 +126,38 @@ const restaurantSettingsSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    whatsappPhone: {
+      type: String,
+      default: '9876543210',
+    },
+    orderAcceptAlert: {
+      type: Boolean,
+      default: true,
+    },
+    preparingAlert: {
+      type: Boolean,
+      default: true,
+    },
+    readyAlert: {
+      type: Boolean,
+      default: true,
+    },
+    servedAlert: {
+      type: Boolean,
+      default: true,
+    },
+    paymentAlert: {
+      type: Boolean,
+      default: true,
+    },
+    autoAcceptOrders: {
+      type: Boolean,
+      default: false,
+    },
+    allowCancellation: {
+      type: Boolean,
+      default: true,
+    },
   },
   {
     timestamps: true,

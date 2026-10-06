@@ -37,13 +37,9 @@ export const orderController = {
               ],
             }
             : {};
-          const mongoPromise = Order.find(query).lean().sort({ createdAt: -1 });
-          const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Atlas query timeout')), 300)
-          );
-          mongoOrders = await Promise.race([mongoPromise, timeoutPromise]);
+          mongoOrders = await Order.find(query).lean().sort({ createdAt: -1 });
         } catch (mErr) {
-          // Graceful fallback to local store
+          console.warn('[ORDERS] MongoDB Atlas query error:', mErr.message);
         }
       }
 

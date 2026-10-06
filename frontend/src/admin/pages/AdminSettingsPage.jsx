@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useAdminData } from '../context/AdminDataContext';
 import { AdminPageHeader } from '../components/AdminPageHeader';
-import { 
-  Building2, 
-  ShoppingBag, 
-  CreditCard, 
-  Bell, 
-  Sliders, 
-  Save, 
-  Clock, 
-  MapPin, 
-  Mail, 
-  Phone, 
-  Percent, 
+import {
+  Building2,
+  ShoppingBag,
+  CreditCard,
+  Bell,
+  Sliders,
+  Save,
+  Clock,
+  MapPin,
+  Mail,
+  Phone,
+  Percent,
   Smartphone,
   CheckCircle2,
   Landmark,
@@ -111,7 +111,7 @@ const SecurityAuthModal = ({ isOpen, onClose, onAuthorized, actionTitle, adminEm
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
       onClick={(e) => e.stopPropagation()}
     >
@@ -357,17 +357,15 @@ const WhatsAppQrCard = ({ showToast, currentPhone, onUpdatePhone, currentSlug = 
     <div className="p-5 rounded-xl border border-slate-200 bg-white shadow-sm space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
         <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-            statusData.connected ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'
-          }`}>
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${statusData.connected ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'
+            }`}>
             <QrCode className="w-5 h-5" />
           </div>
           <div>
             <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               <span>Automatic Background WhatsApp Sender</span>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                statusData.connected ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-              }`}>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${statusData.connected ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                }`}>
                 {statusData.connected ? 'Connected' : 'Setup Required'}
               </span>
             </h4>
@@ -576,18 +574,18 @@ export const AdminSettingsPage = () => {
     reviewCount: settings.reviewCount || 320,
     logo: settings.logo || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=200&q=80',
     banner: settings.banner || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80',
-    
+
     // Operating Hours & Kitchen Status
     openTime: settings.openTime || '11:30 AM',
     closeTime: settings.closeTime || '11:00 PM',
     isKitchenOpen: settings.isKitchenOpen !== false,
-    
+
     // Contact & Location
     email: settings.email || 'contact@spicegarden.com',
     phone: settings.phone || '+91 98765 43210',
     address: settings.address || '14, Palm Grove Road, Indiranagar, Bengaluru',
     gstin: settings.gstin || '29ABCDE1234F1Z5',
-    
+
     // Order Settings
     acceptOrders: settings.isAcceptingOrders !== false,
     autoAcceptOrders: false,
@@ -648,6 +646,18 @@ export const AdminSettingsPage = () => {
         accountHolderName: settings.accountHolderName || prev.accountHolderName,
         accountNumber: settings.accountNumber || prev.accountNumber,
         ifscCode: settings.ifscCode || prev.ifscCode,
+        accountType: settings.accountType || prev.accountType,
+        branchName: settings.branchName || prev.branchName,
+        whatsappEnabled: settings.whatsappEnabled !== undefined ? settings.whatsappEnabled : prev.whatsappEnabled,
+        orderAcceptAlert: settings.orderAcceptAlert !== undefined ? settings.orderAcceptAlert : prev.orderAcceptAlert,
+        preparingAlert: settings.preparingAlert !== undefined ? settings.preparingAlert : prev.preparingAlert,
+        readyAlert: settings.readyAlert !== undefined ? settings.readyAlert : prev.readyAlert,
+        servedAlert: settings.servedAlert !== undefined ? settings.servedAlert : prev.servedAlert,
+        paymentAlert: settings.paymentAlert !== undefined ? settings.paymentAlert : prev.paymentAlert,
+        autoAcceptOrders: settings.autoAcceptOrders !== undefined ? settings.autoAcceptOrders : prev.autoAcceptOrders,
+        allowCancellation: settings.allowCancellation !== undefined ? settings.allowCancellation : prev.allowCancellation,
+        defaultPrepTime: settings.defaultPreparationTimeMinutes !== undefined ? settings.defaultPreparationTimeMinutes : prev.defaultPrepTime,
+        acceptOrders: settings.isAcceptingOrders !== undefined ? settings.isAcceptingOrders : prev.acceptOrders,
       }));
     }
   }, [settings]);
@@ -663,7 +673,7 @@ export const AdminSettingsPage = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Direct Logo upload to Cloudinary
+  // Direct Logo upload to Cloudinary + Auto Save to DB
   const handleLogoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -694,7 +704,8 @@ export const AdminSettingsPage = () => {
         ...prev,
         logo: data.url,
       }));
-      showToast('Logo uploaded to Cloudinary successfully!', 'success');
+      await updateSettings({ logo: data.url });
+      showToast('Logo uploaded & saved successfully!', 'success');
     } catch (err) {
       setLogoUploadError(err.message || 'Failed to upload logo.');
     } finally {
@@ -702,7 +713,7 @@ export const AdminSettingsPage = () => {
     }
   };
 
-  // Direct Cover Banner upload to Cloudinary
+  // Direct Cover Banner upload to Cloudinary + Auto Save to DB
   const handleBannerUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -733,7 +744,8 @@ export const AdminSettingsPage = () => {
         ...prev,
         banner: data.url,
       }));
-      showToast('Cover banner uploaded to Cloudinary successfully!', 'success');
+      await updateSettings({ banner: data.url });
+      showToast('Cover banner uploaded & saved successfully!', 'success');
     } catch (err) {
       setBannerUploadError(err.message || 'Failed to upload banner.');
     } finally {
@@ -768,6 +780,8 @@ export const AdminSettingsPage = () => {
         gstin: formData.gstin,
         isAcceptingOrders: formData.acceptOrders,
         defaultPreparationTimeMinutes: Number(formData.defaultPrepTime),
+        autoAcceptOrders: formData.autoAcceptOrders,
+        allowCancellation: formData.allowCancellation,
         currency: formData.currency,
         taxPercentage: Number(formData.taxPercentage),
         upiId: formData.upiId,
@@ -779,6 +793,11 @@ export const AdminSettingsPage = () => {
         branchName: formData.branchName,
         whatsappEnabled: formData.whatsappEnabled,
         whatsappPhone: formData.whatsappPhone,
+        orderAcceptAlert: formData.orderAcceptAlert,
+        preparingAlert: formData.preparingAlert,
+        readyAlert: formData.readyAlert,
+        servedAlert: formData.servedAlert,
+        paymentAlert: formData.paymentAlert,
       });
       showToast('All restaurant settings saved successfully!', 'success');
     } catch (err) {
@@ -790,18 +809,7 @@ export const AdminSettingsPage = () => {
 
   const handleSave = (e) => {
     if (e && e.preventDefault) e.preventDefault();
-    if (activeTab === 'PAYMENTS' || activeTab === 'NOTIFICATIONS') {
-      setSecurityModal({
-        isOpen: true,
-        actionTitle: `Authorize ${activeTab === 'PAYMENTS' ? 'UPI VPA & Bank Settlement' : 'WhatsApp Settings'} Changes`,
-        onAuthorized: () => {
-          setSecurityModal((prev) => ({ ...prev, isOpen: false }));
-          executeSave();
-        },
-      });
-    } else {
-      executeSave();
-    }
+    executeSave();
   };
 
 
@@ -840,11 +848,10 @@ export const AdminSettingsPage = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all ${
-                    isActive
-                      ? 'bg-amber-50 text-amber-900 border border-amber-200 shadow-xs'
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                  }`}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all ${isActive
+                    ? 'bg-amber-50 text-amber-900 border border-amber-200 shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    }`}
                 >
                   <Icon className={`w-4 h-4 ${isActive ? 'text-amber-600' : 'text-slate-400'}`} />
                   {tab.label}
@@ -970,16 +977,15 @@ export const AdminSettingsPage = () => {
                         </div>
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                      
+
                       {/* Overlay badge preview */}
                       <div className="absolute bottom-2 left-3 right-3 text-white text-[10px] flex items-center justify-between">
                         <span className="flex items-center gap-1 font-semibold text-slate-200">
                           <Clock className="w-3 h-3 text-amber-300" />
                           {formData.openTime} – {formData.closeTime}
                         </span>
-                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase flex items-center gap-1 ${
-                          formData.isKitchenOpen ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'
-                        }`}>
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase flex items-center gap-1 ${formData.isKitchenOpen ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'
+                          }`}>
                           <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
                           {formData.isKitchenOpen ? 'OPEN NOW' : 'CLOSED NOW'}
                         </span>
@@ -1135,11 +1141,10 @@ export const AdminSettingsPage = () => {
 
                     {/* Live Restaurant Status Toggle Switch */}
                     <div className="flex items-center gap-3">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-black uppercase tracking-wider transition-colors flex items-center gap-1.5 ${
-                        formData.isKitchenOpen 
-                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' 
-                          : 'bg-rose-100 text-rose-800 border border-rose-300'
-                      }`}>
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-black uppercase tracking-wider transition-colors flex items-center gap-1.5 ${formData.isKitchenOpen
+                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                        : 'bg-rose-100 text-rose-800 border border-rose-300'
+                        }`}>
                         <span className={`w-2 h-2 rounded-full ${formData.isKitchenOpen ? 'bg-emerald-600 animate-pulse' : 'bg-rose-500'}`}></span>
                         {formData.isKitchenOpen ? 'OPEN NOW' : 'CLOSED NOW'}
                       </span>
@@ -1557,8 +1562,8 @@ export const AdminSettingsPage = () => {
                 </div>
 
                 {/* WhatsApp Auto-Sender Live QR Status Card */}
-                <WhatsAppQrCard 
-                  showToast={showToast} 
+                <WhatsAppQrCard
+                  showToast={showToast}
                   currentSlug={currentSlug}
                   currentPhone={formData.whatsappPhone || formData.phone}
                   onUpdatePhone={(val) => handleChange('whatsappPhone', val)}
