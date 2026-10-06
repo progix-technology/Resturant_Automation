@@ -1,5 +1,5 @@
 import { mockRestaurants } from '../data/mockRestaurants';
-import { simulateDelay } from './apiConfig';
+import { simulateDelay, API_BASE_URL } from './apiConfig';
 import { storage } from '../utils/storage';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 
@@ -47,8 +47,7 @@ export const restaurantService = {
 
     let backendSettings = {};
     try {
-      const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-      const res = await fetch(`${API_URL}/settings/${cleanSlug}`);
+      const res = await fetch(`${API_BASE_URL}/settings/${cleanSlug}`);
       const data = await res.json();
       if (res.ok && data.success && data.settings) {
         backendSettings = data.settings;

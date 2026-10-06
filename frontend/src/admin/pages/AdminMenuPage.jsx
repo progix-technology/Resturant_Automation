@@ -149,8 +149,7 @@ export const AdminMenuPage = () => {
       const uploadData = new FormData();
       uploadData.append('image', file);
 
-      const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-      const res = await fetch(`${API_URL}/upload/dish-image`, {
+      const res = await fetch(`${API_BASE_URL}/upload/dish-image`, {
         method: 'POST',
         body: uploadData,
       });

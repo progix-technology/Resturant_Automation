@@ -1,8 +1,9 @@
 import { whatsappHelper } from '../utils/whatsappHelper';
 import { storage } from '../utils/storage';
+import { API_BASE_URL } from './apiConfig';
 
 const NOTIF_LOG_KEY = 'restaurant_whatsapp_notifications_log';
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_URL = API_BASE_URL;
 
 
 const getActiveSlug = (order = {}) => {
