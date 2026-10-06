@@ -16,11 +16,8 @@ export const menuController = {
           const query = slug
             ? { $or: [{ restaurantSlug: slug }, { restaurantSlug: cleanSlug }, { restaurantSlug: `the-${cleanSlug}` }] }
             : {};
-          const mongoPromise = MenuItem.find(query).lean();
-          const timerPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Atlas query timeout')), 300)
-          );
-          const atlasItems = await Promise.race([mongoPromise, timerPromise]);
+          const atlasItems = await MenuItem.find(query).lean();
+
 
           if (atlasItems && atlasItems.length > 0) {
             items = atlasItems.map((i) => ({

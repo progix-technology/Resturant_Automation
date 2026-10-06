@@ -12,11 +12,8 @@ export const superAdminController = {
     try {
       if (mongoose.connection && mongoose.connection.readyState === 1) {
         try {
-          const mongoPromise = Tenant.find().sort({ createdAt: -1 }).lean();
-          const timerPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Atlas query timeout')), 300)
-          );
-          const mongoTenants = await Promise.race([mongoPromise, timerPromise]);
+          const mongoTenants = await Tenant.find().sort({ createdAt: -1 }).lean();
+
           if (mongoTenants && mongoTenants.length > 0) {
             return res.status(200).json({ success: true, count: mongoTenants.length, data: mongoTenants });
           }

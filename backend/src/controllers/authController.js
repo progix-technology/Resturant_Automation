@@ -27,11 +27,7 @@ export const authController = {
       // 2. If not found locally and Atlas is connected, check Atlas
       if (!superAdmin && mongoose.connection && mongoose.connection.readyState === 1) {
         try {
-          const atlasPromise = SuperAdmin.findOne({ email: cleanEmail }).lean();
-          const timerPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Atlas query timeout')), 300)
-          );
-          superAdmin = await Promise.race([atlasPromise, timerPromise]);
+          superAdmin = await SuperAdmin.findOne({ email: cleanEmail }).lean();
         } catch (dbErr) {
           // Fallback
         }
@@ -138,11 +134,7 @@ export const authController = {
       // 2. If not found locally and Atlas is connected, check Atlas
       if (!admin && mongoose.connection && mongoose.connection.readyState === 1) {
         try {
-          const atlasPromise = RestaurantAdmin.findOne({ email: cleanEmail }).lean();
-          const timerPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Atlas query timeout')), 300)
-          );
-          admin = await Promise.race([atlasPromise, timerPromise]);
+          admin = await RestaurantAdmin.findOne({ email: cleanEmail }).lean();
         } catch (dbErr) {
           // Fallback
         }
