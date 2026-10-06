@@ -36,6 +36,7 @@ import {
 
 import { useAdminAuth } from '../context/AdminAuthContext';
 import { notificationService } from '../../services/notificationService';
+import { API_BASE_URL } from '../../services/apiConfig';
 
 const SecurityAuthModal = ({ isOpen, onClose, onAuthorized, actionTitle, adminEmail, targetMobile, currentSlug }) => {
   const [password, setPassword] = useState('');
@@ -679,8 +680,7 @@ export const AdminSettingsPage = () => {
       const uploadData = new FormData();
       uploadData.append('image', file);
 
-      const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-      const res = await fetch(`${API_URL}/upload/restaurant-image?type=logo`, {
+      const res = await fetch(`${API_BASE_URL}/upload/restaurant-image?type=logo`, {
         method: 'POST',
         body: uploadData,
       });
@@ -719,8 +719,7 @@ export const AdminSettingsPage = () => {
       const uploadData = new FormData();
       uploadData.append('image', file);
 
-      const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-      const res = await fetch(`${API_URL}/upload/restaurant-image?type=banner`, {
+      const res = await fetch(`${API_BASE_URL}/upload/restaurant-image?type=banner`, {
         method: 'POST',
         body: uploadData,
       });

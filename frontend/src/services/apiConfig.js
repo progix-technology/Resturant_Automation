@@ -1,7 +1,15 @@
-/**
- * API Configuration & Central Backend Base URL
- */
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const getApiBaseUrl = () => {
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+  // Smart fallback for live production frontend (e.g. Vercel)
+  if (typeof window !== 'undefined' && !['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+    return `${window.location.protocol}//${window.location.hostname}:5000/api`;
+  }
+  return 'http://localhost:5000/api';
+};
+
+export const API_BASE_URL = getApiBaseUrl();
 
 
 /**

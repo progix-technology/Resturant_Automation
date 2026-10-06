@@ -6,6 +6,7 @@ import { mockTables, mockRestaurantSettings } from '../data/mockAdminData';
 import { mockCategories } from '../../data/mockCategories';
 import { storage } from '../../utils/storage';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
+import { apiRequest } from '../../services/apiConfig';
 
 const AdminDataContext = createContext(null);
 
@@ -92,10 +93,8 @@ export const AdminDataProvider = ({ children }) => {
     try {
       const session = storage.get(STORAGE_KEYS.ADMIN_SESSION, null);
       const currentSlug = (session?.restaurantSlug || 'spice-garden').toLowerCase().trim();
-      const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-      const res = await fetch(`${API_URL}/settings/${currentSlug}`);
-      const data = await res.json();
-      if (res.ok && data.success && data.settings) {
+      const data = await apiRequest(`/settings/${currentSlug}`);
+      if (data && data.success && data.settings) {
         setSettings((prev) => ({
           ...prev,
           ...data.settings,
@@ -397,10 +396,8 @@ export const AdminDataProvider = ({ children }) => {
 
     // Also persist to MongoDB backend for this specific restaurant slug
     try {
-      const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-      await fetch(`${API_URL}/settings/${currentSlug}`, {
+      await apiRequest(`/settings/${currentSlug}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...partialSettings, slug: currentSlug }),
       });
     } catch (err) {
