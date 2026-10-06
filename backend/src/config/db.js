@@ -8,7 +8,6 @@ import { Order } from '../models/Order.js';
 import { Tenant } from '../models/Tenant.js';
 import { db } from '../data/db.js';
 
-mongoose.set('bufferCommands', false);
 mongoose.set('autoIndex', false);
 
 export const connectMongoDB = async () => {
@@ -22,7 +21,7 @@ export const connectMongoDB = async () => {
   try {
     console.log('🔄 Connecting to MongoDB Atlas...');
     const conn = await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 2500,
+      serverSelectionTimeoutMS: 10000,
     });
     console.log(`✅ MongoDB Atlas Connected: ${conn.connection.host} (DB: ${conn.connection.name})`);
 
