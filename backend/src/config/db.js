@@ -125,30 +125,36 @@ export const seedAndProtectDatabase = async () => {
       });
     }
 
-    // 3. Seed Menu Items if empty
-    const menuCount = await MenuItem.countDocuments();
-    if (menuCount === 0) {
-      const items = db.get('menuItems');
-      if (items && items.length > 0) {
-        await MenuItem.insertMany(
-          items.map((i) => ({
-            itemId: i.id,
-            restaurantSlug: i.restaurantSlug || 'spice-garden',
-            name: i.name,
-            category: i.category,
-            price: i.price,
-            description: i.description,
-            image: i.image,
-            isVeg: i.isVeg,
-            isSpicy: i.isSpicy,
-            isPopular: i.isPopular,
-            isAvailable: i.isAvailable,
-            preparationTime: i.preparationTime || 15,
-          }))
-        );
-        console.log(`📋 Seeded ${items.length} Menu Items to MongoDB Atlas.`);
-      }
+    // 3. Upsert / Sync all local Menu Items to MongoDB Atlas
+    const items = db.get('menuItems');
+    if (items && items.length > 0) {
+      const operations = items.map((i) => ({
+        updateOne: {
+          filter: { itemId: i.id || i.itemId },
+          update: {
+            $set: {
+              itemId: i.id || i.itemId,
+              restaurantSlug: i.restaurantSlug || 'spice-garden',
+              name: i.name,
+              category: i.category || 'Specialties',
+              categoryId: i.categoryId,
+              price: i.price,
+              description: i.description || '',
+              image: i.image,
+              isVeg: i.isVeg !== false,
+              isSpicy: i.isSpicy || false,
+              isPopular: i.isPopular || false,
+              isAvailable: i.isAvailable !== false,
+              preparationTime: i.preparationTime || 15,
+            },
+          },
+          upsert: true,
+        },
+      }));
+      await MenuItem.bulkWrite(operations);
+      console.log(`📋 Synchronized ${items.length} Menu Items to MongoDB Atlas Cloud.`);
     }
+
 
     // 4. Seed Tables if empty
     const tableCount = await Table.countDocuments();
