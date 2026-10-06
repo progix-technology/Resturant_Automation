@@ -1,6 +1,7 @@
 import express from 'express';
 import { RestaurantSettings } from '../models/RestaurantSettings.js';
 import { deleteMenuImage } from '../services/cloudinaryService.js';
+import { db } from '../data/db.js';
 
 const router = express.Router();
 
@@ -91,6 +92,20 @@ router.put('/:slug?', async (req, res) => {
 
     Object.assign(current, updateData);
     const saved = await current.save();
+
+    // Also update local db.json so local store stays 100% synced with MongoDB Atlas
+    try {
+      const localRestaurants = db.get('restaurants') || [];
+      const updatedLocal = localRestaurants.map((r) => {
+        if (r.slug === slug || r.slug === current.slug) {
+          return { ...r, ...updateData };
+        }
+        return r;
+      });
+      db.set('restaurants', updatedLocal);
+    } catch (dbErr) {
+      console.warn('Local db sync warning for settings:', dbErr.message);
+    }
 
     res.status(200).json({
       success: true,
