@@ -20,6 +20,9 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Enable 'trust proxy' for Render / Vercel / Cloudflare reverse proxies (fixes rate limiter ERR_ERL_UNEXPECTED_X_FORWARDED_FOR)
+app.set('trust proxy', 1);
+
 // Enable CORS for all frontend origins
 app.use(
   cors({
