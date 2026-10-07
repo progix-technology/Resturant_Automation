@@ -1,5 +1,4 @@
 import makeWASocket, { useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } from '@whiskeysockets/baileys';
-import qrcodeTerminal from 'qrcode-terminal';
 import QRCode from 'qrcode';
 import fs from 'fs';
 import path from 'path';
@@ -122,10 +121,6 @@ export const whatsappService = {
         if (qr && !isRegisteredSession(safeSlug)) {
           sess.connectionStatus = 'QR_READY';
           sess.isConnected = false;
-          console.log(`\n==================================================`);
-          console.log(`[WhatsApp Service - Tenant: ${safeSlug}] SCAN QR CODE TO CONNECT:`);
-          qrcodeTerminal.generate(qr, { small: true });
-          console.log(`==================================================\n`);
 
           try {
             sess.qrCodeDataUrl = await QRCode.toDataURL(qr);
