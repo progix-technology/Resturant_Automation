@@ -108,24 +108,24 @@ export const CustomerDetailsPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-warm-100 flex flex-col justify-between max-w-lg mx-auto p-4 sm:p-6 antialiased">
+    <div className="min-h-screen bg-warm-100 flex flex-col justify-center gap-2.5 sm:gap-4 max-w-lg mx-auto p-3.5 sm:p-6 antialiased">
       {/* Top Header */}
       <div>
-        <div className="pt-4 pb-6 text-center">
-          <span className="text-[11px] font-bold text-brand-800 bg-brand-50 border border-brand-200 px-3 py-1 rounded-full uppercase tracking-wider">
+        <div className="pt-1 pb-2 sm:pb-4 text-center">
+          <span className="text-[11px] font-bold text-brand-800 bg-brand-50 border border-brand-200 px-3 py-0.5 rounded-full uppercase tracking-wider">
             Quick Guest Check-in
           </span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-charcoal-900 mt-2 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-charcoal-900 mt-1.5 tracking-tight">
             Welcome to {restaurant?.name || 'Spice Garden'}
           </h1>
-          <p className="text-xs sm:text-sm text-charcoal-600 mt-1 max-w-xs mx-auto">
+          <p className="text-xs sm:text-sm text-charcoal-600 mt-0.5 max-w-xs mx-auto">
             Please enter your dining details to view the menu and place orders from your table.
           </p>
         </div>
 
         {/* Form Container */}
-        <div className="bg-white rounded-3xl p-5 sm:p-7 border border-warm-200 shadow-card">
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="bg-white rounded-3xl p-4 sm:p-7 border border-warm-200 shadow-card">
+          <form onSubmit={handleSubmit} className="space-y-3">
             {/* Full Name */}
             <Input
               label="Full Name"
@@ -153,7 +153,7 @@ export const CustomerDetailsPage = () => {
             />
 
             {/* Table Number Dropdown with Occupied indicator */}
-            <div className="w-full flex flex-col gap-1.5">
+            <div className="w-full flex flex-col gap-1">
               <label
                 htmlFor="tableNumber"
                 className="text-xs font-semibold text-charcoal-700 tracking-wide uppercase flex items-center justify-between"
@@ -204,7 +204,7 @@ export const CustomerDetailsPage = () => {
                   onChange={(e) => handleChange('tableNumber', e.target.value)}
                   required
                   className={`
-                    w-full h-12 pl-11 pr-10 rounded-xl text-sm md:text-base font-semibold text-charcoal-900 bg-white
+                    w-full h-11 pl-11 pr-10 rounded-xl text-sm font-semibold text-charcoal-900 bg-white
                     border transition-all duration-150 outline-none appearance-none cursor-pointer
                     ${
                       errors.tableNumber
@@ -259,8 +259,8 @@ export const CustomerDetailsPage = () => {
             </div>
 
             {/* Note banner */}
-            <div className="pt-2">
-              <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-brand-50/80 border border-brand-200 text-xs text-charcoal-700 leading-relaxed">
+            <div className="pt-1">
+              <div className="flex items-start gap-2.5 p-2.5 rounded-2xl bg-brand-50/80 border border-brand-200 text-xs text-charcoal-700 leading-relaxed">
                 <MessageSquare className="w-4 h-4 text-brand-800 shrink-0 mt-0.5" />
                 <p>
                   No password or account registration needed. Your table order session is safely saved on your device.
@@ -269,7 +269,7 @@ export const CustomerDetailsPage = () => {
             </div>
 
             {/* Submit CTA */}
-            <div className="pt-3">
+            <div className="pt-2">
               <Button
                 type="submit"
                 variant="primary"
@@ -287,7 +287,7 @@ export const CustomerDetailsPage = () => {
       </div>
 
       {/* Footer Guarantee */}
-      <div className="py-6 flex items-center justify-center gap-1.5 text-xs text-charcoal-500">
+      <div className="py-1 sm:py-3 flex items-center justify-center gap-1.5 text-xs text-charcoal-500">
         <ShieldCheck className="w-4 h-4 text-emerald-600" />
         <span>Your information is only used for table dining service.</span>
       </div>
