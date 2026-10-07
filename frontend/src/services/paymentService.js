@@ -19,7 +19,7 @@ export const paymentService = {
   async simulatePaymentSuccess(orderId, markServed = true) {
     await simulateDelay(200);
     const updatedOrder = await orderService.updatePaymentStatus(orderId, PAYMENT_STATUS.COMPLETED, markServed);
-    notificationService.sendPaymentConfirmation(updatedOrder);
+    // Automatic WhatsApp dispatch removed as per user instruction (Admin dispatches manually)
     return updatedOrder;
   },
 };

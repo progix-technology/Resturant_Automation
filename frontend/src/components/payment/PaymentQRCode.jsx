@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Smartphone, CheckCircle2, ShieldCheck, Sparkles, Copy, Check, Landmark, CreditCard, ChevronDown, ChevronUp } from 'lucide-react';
+import { Smartphone, CheckCircle2, ShieldCheck, Sparkles, Copy, Check, Landmark, CreditCard, ChevronDown, ChevronUp, Clock } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
 import { Button } from '../common/Button';
 import { useRestaurant } from '../../hooks/useRestaurant';
@@ -22,6 +22,18 @@ export const PaymentQRCode = ({
   const [copiedIfsc, setCopiedIfsc] = useState(false);
   const [showBankDetails, setShowBankDetails] = useState(false);
   const [liveSettings, setLiveSettings] = useState(null);
+
+  // 1-minute (60 seconds) timer & checkbox state
+  const [timeLeft, setTimeLeft] = useState(60);
+  const [isChecked, setIsChecked] = useState(false);
+
+  useEffect(() => {
+    if (timeLeft <= 0) return;
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [timeLeft]);
 
   useEffect(() => {
     const rawSlug = (restaurantSlug || 'spice-garden').toLowerCase().trim();
@@ -216,25 +228,51 @@ export const PaymentQRCode = ({
         </div>
       )}
 
-      {/* Real-time Payment Confirmation Action (Done / Not Done) */}
+      {/* Real-time Payment Confirmation Action with 1-Minute Timer & Checkbox */}
       <div className="w-full mt-5 pt-4 border-t border-warm-200">
-        <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/60 border border-emerald-300 rounded-2xl p-4 shadow-sm text-left space-y-3">
-          <div className="flex items-center gap-2 text-emerald-950 font-bold text-xs sm:text-sm">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>Have you completed payment of {formatCurrency(amount)}?</span>
+        <div className="bg-gradient-to-br from-amber-50 to-amber-100/60 border border-amber-300 rounded-2xl p-4 shadow-sm text-left space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs sm:text-sm font-extrabold text-amber-950 flex items-center gap-1.5">
+              <Clock className="w-4 h-4 text-amber-600 animate-spin" />
+              <span>Payment Confirmation Check</span>
+            </span>
+            <span className="text-[10px] font-mono font-bold bg-amber-200 text-amber-900 px-2.5 py-0.5 rounded-full border border-amber-300">
+              {timeLeft > 0 ? `Unlocks in ${timeLeft}s` : 'Ready to confirm'}
+            </span>
           </div>
-          <p className="text-[11px] text-emerald-800 leading-snug">
-            After paying via GPay, PhonePe, or Paytm, click <strong>Done</strong> to notify kitchen & view receipt.
-          </p>
+
+          {timeLeft > 0 ? (
+            <p className="text-[11px] text-amber-900 leading-snug">
+              Please complete your UPI payment of <strong>{formatCurrency(amount)}</strong> in Google Pay, PhonePe, or Paytm. The payment confirmation checkbox will unlock in <strong>{timeLeft} seconds</strong>.
+            </p>
+          ) : (
+            <label className="flex items-start gap-2.5 p-3 rounded-xl bg-white border-2 border-emerald-400 shadow-xs cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={isChecked}
+                onChange={(e) => setIsChecked(e.target.checked)}
+                className="w-4 h-4 mt-0.5 text-emerald-600 rounded focus:ring-emerald-500 cursor-pointer"
+              />
+              <div className="text-xs">
+                <span className="font-extrabold text-slate-900 block">
+                  I have completed the UPI payment of {formatCurrency(amount)}
+                </span>
+                <span className="text-[10px] text-slate-500">
+                  Check this box once paid to confirm your order & proceed.
+                </span>
+              </div>
+            </label>
+          )}
 
           <div className="grid grid-cols-2 gap-2.5 pt-1">
             <Button
               onClick={onConfirmDone || onSimulateSuccess}
+              disabled={timeLeft > 0 || !isChecked || isLoading}
               isLoading={isLoading}
               variant="primary"
               size="md"
               icon={CheckCircle2}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-md cursor-pointer"
+              className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-extrabold text-xs shadow-md cursor-pointer"
             >
               Done (I Have Paid)
             </Button>
@@ -253,4 +291,5 @@ export const PaymentQRCode = ({
     </div>
   );
 };
+
 

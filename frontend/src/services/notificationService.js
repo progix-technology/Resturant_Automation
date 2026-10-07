@@ -11,7 +11,7 @@ const getActiveSlug = (order = {}) => {
   try {
     const adminSession = storage.get('restaurant_admin_session', null);
     if (adminSession?.restaurantSlug) return adminSession.restaurantSlug;
-  } catch {}
+  } catch { }
   return 'spice-garden';
 };
 
@@ -79,7 +79,7 @@ export const notificationService = {
   },
 
   async sendPaymentConfirmation(order, openChat = false) {
-    const text = whatsappHelper.createPaymentConfirmationMessage(order);
+    const text = `Payment of ₹${order.total || 0} confirmed for Order #${order.orderId || order.id}! Your food is being prepared. 👨‍🍳`;
     const slug = getActiveSlug(order);
     logNotification('PAYMENT_CONFIRMATION', order, text, order.mobile);
     return await dispatchWhatsAppMessage(order.mobile, text, openChat, slug);
