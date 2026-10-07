@@ -600,10 +600,6 @@ export const AdminOrdersPage = () => {
                         </p>
                       </div>
                     </div>
-
-                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-200/80 text-emerald-900">
-                      Free Web WhatsApp
-                    </span>
                   </div>
 
                   {/* Preparation Time selector */}
