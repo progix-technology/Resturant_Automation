@@ -3,6 +3,12 @@ import { db } from '../data/db.js';
 import { Table } from '../models/Table.js';
 import { Order } from '../models/Order.js';
 
+const cleanNum = (val) => {
+  if (val === null || val === undefined) return '';
+  const digits = String(val).replace(/\D/g, '');
+  return digits ? String(parseInt(digits, 10)) : String(val).toLowerCase().trim();
+};
+
 export const tableController = {
   async getTables(req, res) {
     try {
@@ -43,7 +49,7 @@ export const tableController = {
         try {
           mongoOrders = await Order.find({
             $or: [
-              { orderStatus: { $ne: 'CANCELLED' } },
+              { orderStatus: { $nin: ['CANCELLED', 'COMPLETED', 'REJECTED'] } },
               { paymentStatus: { $ne: 'COMPLETED' } }
             ]
           }).lean();
@@ -54,15 +60,13 @@ export const tableController = {
 
       // Map dynamic status onto tables
       const dynamicTables = tables.map((t) => {
-        const tableNumStr = String(t.number).padStart(2, '0');
-        const tableNumShort = String(t.number).replace(/^0+/, '');
+        const tableClean = cleanNum(t.number || t.id || t.tableId);
 
         // Find active order for this table (not completed or unpaid)
         const activeOrder = allOrders.find((o) => {
-          const oTableStr = String(o.tableNumber || '').padStart(2, '0');
-          const oTableShort = String(o.tableNumber || '').replace(/^0+/, '');
-          const matchesTable = oTableStr === tableNumStr || oTableShort === tableNumShort;
-          const isActive = o.paymentStatus !== 'COMPLETED' && o.orderStatus !== 'CANCELLED' && o.orderStatus !== 'COMPLETED';
+          const oTableClean = cleanNum(o.tableNumber);
+          const matchesTable = oTableClean && tableClean && oTableClean === tableClean;
+          const isActive = o.paymentStatus !== 'COMPLETED' && o.orderStatus !== 'CANCELLED' && o.orderStatus !== 'COMPLETED' && o.orderStatus !== 'REJECTED';
           return matchesTable && isActive;
         });
 
@@ -75,18 +79,9 @@ export const tableController = {
             amount: activeOrder.total || t.amount || 0,
             occupiedSince: t.occupiedSince || activeOrder.createdAt || new Date().toISOString(),
           };
-        } else if (t.status === 'OCCUPIED') {
-          // If no active orders remain and it wasn't manually set to RESERVED or CLEANING
-          return {
-            ...t,
-            status: 'AVAILABLE',
-            currentOrderId: null,
-            customerName: null,
-            amount: 0,
-            occupiedSince: null,
-          };
         }
 
+        // If no active order exists, keep manual status (RESERVED, CLEANING, or manually set OCCUPIED)
         return t;
       });
 
@@ -100,29 +95,35 @@ export const tableController = {
     try {
       const { id } = req.params;
       const { status, customerName } = req.body;
+      const targetClean = cleanNum(id);
 
       // Update MongoDB Atlas if connected
       if (mongoose.connection && mongoose.connection.readyState === 1) {
-        Table.findOneAndUpdate(
-          { $or: [{ tableId: id }, { number: id }] },
-          {
-            status,
-            ...(status === 'AVAILABLE'
-              ? { currentOrderId: null, customerName: null, amount: 0, occupiedSince: null }
-              : status === 'RESERVED' && customerName
-                ? { customerName }
-                : {}),
+        try {
+          const mongoTables = await Table.find();
+          const targetDoc = mongoTables.find((t) => cleanNum(t.tableId) === targetClean || cleanNum(t.number) === targetClean);
+          if (targetDoc) {
+            targetDoc.status = status;
+            if (status === 'AVAILABLE') {
+              targetDoc.currentOrderId = null;
+              targetDoc.customerName = null;
+              targetDoc.amount = 0;
+              targetDoc.occupiedSince = null;
+            } else if (customerName) {
+              targetDoc.customerName = customerName;
+            }
+            await targetDoc.save();
           }
-        ).catch((mErr) => {
+        } catch (mErr) {
           console.warn('MongoDB table update warning:', mErr.message);
-        });
+        }
       }
 
       const tables = db.get('tables') || [];
       let updatedTable = null;
 
       const next = tables.map((t) => {
-        if (t.id === id || t.number === id) {
+        if (cleanNum(t.id) === targetClean || cleanNum(t.tableId) === targetClean || cleanNum(t.number) === targetClean) {
           updatedTable = {
             ...t,
             status,
