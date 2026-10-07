@@ -7,9 +7,9 @@ const ADMIN_ORDERS_KEY = 'restaurant_admin_all_orders';
 
 const isDummyOrder = (o) => {
   if (!o) return true;
-  const id = o.orderId || o.id || '';
+  const id = (o.orderId || o.id || '').replace('#', '').trim();
   const name = (o.customerName || '').toLowerCase();
-  if (['ORD-1526', 'ORD-8021', 'ORD-1041', 'ORD-1042'].includes(id)) return true;
+  if (['ORD-1526', 'ORD-8021', 'ORD-1041', 'ORD-1042', 'ORD-5970', 'ORD-8859'].includes(id)) return true;
   if (name.includes('test') || name.includes('sample') || name === 'rohan sharma') return true;
   return false;
 };
@@ -312,5 +312,35 @@ export const adminOrderService = {
    */
   async setPreparationTime(orderId, minutes) {
     return this.updateOrderStatus(orderId, 'PREPARING', { etaMinutes: minutes });
+  },
+
+  /**
+   * Delete order by ID
+   */
+  async deleteOrder(orderId) {
+    const cleanId = String(orderId).replace('#', '').trim();
+    try {
+      await apiRequest(`/orders/${cleanId}`, { method: 'DELETE' });
+    } catch (e) {}
+
+    const currentSlug = getCurrentSlug();
+    const cached = storage.get(`${ADMIN_ORDERS_KEY}_${currentSlug}`, []);
+    if (Array.isArray(cached)) {
+      const filtered = cached.filter((o) => (o.orderId || o.id) !== cleanId && (o.orderId || o.id) !== `#${cleanId}` && (o.orderId || o.id) !== orderId);
+      storage.set(`${ADMIN_ORDERS_KEY}_${currentSlug}`, filtered);
+    }
+
+    const activeOrder = storage.get(STORAGE_KEYS.ACTIVE_ORDER);
+    if (activeOrder && ((activeOrder.orderId || activeOrder.id) === cleanId || (activeOrder.orderId || activeOrder.id) === orderId)) {
+      storage.remove(STORAGE_KEYS.ACTIVE_ORDER);
+    }
+
+    const history = storage.get(STORAGE_KEYS.ORDER_HISTORY, []);
+    if (Array.isArray(history)) {
+      const filteredHistory = history.filter((o) => (o.orderId || o.id) !== cleanId && (o.orderId || o.id) !== orderId);
+      storage.set(STORAGE_KEYS.ORDER_HISTORY, filteredHistory);
+    }
+
+    return true;
   },
 };

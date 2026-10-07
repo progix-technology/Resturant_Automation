@@ -251,6 +251,17 @@ export const AdminDataProvider = ({ children }) => {
     }
   };
 
+  const deleteOrder = async (orderId) => {
+    const cleanId = String(orderId).replace('#', '').trim();
+    setOrders((prev) => prev.filter((o) => (o.orderId || o.id) !== cleanId && (o.orderId || o.id) !== `#${cleanId}` && (o.orderId || o.id) !== orderId));
+    showToast(`Order #${cleanId} deleted permanently`, 'info');
+    try {
+      await adminOrderService.deleteOrder(orderId);
+    } catch (err) {
+      console.warn('Delete order error:', err);
+    }
+  };
+
   const addTable = async (tableData) => {
     try {
       const created = await adminTableService.addTable(tableData);
@@ -504,6 +515,7 @@ export const AdminDataProvider = ({ children }) => {
     loadTables,
     updateOrderStatus,
     markPaid,
+    deleteOrder,
     setPreparationTime,
     updateTableStatus,
     addTable,

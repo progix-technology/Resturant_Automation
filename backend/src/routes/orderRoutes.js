@@ -13,6 +13,9 @@ router.post('/', orderController.createOrder);
 router.patch('/:id/status', orderController.updateOrderStatus);
 router.patch('/:id/pay', orderController.markPaymentPaid);
 
+// Delete single order
+router.delete('/:id', orderController.deleteOrder);
+
 // Reset all orders and tables (Clean slate)
 router.delete('/', orderController.resetOrders);
 router.post('/reset', orderController.resetOrders);

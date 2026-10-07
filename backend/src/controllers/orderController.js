@@ -5,9 +5,9 @@ import { Table } from '../models/Table.js';
 
 const isDummyOrder = (o) => {
   if (!o) return true;
-  const id = o.orderId || o.id || '';
+  const id = (o.orderId || o.id || '').replace('#', '').trim();
   const name = (o.customerName || '').toLowerCase();
-  if (['ORD-1526', 'ORD-8021', 'ORD-1041', 'ORD-1042'].includes(id)) return true;
+  if (['ORD-1526', 'ORD-8021', 'ORD-1041', 'ORD-1042', 'ORD-5970', 'ORD-8859'].includes(id)) return true;
   if (name.includes('test') || name.includes('sample') || name === 'rohan sharma') return true;
   return false;
 };
@@ -448,6 +448,38 @@ export const orderController = {
       if (!res.headersSent) {
         return res.status(500).json({ success: false, message: 'Failed to reset orders' });
       }
+    }
+  },
+
+  /**
+   * Delete order by ID
+   */
+  async deleteOrder(req, res) {
+    try {
+      const { id } = req.params;
+      const cleanId = String(id).replace('#', '').trim();
+
+      const orders = db.get('orders') || [];
+      const filtered = orders.filter((o) => (o.orderId || o.id) !== cleanId && (o.orderId || o.id) !== `#${cleanId}` && (o.orderId || o.id) !== id);
+      db.set('orders', filtered);
+
+      if (mongoose.connection && mongoose.connection.readyState === 1) {
+        await Order.deleteMany({
+          $or: [
+            { orderId: cleanId },
+            { orderId: `#${cleanId}` },
+            { id: cleanId },
+            { id: `#${cleanId}` },
+          ],
+        }).catch((e) => console.warn('Mongo deleteOrder warning:', e.message));
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: `Order ${id} deleted successfully`,
+      });
+    } catch (err) {
+      return res.status(500).json({ success: false, message: 'Failed to delete order' });
     }
   },
 };
