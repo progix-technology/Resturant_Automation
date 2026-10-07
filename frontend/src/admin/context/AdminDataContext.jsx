@@ -92,7 +92,8 @@ export const AdminDataProvider = ({ children }) => {
   const loadSettings = async () => {
     try {
       const session = storage.get(STORAGE_KEYS.ADMIN_SESSION, null);
-      const currentSlug = (session?.restaurantSlug || 'spice-garden').toLowerCase().trim();
+      const rawSlug = (session?.restaurantSlug || 'spice-garden').toLowerCase().trim();
+      const currentSlug = rawSlug.replace(/_/g, '-');
       const data = await apiRequest(`/settings/${currentSlug}`);
       if (data && data.success && data.settings) {
         setSettings((prev) => ({
@@ -104,6 +105,7 @@ export const AdminDataProvider = ({ children }) => {
           ...data.settings,
         });
         storage.set(`${STORAGE_KEYS.ADMIN_SETTINGS}_${currentSlug}`, data.settings);
+        storage.set(`${STORAGE_KEYS.ADMIN_SETTINGS}_${rawSlug}`, data.settings);
       }
     } catch (err) {
       console.warn('Load settings warning:', err);
@@ -382,7 +384,8 @@ export const AdminDataProvider = ({ children }) => {
 
   const updateSettings = async (partialSettings) => {
     const session = storage.get(STORAGE_KEYS.ADMIN_SESSION, null);
-    const currentSlug = (session?.restaurantSlug || 'spice-garden').toLowerCase().trim();
+    const rawSlug = (session?.restaurantSlug || 'spice-garden').toLowerCase().trim();
+    const currentSlug = rawSlug.replace(/_/g, '-');
 
     const updated = {
       ...settings,
@@ -393,6 +396,7 @@ export const AdminDataProvider = ({ children }) => {
     setSettings(updated);
     storage.set(STORAGE_KEYS.ADMIN_SETTINGS, updated);
     storage.set(`${STORAGE_KEYS.ADMIN_SETTINGS}_${currentSlug}`, updated);
+    storage.set(`${STORAGE_KEYS.ADMIN_SETTINGS}_${rawSlug}`, updated);
 
     // Also persist to MongoDB backend for this specific restaurant slug
     try {

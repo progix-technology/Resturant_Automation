@@ -27,7 +27,7 @@ const restaurantSettingsSchema = new mongoose.Schema(
     },
     cuisine: {
       type: String,
-      default: '',
+      default: 'North Indian • Chinese • Tandoor',
       trim: true,
     },
     rating: {
@@ -38,12 +38,12 @@ const restaurantSettingsSchema = new mongoose.Schema(
     },
     reviewCount: {
       type: Number,
-      default: 0,
+      default: 320,
       min: 0,
     },
     address: {
       type: String,
-      default: '',
+      default: '14, Palm Grove Road, Indiranagar, Bengaluru',
       trim: true,
     },
     logo: {
@@ -72,19 +72,19 @@ const restaurantSettingsSchema = new mongoose.Schema(
     },
     phone: {
       type: String,
-      default: '',
+      default: '+91 98765 43210',
     },
     email: {
       type: String,
-      default: '',
+      default: 'contact@spicegarden.com',
     },
     gstin: {
       type: String,
-      default: '',
+      default: '29ABCDE1234F1Z5',
     },
     upiId: {
       type: String,
-      default: '',
+      default: 'spicegarden@okhdfcbank',
     },
     currency: {
       type: String,
@@ -100,27 +100,27 @@ const restaurantSettingsSchema = new mongoose.Schema(
     },
     bankName: {
       type: String,
-      default: '',
+      default: 'HDFC Bank',
     },
     accountHolderName: {
       type: String,
-      default: '',
+      default: 'Spice Garden Hospitality',
     },
     accountNumber: {
       type: String,
-      default: '',
+      default: '50200084920184',
     },
     ifscCode: {
       type: String,
-      default: '',
+      default: 'HDFC0000128',
     },
     accountType: {
       type: String,
-      default: '',
+      default: 'Current Account',
     },
     branchName: {
       type: String,
-      default: '',
+      default: 'Indiranagar Branch, Bengaluru',
     },
     whatsappEnabled: {
       type: Boolean,
@@ -164,8 +164,11 @@ const restaurantSettingsSchema = new mongoose.Schema(
   }
 );
 
-// Auto-sync name and restaurantName
+// Auto-sync name and restaurantName, and normalize slug
 restaurantSettingsSchema.pre('save', function () {
+  if (this.slug) {
+    this.slug = this.slug.toLowerCase().trim().replace(/_/g, '-');
+  }
   if (this.name && !this.restaurantName) {
     this.restaurantName = this.name;
   } else if (this.restaurantName && !this.name) {

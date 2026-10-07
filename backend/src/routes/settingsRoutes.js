@@ -11,22 +11,32 @@ const DEFAULT_SLUG = 'spice-garden';
 // Helper to get or create default settings safely
 async function getOrCreateSettings(slug = DEFAULT_SLUG) {
   let settings = null;
-  const cleanSlug = slug.toLowerCase().trim();
-  const displayName = cleanSlug.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ') || 'Restaurant';
+  const rawSlug = (slug || DEFAULT_SLUG).toLowerCase().trim();
+  const cleanSlug = rawSlug.replace(/_/g, '-');
 
   if (mongoose.connection && mongoose.connection.readyState === 1) {
     try {
-      settings = await RestaurantSettings.findOne({ slug: cleanSlug });
-      if (!settings) {
+      // Find matching setting with either cleanSlug or rawSlug
+      settings = await RestaurantSettings.findOne({
+        $or: [{ slug: cleanSlug }, { slug: rawSlug }],
+      });
+
+      if (settings) {
+        // If found under rawSlug (e.g. spice_garden), update to cleanSlug
+        if (settings.slug !== cleanSlug) {
+          settings.slug = cleanSlug;
+          await settings.save().catch(() => {});
+        }
+      } else {
         settings = await RestaurantSettings.create({
           slug: cleanSlug,
-          name: displayName,
-          restaurantName: displayName,
+          name: 'Spice Garden',
+          restaurantName: 'Spice Garden',
           tagline: '',
-          cuisine: '',
+          cuisine: 'North Indian • Chinese • Tandoor',
           rating: 4.8,
-          reviewCount: 0,
-          address: '',
+          reviewCount: 320,
+          address: '14, Palm Grove Road, Indiranagar, Bengaluru',
           logo: '',
           banner: '',
           openTime: '11:30 AM',
@@ -42,45 +52,28 @@ async function getOrCreateSettings(slug = DEFAULT_SLUG) {
 
   if (!settings) {
     const restaurants = db.get('restaurants') || [];
-    const localMatch = restaurants.find((r) => r.slug === cleanSlug) || {};
+    const localMatch =
+      restaurants.find((r) => r.slug === cleanSlug || r.slug === rawSlug) || restaurants[0] || {};
     settings = {
       slug: cleanSlug,
-      name: localMatch.name || displayName,
-      restaurantName: localMatch.name || displayName,
+      name: localMatch.name || 'Spice Garden',
+      restaurantName: localMatch.name || 'Spice Garden',
       tagline: localMatch.tagline || '',
-      cuisine: localMatch.cuisine || '',
+      cuisine: localMatch.cuisine || 'North Indian • Chinese • Tandoor',
       rating: localMatch.rating || 4.8,
-      reviewCount: localMatch.reviewCount || 0,
-      address: localMatch.address || '',
+      reviewCount: localMatch.reviewCount || 320,
+      address: localMatch.address || '14, Palm Grove Road, Indiranagar, Bengaluru',
       logo: localMatch.logo || '',
       banner: localMatch.banner || '',
       openTime: localMatch.openTime || '11:30 AM',
       closeTime: localMatch.closeTime || '11:00 PM',
       isKitchenOpen: localMatch.isKitchenOpen !== false,
       isAcceptingOrders: localMatch.isAcceptingOrders !== false,
-      phone: localMatch.phone || '',
-      email: localMatch.email || '',
-      gstin: localMatch.gstin || '',
-      upiId: localMatch.upiId || '',
+      phone: localMatch.phone || '+91 98765 43210',
+      email: localMatch.email || 'contact@spicegarden.com',
+      gstin: localMatch.gstin || '29ABCDE1234F1Z5',
+      upiId: localMatch.upiId || 'spicegarden@okhdfcbank',
     };
-  }
-
-  // Auto-scrub legacy dummy unsplash URLs and dummy addresses from existing settings
-  let needsScrub = false;
-  if (settings.logo && (settings.logo.includes('unsplash.com') || settings.logo === '🌿')) {
-    settings.logo = '';
-    needsScrub = true;
-  }
-  if (settings.banner && settings.banner.includes('unsplash.com')) {
-    settings.banner = '';
-    needsScrub = true;
-  }
-  if (settings.address && (settings.address.includes('Indiranagar') || settings.address.includes('High Street') || settings.address.includes('Palm Grove'))) {
-    settings.address = '';
-    needsScrub = true;
-  }
-  if (needsScrub && settings.save && typeof settings.save === 'function') {
-    await settings.save().catch(() => {});
   }
 
   return settings;
@@ -114,8 +107,9 @@ router.get('/:slug?', async (req, res) => {
 router.put('/:slug?', async (req, res) => {
   try {
     const slug = req.params.slug || req.body.slug || DEFAULT_SLUG;
-    const cleanSlug = slug.toLowerCase().trim();
-    const updateData = { ...req.body };
+    const rawSlug = (slug || DEFAULT_SLUG).toLowerCase().trim();
+    const cleanSlug = rawSlug.replace(/_/g, '-');
+    const updateData = { ...req.body, slug: cleanSlug };
 
     // Normalize name / restaurantName
     if (updateData.name && !updateData.restaurantName) {
@@ -128,10 +122,13 @@ router.put('/:slug?', async (req, res) => {
 
     if (mongoose.connection && mongoose.connection.readyState === 1) {
       try {
-        let current = await RestaurantSettings.findOne({ slug: cleanSlug });
+        let current = await RestaurantSettings.findOne({
+          $or: [{ slug: cleanSlug }, { slug: rawSlug }],
+        });
         if (!current) {
           current = new RestaurantSettings({ slug: cleanSlug });
         }
+        current.slug = cleanSlug;
 
         // Auto-cleanup old logo if replaced
         if (updateData.logo && current.logo && updateData.logo !== current.logo) {
@@ -162,8 +159,8 @@ router.put('/:slug?', async (req, res) => {
     try {
       const localRestaurants = db.get('restaurants') || [];
       const updatedLocal = localRestaurants.map((r) => {
-        if (r.slug === cleanSlug) {
-          return { ...r, ...updateData };
+        if (r.slug === cleanSlug || r.slug === rawSlug) {
+          return { ...r, ...updateData, slug: cleanSlug };
         }
         return r;
       });

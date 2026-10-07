@@ -71,17 +71,19 @@ export const RestaurantWelcomePage = () => {
       {/* Top Branding Section */}
       <div className="pt-6 sm:pt-10 flex flex-col items-center text-center">
         {/* Restaurant Logo */}
-        <div className="w-24 h-24 rounded-3xl overflow-hidden bg-brand-800 shadow-xl border-4 border-white mb-5 animate-fade-in flex items-center justify-center text-white">
+        <div className="w-24 h-24 rounded-3xl overflow-hidden bg-brand-800 shadow-xl border-4 border-white mb-5 animate-fade-in flex items-center justify-center text-white font-black text-2xl shrink-0">
           {restaurant.logo ? (
             <img
               src={restaurant.logo}
               alt={restaurant.name}
               className="w-full h-full object-cover"
-              onError={(e) => { e.target.style.display = 'none'; }}
+              onError={(e) => {
+                e.target.style.display = 'none';
+              }}
             />
           ) : (
-            <span className="text-3xl font-black tracking-wider text-warm-100">
-              {restaurant.name ? restaurant.name.charAt(0).toUpperCase() : 'R'}
+            <span className="tracking-wider uppercase">
+              {restaurant.name ? restaurant.name.split(' ').map(n => n[0]).join('').slice(0, 2) : 'SG'}
             </span>
           )}
         </div>
@@ -90,46 +92,45 @@ export const RestaurantWelcomePage = () => {
         <h1 className="text-3xl sm:text-4xl font-black text-charcoal-900 tracking-tight">
           {restaurant.name}
         </h1>
-        {restaurant.tagline ? (
+        {restaurant.tagline && restaurant.tagline.trim() && (
           <p className="text-sm sm:text-base text-charcoal-600 mt-2 font-medium max-w-xs">
             "{restaurant.tagline}"
           </p>
-        ) : null}
+        )}
 
         {/* Rating and Cuisine Chips */}
         <div className="flex flex-wrap items-center justify-center gap-2 mt-4">
           <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-900 border border-amber-200 text-xs font-bold">
             <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
             <span>{restaurant.rating}</span>
-            {restaurant.reviewCount > 0 && (
-              <span className="text-amber-700 font-normal">({restaurant.reviewCount}+ reviews)</span>
-            )}
+            <span className="text-amber-700 font-normal">({restaurant.reviewCount}+ reviews)</span>
           </div>
 
-          {restaurant.cuisine ? (
-            <div className="px-3 py-1 rounded-full bg-brand-50 text-brand-800 border border-brand-200 text-xs font-semibold">
-              {restaurant.cuisine}
-            </div>
-          ) : null}
+          <div className="px-3 py-1 rounded-full bg-brand-50 text-brand-800 border border-brand-200 text-xs font-semibold">
+            {restaurant.cuisine}
+          </div>
         </div>
       </div>
 
       {/* Center Hero Card */}
       <div className="my-6 rounded-3xl overflow-hidden shadow-card border border-warm-200 relative bg-white">
-        <div className="h-48 w-full relative bg-gradient-to-br from-brand-900 via-charcoal-900 to-brand-950">
+        <div className="h-48 w-full relative bg-gradient-to-br from-charcoal-900 via-brand-950 to-charcoal-950 flex items-center justify-center">
           {restaurant.banner ? (
             <img
               src={restaurant.banner}
               alt={restaurant.name}
               className="w-full h-full object-cover brightness-90"
-              onError={(e) => { e.target.style.display = 'none'; }}
+              onError={(e) => {
+                e.target.style.display = 'none';
+              }}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <Utensils className="w-16 h-16 text-white/20" />
+            <div className="text-center text-white/80 p-4">
+              <Utensils className="w-10 h-10 mx-auto opacity-30 mb-1" />
+              <p className="text-xs font-medium tracking-wide uppercase opacity-50">{restaurant.name}</p>
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-charcoal-950/80 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-charcoal-950/80 via-transparent to-transparent pointer-events-none" />
           <div className="absolute bottom-3 left-4 right-4 text-white text-xs flex items-center justify-between">
             <span className="flex items-center gap-1 font-medium">
               <Clock className="w-3.5 h-3.5 text-warm-200" />
@@ -147,12 +148,10 @@ export const RestaurantWelcomePage = () => {
 
         </div>
 
-        {restaurant.address ? (
-          <div className="p-4 text-xs text-charcoal-600 flex items-start gap-2 bg-warm-50/50">
-            <MapPin className="w-4 h-4 text-brand-800 shrink-0 mt-0.5" />
-            <span>{restaurant.address}</span>
-          </div>
-        ) : null}
+        <div className="p-4 text-xs text-charcoal-600 flex items-start gap-2 bg-warm-50/50">
+          <MapPin className="w-4 h-4 text-brand-800 shrink-0 mt-0.5" />
+          <span>{restaurant.address}</span>
+        </div>
       </div>
 
       {/* Bottom Action Area */}

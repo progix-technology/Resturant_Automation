@@ -8,17 +8,19 @@ export const RestaurantBanner = ({ restaurant, className = '' }) => {
   return (
     <div className={`relative overflow-hidden rounded-3xl shadow-card bg-charcoal-900 text-white ${className}`}>
       {/* Background Image with warm gradient overlay */}
-      <div className="relative h-44 sm:h-52 w-full bg-gradient-to-br from-brand-900 via-charcoal-900 to-brand-950">
-        {restaurant.banner ? (
+      <div className="relative h-44 sm:h-52 w-full bg-gradient-to-br from-brand-950 via-charcoal-900 to-charcoal-950">
+        {restaurant.banner && (
           <img
             src={restaurant.banner}
             alt={restaurant.name}
             className="w-full h-full object-cover object-center brightness-75"
             loading="eager"
-            onError={(e) => { e.target.style.display = 'none'; }}
+            onError={(e) => {
+              e.target.style.display = 'none';
+            }}
           />
-        ) : null}
-        <div className="absolute inset-0 bg-gradient-to-t from-charcoal-950 via-charcoal-900/50 to-transparent" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-charcoal-950 via-charcoal-900/50 to-transparent pointer-events-none" />
       </div>
 
       {/* Content overlay */}
@@ -31,9 +33,7 @@ export const RestaurantBanner = ({ restaurant, className = '' }) => {
             <div className="flex items-center gap-1 text-amber-400 text-xs font-bold">
               <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
               <span>{restaurant.rating}</span>
-              {restaurant.reviewCount > 0 && (
-                <span className="text-charcoal-300 font-normal">({restaurant.reviewCount}+)</span>
-              )}
+              <span className="text-charcoal-300 font-normal">({restaurant.reviewCount}+)</span>
             </div>
           </div>
 
@@ -41,11 +41,11 @@ export const RestaurantBanner = ({ restaurant, className = '' }) => {
             {restaurant.name}
           </h1>
 
-          {restaurant.tagline ? (
+          {restaurant.tagline && restaurant.tagline.trim() && (
             <p className="text-xs sm:text-sm text-warm-200/90 mt-1 line-clamp-1">
               {restaurant.tagline}
             </p>
-          ) : null}
+          )}
         </div>
 
         {/* Operating status badge */}
