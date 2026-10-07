@@ -670,6 +670,32 @@
   ],
   "orders": [
     {
+      "orderId": "ORD-8193",
+      "id": "ORD-8193",
+      "restaurantSlug": "spice-garden",
+      "customerName": "Shivansh",
+      "mobile": "9569881374",
+      "tableNumber": "01",
+      "items": [
+        {
+          "id": "item-101",
+          "name": "Crispy Corn Chilli Pepper",
+          "price": 240,
+          "quantity": 1,
+          "isVeg": true
+        }
+      ],
+      "subtotal": 240,
+      "taxes": 12,
+      "total": 252,
+      "orderStatus": "CONFIRMED",
+      "paymentStatus": "PENDING",
+      "paymentMethod": "UPI",
+      "etaMinutes": 25,
+      "notes": "",
+      "createdAt": "2026-10-07T08:23:15.623Z"
+    },
+    {
       "orderId": "ORD-2975",
       "id": "ORD-2975",
       "restaurantSlug": "spice-garden",

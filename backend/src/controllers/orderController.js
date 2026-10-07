@@ -183,10 +183,30 @@ export const orderController = {
       };
 
       // 1. Immediately update orders in local store (INSTANT 0ms, NEVER FAILS)
-      // Note: Table reservation/occupancy status is NOT automatically changed - strictly managed manually by Admin!
       const orders = db.get('orders') || [];
       const nextOrders = [newOrder, ...orders.filter((o) => o.orderId !== orderId)];
       db.set('orders', nextOrders);
+
+      // Auto-update table occupancy status in local DB
+      const tableNumStr = String(normalizedTableNumber).padStart(2, '0');
+      const tableNumShort = String(normalizedTableNumber).replace(/^0+/, '');
+      const localTables = db.get('tables') || [];
+      const updatedTables = localTables.map((t) => {
+        const tStr = String(t.number).padStart(2, '0');
+        const tShort = String(t.number).replace(/^0+/, '');
+        if (tStr === tableNumStr || tShort === tableNumShort) {
+          return {
+            ...t,
+            status: 'OCCUPIED',
+            customerName: newOrder.customerName,
+            currentOrderId: newOrder.orderId,
+            amount: newOrder.total,
+            occupiedSince: t.occupiedSince || new Date().toISOString(),
+          };
+        }
+        return t;
+      });
+      db.set('tables', updatedTables);
 
       // 2. Respond immediately to client so UI receives instant confirmation
       res.status(201).json({
@@ -195,11 +215,24 @@ export const orderController = {
         data: newOrder,
       });
 
-      // 3. Asynchronously push to MongoDB Atlas in background (Non-blocking)
-      Order.create(newOrder)
-        .catch((mErr) => {
-          console.warn('MongoDB Atlas order insert background warning:', mErr.message);
-        });
+      // 3. Asynchronously push order & table status to MongoDB Atlas in background
+      Order.create(newOrder).catch((mErr) => {
+        console.warn('MongoDB Atlas order insert background warning:', mErr.message);
+      });
+
+      if (mongoose.connection && mongoose.connection.readyState === 1) {
+        Table.findOneAndUpdate(
+          { $or: [{ number: tableNumStr }, { number: tableNumShort }, { tableId: `tbl-${tableNumStr}` }] },
+          {
+            status: 'OCCUPIED',
+            customerName: newOrder.customerName,
+            currentOrderId: newOrder.orderId,
+            amount: newOrder.total,
+            occupiedSince: new Date().toISOString(),
+          },
+          { upsert: true }
+        ).catch((tErr) => console.warn('Mongo table occupy background warning:', tErr.message));
+      }
     } catch (err) {
       console.error('createOrder error:', err);
       if (!res.headersSent) {

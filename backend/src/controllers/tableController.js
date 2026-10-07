@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { db } from '../data/db.js';
 import { Table } from '../models/Table.js';
+import { Order } from '../models/Order.js';
 
 export const tableController = {
   async getTables(req, res) {
@@ -35,7 +36,61 @@ export const tableController = {
         tables = db.get('tables') || [];
       }
 
-      return res.status(200).json({ success: true, data: tables });
+      // 3. Fetch active orders from local DB & MongoDB to dynamically derive real-time table status
+      const localOrders = db.get('orders') || [];
+      let mongoOrders = [];
+      if (mongoose.connection && mongoose.connection.readyState === 1) {
+        try {
+          mongoOrders = await Order.find({
+            $or: [
+              { orderStatus: { $ne: 'CANCELLED' } },
+              { paymentStatus: { $ne: 'COMPLETED' } }
+            ]
+          }).lean();
+        } catch (e) {}
+      }
+
+      const allOrders = [...localOrders, ...mongoOrders];
+
+      // Map dynamic status onto tables
+      const dynamicTables = tables.map((t) => {
+        const tableNumStr = String(t.number).padStart(2, '0');
+        const tableNumShort = String(t.number).replace(/^0+/, '');
+
+        // Find active order for this table (not completed or unpaid)
+        const activeOrder = allOrders.find((o) => {
+          const oTableStr = String(o.tableNumber || '').padStart(2, '0');
+          const oTableShort = String(o.tableNumber || '').replace(/^0+/, '');
+          const matchesTable = oTableStr === tableNumStr || oTableShort === tableNumShort;
+          const isActive = o.paymentStatus !== 'COMPLETED' && o.orderStatus !== 'CANCELLED' && o.orderStatus !== 'COMPLETED';
+          return matchesTable && isActive;
+        });
+
+        if (activeOrder) {
+          return {
+            ...t,
+            status: 'OCCUPIED',
+            currentOrderId: activeOrder.orderId || activeOrder.id,
+            customerName: activeOrder.customerName || t.customerName || 'Guest Diner',
+            amount: activeOrder.total || t.amount || 0,
+            occupiedSince: t.occupiedSince || activeOrder.createdAt || new Date().toISOString(),
+          };
+        } else if (t.status === 'OCCUPIED') {
+          // If no active orders remain and it wasn't manually set to RESERVED or CLEANING
+          return {
+            ...t,
+            status: 'AVAILABLE',
+            currentOrderId: null,
+            customerName: null,
+            amount: 0,
+            occupiedSince: null,
+          };
+        }
+
+        return t;
+      });
+
+      return res.status(200).json({ success: true, data: dynamicTables });
     } catch (err) {
       return res.status(500).json({ success: false, message: 'Failed to fetch tables' });
     }
