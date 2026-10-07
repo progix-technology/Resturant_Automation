@@ -321,7 +321,7 @@ export const whatsappService = {
   /**
    * Dispatches WhatsApp message directly via background socket for specific tenant
    */
-  async sendMessage({ slug = 'spice-garden', mobile, messageText }) {
+  async sendMessage({ slug = 'spice-garden', mobile, messageText, imageBuffer, imageUrl }) {
     const safeSlug = (slug || 'spice-garden').toLowerCase().replace(/[^a-z0-9_-]/g, '_');
     const formattedNum = this.formatPhoneNumber(mobile);
 
@@ -338,12 +338,25 @@ export const whatsappService = {
 
     if ((sess.isConnected || registered) && sess.socket) {
       try {
-        console.log(`[WhatsApp Auto-Send - Tenant ${safeSlug}] Sending background message to +${formattedNum}...`);
+        console.log(`[WhatsApp Auto-Send - Tenant ${safeSlug}] Sending background message with QR Image to +${formattedNum}...`);
 
         // Anti-ban 2.5 second safe delay
         await new Promise((res) => setTimeout(res, 2500));
 
-        await sess.socket.sendMessage(recipientJid, { text: messageText });
+        if (imageBuffer) {
+          await sess.socket.sendMessage(recipientJid, {
+            image: imageBuffer,
+            caption: messageText,
+          });
+        } else if (imageUrl) {
+          await sess.socket.sendMessage(recipientJid, {
+            image: { url: imageUrl },
+            caption: messageText,
+          });
+        } else {
+          await sess.socket.sendMessage(recipientJid, { text: messageText });
+        }
+
         console.log(`[WhatsApp Auto-Send SUCCESS - ${safeSlug}] Delivered to +${formattedNum}!`);
 
         return {
@@ -351,7 +364,7 @@ export const whatsappService = {
           mode: 'AUTOMATIC_BACKGROUND',
           slug: safeSlug,
           recipient: formattedNum,
-          message: 'Message delivered automatically in background.',
+          message: 'Message delivered automatically in background with payment QR image.',
         };
       } catch (err) {
         console.error(`[WhatsApp Auto-Send Error - ${safeSlug}]:`, err.message);

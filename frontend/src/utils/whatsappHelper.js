@@ -142,13 +142,9 @@ export const whatsappHelper = {
     const upiVpa = getRestaurantUpi(order, settings);
     const amount = order.total || order.amount || 0;
     const orderId = order.orderId || order.id || 'ORD-001';
-    const slug = order.restaurantSlug || 'spice-garden';
 
     const upiDeepLink = generateUpiDeepLink(order, settings);
     const upiQrCodeUrl = generateUpiQrCodeUrl(order, settings);
-
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173';
-    const paymentLink = `${origin}/menu/${slug}/payment`;
 
     const itemsList = (order.items || [])
       .map((item) => `🔸 *${item.name}* × ${item.quantity || 1} ── ₹${(item.price || 0) * (item.quantity || 1)}`)
@@ -160,21 +156,19 @@ export const whatsappHelper = {
       `*Digital Table Invoice & Bill*\n` +
       `━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
       `Hello *${order.customerName || 'Guest'}* 👋\n` +
-      `Your meal for *Table ${order.tableNumber || '01'}* (Order \`#${orderId}\`) is hot & ready to serve!\n\n` +
+      `Your meal for *Table ${order.tableNumber || '01'}* (Order \`#${orderId}\`) is hot & ready!\n\n` +
       `📋 *BILL BREAKDOWN*\n` +
       `${itemsList || '🔸 Food & Beverages'}\n\n` +
       `──────────────────────────\n` +
-      `💳 *GRAND TOTAL:* *₹${amount}*\n` +
-      `📌 *PAYMENT STATUS:* ${order.paymentStatus === 'COMPLETED' ? '✅ *PAID*' : '⏳ *PENDING (Pay Now to Serve)*'}\n` +
+      `💳 *GRAND TOTAL PAYABLE:* *₹${amount}*\n` +
+      `📌 *PAYMENT STATUS:* ${order.paymentStatus === 'COMPLETED' ? '✅ *PAID*' : '⏳ *PENDING*'}\n` +
       `──────────────────────────\n\n` +
-      `⚡ *DYNAMIC AUTO-AMOUNT UPI PAYMENT*\n` +
-      `📲 *1-Tap GPay/PhonePe Link (Auto-Fills ₹${amount}):*\n` +
-      `${upiDeepLink}\n\n` +
-      `🖼️ *Dynamic ₹${amount} QR Code Image:* \n` +
+      `📲 *PAYMENT QR CODE (Auto-Fills Exact ₹${amount}):*\n` +
       `${upiQrCodeUrl}\n\n` +
-      `👉 *Pay Online Web Portal:* ${paymentLink}\n` +
+      `⚡ *1-Tap GPay/PhonePe App Direct Pay:*\n` +
+      `${upiDeepLink}\n\n` +
       `👉 *UPI VPA:* \`${upiVpa}\`\n\n` +
-      `*Scanning or tapping the UPI link above will AUTOMATICALLY PRE-FILL EXACT ₹${amount} in Google Pay, PhonePe, Paytm & BHIM!* 🛎️`
+      `*Scanning the QR code or tapping the UPI link above will AUTOMATICALLY PRE-FILL EXACT ₹${amount} in Google Pay, PhonePe, Paytm & BHIM!* 🛎️`
     );
   },
 

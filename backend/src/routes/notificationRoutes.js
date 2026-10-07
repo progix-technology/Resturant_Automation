@@ -1,5 +1,7 @@
 import { Router } from 'express';
+import QRCode from 'qrcode';
 import { whatsappService } from '../services/whatsappService.js';
+import { RestaurantSettings } from '../models/RestaurantSettings.js';
 
 const router = Router();
 
@@ -46,27 +48,63 @@ router.post('/whatsapp/send', async (req, res) => {
       });
     }
 
-    const restName = restaurantName || 'Restaurant';
-    const restUpi = upiVpa || 'merchant@upi';
-    const slug = restaurantSlug || 'menu';
+    const cleanSlug = (restaurantSlug || 'spice-garden').toLowerCase().trim().replace(/_/g, '-');
+    
+    // Fetch live settings if available to get upiId
+    let dbSettings = null;
+    try {
+      dbSettings = await RestaurantSettings.findOne({ slug: cleanSlug });
+    } catch (e) {}
+
+    const restName = restaurantName || dbSettings?.restaurantName || dbSettings?.name || 'Restaurant';
+    const restUpi = upiVpa || dbSettings?.upiId || 'spicegarden@okhdfcbank';
+    const amount = Number(total || 0);
 
     let text = customMessage || '';
+    let imageBuffer = null;
+
     if (!text) {
       if (type === 'ORDER_CONFIRMATION') {
-        text = `*${restName} - Order Received!* 🍽️\n\nHello *${customerName || 'Guest'}*,\nYour order #${orderId} for Table ${tableNumber || '01'} of total ₹${total || 0} is confirmed by kitchen!`;
+        text = `*${restName} - Order Received!* 🍽️\n\nHello *${customerName || 'Guest'}*,\nYour order #${orderId} for Table ${tableNumber || '01'} of total ₹${amount} is confirmed by kitchen!`;
       } else if (type === 'TABLE_BILL') {
-        text = `*${restName} - Your Food is Ready! Please Pay Bill to Receive Service* 🍽️⚡\n\nHello *${customerName || 'Guest'}*,\nYour meal for Table ${tableNumber || '01'} (Order #${orderId}) is hot & ready!\nTotal Bill: *₹${total || 0}*\nPay via UPI: https://upiqr.in/api/qr?name=${encodeURIComponent(restName)}&vpa=${restUpi}&amount=${total || 0}\n\nServer will deliver your meal once payment is confirmed! ✨`;
+        // Generate dynamic UPI QR image buffer with exact auto-fixed order amount
+        const upiUri = `upi://pay?pa=${restUpi.trim()}&pn=${encodeURIComponent(restName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(`Bill_${orderId || '001'}`)}`;
+        try {
+          imageBuffer = await QRCode.toBuffer(upiUri, {
+            errorCorrectionLevel: 'H',
+            margin: 2,
+            width: 450,
+          });
+        } catch (qrErr) {
+          console.warn('[QR GENERATION ERROR]:', qrErr.message);
+        }
+
+        text = `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+          `🧾  *${restName.toUpperCase()}*  🧾\n` +
+          `*Digital Table Invoice & Bill*\n` +
+          `━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `Hello *${customerName || 'Guest'}* 👋\n` +
+          `Your meal for *Table ${tableNumber || '01'}* (Order \`#${orderId || '001'}\`) is hot & ready!\n\n` +
+          `──────────────────────────\n` +
+          `💳 *GRAND TOTAL PAYABLE:* *₹${amount}*\n` +
+          `📌 *PAYMENT STATUS:* ⏳ *PENDING*\n` +
+          `──────────────────────────\n\n` +
+          `📲 *PAYMENT QR CODE ATTACHED ABOVE*\n` +
+          `*Scan the attached QR code using Google Pay, PhonePe, Paytm or BHIM UPI to complete payment of exact ₹${amount}.* (Amount is pre-filled!)\n\n` +
+          `👉 *UPI VPA:* \`${restUpi}\` ✨`;
       } else if (type === 'GOOGLE_REVIEW') {
         text = `*How was your dining experience at ${restName}?* ⭐⭐⭐⭐⭐\n\nDear *${customerName || 'Guest'}*,\nPlease share your review & 5-star rating on Google:\n👉 ${googleReviewUrl || 'https://search.google.com'}`;
       } else {
-        text = `*${restName} Alert:* Order #${orderId} at Table ${tableNumber || '01'} has been updated! Total: ₹${total || 0}.`;
+        text = `*${restName} Alert:* Order #${orderId} at Table ${tableNumber || '01'} has been updated! Total: ₹${amount}.`;
       }
     }
 
-    // Call whatsappService to send via Meta Cloud API or fallback smart link
+    // Call whatsappService to send via Meta Cloud API or background socket with image attachment
     const result = await whatsappService.sendMessage({
+      slug: cleanSlug,
       mobile,
       messageText: text,
+      imageBuffer,
       templateName,
       components,
       credentials,
