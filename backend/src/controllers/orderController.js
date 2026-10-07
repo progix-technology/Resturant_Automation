@@ -249,7 +249,7 @@ export const orderController = {
       const { id } = req.params;
       const { status, etaMinutes } = req.body;
 
-      // 1. Update in local store FIRST (instant 0ms)
+      // 1. Update in local store
       const orders = db.get('orders') || [];
       let updatedOrder = null;
 
@@ -258,6 +258,7 @@ export const orderController = {
           updatedOrder = {
             ...o,
             orderStatus: status || o.orderStatus,
+            status: status || o.orderStatus,
             etaMinutes: etaMinutes !== undefined ? Number(etaMinutes) : o.etaMinutes,
             updatedAt: new Date().toISOString(),
           };
@@ -266,30 +267,49 @@ export const orderController = {
         return o;
       });
 
-      if (!updatedOrder) {
-        return res.status(404).json({ success: false, message: 'Order not found' });
+      // 2. Sync to MongoDB Atlas
+      if (mongoose.connection && mongoose.connection.readyState === 1) {
+        try {
+          const mongoDoc = await Order.findOneAndUpdate(
+            { $or: [{ orderId: id }, { id: id }] },
+            {
+              orderStatus: status,
+              status: status,
+              ...(etaMinutes !== undefined ? { etaMinutes: Number(etaMinutes) } : {}),
+              updatedAt: new Date().toISOString(),
+            },
+            { new: true }
+          ).lean();
+          if (mongoDoc && !updatedOrder) {
+            updatedOrder = { ...mongoDoc, orderId: mongoDoc.orderId || id, id: mongoDoc.orderId || id };
+          }
+        } catch (mErr) {
+          console.warn('[ORDERS] Mongo updateOrderStatus warning:', mErr.message);
+        }
       }
 
-      // Note: Table reservation/unreservation status is strictly managed manually by Admin!
-      db.set('orders', nextOrders);
+      if (!updatedOrder) {
+        updatedOrder = {
+          orderId: id,
+          id,
+          orderStatus: status,
+          status,
+          ...(etaMinutes !== undefined ? { etaMinutes: Number(etaMinutes) } : {}),
+          updatedAt: new Date().toISOString(),
+        };
+      }
 
-      // 2. Respond immediately to admin client (0ms latency!)
-      res.status(200).json({
+      if (orders.some((o) => o.orderId === id || o.id === id)) {
+        db.set('orders', nextOrders);
+      } else {
+        db.set('orders', [updatedOrder, ...orders]);
+      }
+
+      return res.status(200).json({
         success: true,
         message: `Order #${id} status updated to ${status}`,
         data: updatedOrder,
       });
-
-      // 3. Asynchronously sync to MongoDB Atlas in background
-      if (mongoose.connection && mongoose.connection.readyState === 1) {
-        Order.findOneAndUpdate(
-          { orderId: id },
-          {
-            orderStatus: status,
-            ...(etaMinutes !== undefined ? { etaMinutes: Number(etaMinutes) } : {}),
-          }
-        ).catch(() => { });
-      }
     } catch (err) {
       console.error('updateOrderStatus error:', err);
       if (!res.headersSent) {
@@ -306,7 +326,7 @@ export const orderController = {
       const { id } = req.params;
       const { method = 'UPI', markServed = true } = req.body;
 
-      // 1. Update in local store FIRST (instant 0ms)
+      // 1. Update in local store
       const orders = db.get('orders') || [];
       let updatedOrder = null;
 
@@ -317,38 +337,59 @@ export const orderController = {
             paymentStatus: 'COMPLETED',
             paymentMethod: method,
             paidAt: new Date().toISOString(),
-            ...(markServed ? { orderStatus: 'SERVED' } : {}),
+            ...(markServed ? { orderStatus: 'SERVED', status: 'SERVED' } : {}),
+            updatedAt: new Date().toISOString(),
           };
           return updatedOrder;
         }
         return o;
       });
 
-      if (!updatedOrder) {
-        return res.status(404).json({ success: false, message: 'Order not found' });
+      // 2. Sync to MongoDB Atlas
+      if (mongoose.connection && mongoose.connection.readyState === 1) {
+        try {
+          const mongoDoc = await Order.findOneAndUpdate(
+            { $or: [{ orderId: id }, { id: id }] },
+            {
+              paymentStatus: 'COMPLETED',
+              paymentMethod: method,
+              paidAt: new Date().toISOString(),
+              ...(markServed ? { orderStatus: 'SERVED', status: 'SERVED' } : {}),
+              updatedAt: new Date().toISOString(),
+            },
+            { new: true }
+          ).lean();
+          if (mongoDoc && !updatedOrder) {
+            updatedOrder = { ...mongoDoc, orderId: mongoDoc.orderId || id, id: mongoDoc.orderId || id };
+          }
+        } catch (mErr) {
+          console.warn('[ORDERS] Mongo markPaymentPaid warning:', mErr.message);
+        }
       }
 
-      // Note: Table status remains purely manual as per user instructions
-      db.set('orders', nextOrders);
+      if (!updatedOrder) {
+        updatedOrder = {
+          orderId: id,
+          id,
+          paymentStatus: 'COMPLETED',
+          paymentMethod: method,
+          paidAt: new Date().toISOString(),
+          ...(markServed ? { orderStatus: 'SERVED', status: 'SERVED' } : {}),
+          updatedAt: new Date().toISOString(),
+        };
+      }
 
-      // 2. Respond immediately
-      res.status(200).json({
+      if (orders.some((o) => o.orderId === id || o.id === id)) {
+        db.set('orders', nextOrders);
+      } else {
+        db.set('orders', [updatedOrder, ...orders]);
+      }
+
+      return res.status(200).json({
         success: true,
         message: `Payment completed for Order #${id}${markServed ? ' & marked as SERVED' : ''}`,
         data: updatedOrder,
       });
-
-      // 3. Asynchronously sync to MongoDB Atlas in background
-      if (mongoose.connection && mongoose.connection.readyState === 1) {
-        Order.findOneAndUpdate(
-          { orderId: id },
-          {
-            paymentStatus: 'COMPLETED',
-            paymentMethod: method,
-            ...(markServed ? { orderStatus: 'SERVED' } : {}),
-          }
-        ).catch(() => { });
-      }
     } catch (err) {
       if (!res.headersSent) {
         return res.status(500).json({ success: false, message: 'Failed to record payment' });

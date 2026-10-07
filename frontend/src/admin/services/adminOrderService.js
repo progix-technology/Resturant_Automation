@@ -93,7 +93,10 @@ export const adminOrderService = {
         }).catch(() => {});
       } else {
         const existing = orderMap.get(id);
-        orderMap.set(id, { ...existing, ...freshActive });
+        const isBackendCompleted = existing.paymentStatus === 'COMPLETED' || existing.orderStatus === 'SERVED' || existing.orderStatus === 'COMPLETED' || existing.orderStatus === 'CANCELLED';
+        if (!isBackendCompleted) {
+          orderMap.set(id, { ...existing, ...freshActive });
+        }
       }
     }
 
@@ -111,6 +114,12 @@ export const adminOrderService = {
               method: 'POST',
               body: JSON.stringify({ ...custOrder, restaurantSlug: currentSlug }),
             }).catch(() => {});
+          } else {
+            const existing = orderMap.get(id);
+            const isBackendCompleted = existing.paymentStatus === 'COMPLETED' || existing.orderStatus === 'SERVED' || existing.orderStatus === 'COMPLETED' || existing.orderStatus === 'CANCELLED';
+            if (!isBackendCompleted) {
+              orderMap.set(id, { ...existing, ...custOrder });
+            }
           }
         }
       });
@@ -173,18 +182,26 @@ export const adminOrderService = {
 
     const orders = await this.getOrders();
     const index = orders.findIndex((o) => (o.orderId || o.id) === orderId);
-    if (index === -1) throw new Error('Order not found');
-
-    const updated = {
+    
+    const updated = index !== -1 ? {
       ...orders[index],
+      orderStatus: nextStatus,
+      status: nextStatus,
+      updatedAt: new Date().toISOString(),
+      ...metadata,
+    } : {
+      orderId,
+      id: orderId,
       orderStatus: nextStatus,
       status: nextStatus,
       updatedAt: new Date().toISOString(),
       ...metadata,
     };
 
-    orders[index] = updated;
-    storage.set(ADMIN_ORDERS_KEY, orders);
+    if (index !== -1) {
+      orders[index] = updated;
+      storage.set(ADMIN_ORDERS_KEY, orders);
+    }
 
     // Sync with customer local session if matching
     const activeOrder = storage.get(STORAGE_KEYS.ACTIVE_ORDER);
@@ -195,6 +212,16 @@ export const adminOrderService = {
         status: nextStatus,
         ...metadata,
       });
+    }
+
+    const history = storage.get(STORAGE_KEYS.ORDER_HISTORY, []);
+    if (Array.isArray(history)) {
+      const updatedHistory = history.map((o) =>
+        (o.orderId || o.id) === orderId
+          ? { ...o, orderStatus: nextStatus, status: nextStatus, ...metadata }
+          : o
+      );
+      storage.set(STORAGE_KEYS.ORDER_HISTORY, updatedHistory);
     }
 
     // Notify customer
@@ -230,18 +257,26 @@ export const adminOrderService = {
 
     const orders = await this.getOrders();
     const index = orders.findIndex((o) => (o.orderId || o.id) === orderId);
-    if (index === -1) throw new Error('Order not found');
 
-    const updated = {
+    const updated = index !== -1 ? {
       ...orders[index],
+      paymentStatus: 'COMPLETED',
+      paymentMethod: method,
+      paidAt: new Date().toISOString(),
+      ...(markServed ? { orderStatus: 'SERVED' } : {}),
+    } : {
+      orderId,
+      id: orderId,
       paymentStatus: 'COMPLETED',
       paymentMethod: method,
       paidAt: new Date().toISOString(),
       ...(markServed ? { orderStatus: 'SERVED' } : {}),
     };
 
-    orders[index] = updated;
-    storage.set(ADMIN_ORDERS_KEY, orders);
+    if (index !== -1) {
+      orders[index] = updated;
+      storage.set(ADMIN_ORDERS_KEY, orders);
+    }
 
     // Sync active customer order
     const activeOrder = storage.get(STORAGE_KEYS.ACTIVE_ORDER);
@@ -252,6 +287,21 @@ export const adminOrderService = {
         paymentMethod: method,
         ...(markServed ? { orderStatus: 'SERVED' } : {}),
       });
+    }
+
+    const history = storage.get(STORAGE_KEYS.ORDER_HISTORY, []);
+    if (Array.isArray(history)) {
+      const updatedHistory = history.map((o) =>
+        (o.orderId || o.id) === orderId
+          ? {
+              ...o,
+              paymentStatus: 'COMPLETED',
+              paymentMethod: method,
+              ...(markServed ? { orderStatus: 'SERVED' } : {}),
+            }
+          : o
+      );
+      storage.set(STORAGE_KEYS.ORDER_HISTORY, updatedHistory);
     }
 
     return updated;
