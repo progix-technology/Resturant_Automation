@@ -49,7 +49,8 @@ const dispatchWhatsAppMessage = async (mobile, text, openChat = false, slug = 's
       console.log(`%c[WhatsApp Auto-Send Success for Tenant ${slug} to +91-${mobile}]`, 'color: #25D366; font-weight: bold;');
       return data;
     } else {
-      if (openChat || data.fallbackUrl) {
+      // Only open WhatsApp browser tab if openChat is explicitly true (manual admin trigger)
+      if (openChat) {
         whatsappHelper.openWhatsAppChat(mobile, text);
       }
       return data;
