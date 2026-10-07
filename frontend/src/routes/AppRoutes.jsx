@@ -44,12 +44,11 @@ const SuperAdminInvoicesPage = lazy(() => import('../superadmin/pages').then(m =
 const SuperAdminAnalyticsPage = lazy(() => import('../superadmin/pages').then(m => ({ default: m.SuperAdminAnalyticsPage })));
 const SuperAdminSettingsPage = lazy(() => import('../superadmin/pages').then(m => ({ default: m.SuperAdminSettingsPage })));
 
+import { Loader } from '../components/common/Loader';
+
 // Suspense Loader Fallback
 const PageFallback = () => (
-  <div className="w-full h-64 flex flex-col items-center justify-center gap-2 text-slate-400">
-    <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
-    <span className="text-xs font-semibold">Loading Page...</span>
-  </div>
+  <Loader fullScreen text="Loading Page..." />
 );
 
 export const AppRoutes = () => {

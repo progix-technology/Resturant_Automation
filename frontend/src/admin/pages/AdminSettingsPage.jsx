@@ -519,9 +519,16 @@ const WhatsAppQrCard = ({ showToast, currentPhone, onUpdatePhone, currentSlug = 
                 </p>
               </>
             ) : (
-              <div className="w-48 h-48 flex flex-col items-center justify-center text-slate-400 gap-2">
-                <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
-                <span className="text-xs font-semibold">Generating QR Code...</span>
+              <div className="w-48 h-48 flex flex-col items-center justify-center text-slate-400 gap-3">
+                <div className="cube-spinner">
+                  <div />
+                  <div />
+                  <div />
+                  <div />
+                  <div />
+                  <div />
+                </div>
+                <span className="text-xs font-semibold text-slate-600">Generating QR Code...</span>
               </div>
             )}
           </div>
