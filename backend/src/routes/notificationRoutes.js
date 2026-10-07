@@ -57,7 +57,7 @@ router.post('/whatsapp/send', async (req, res) => {
     } catch (e) {}
 
     const restName = restaurantName || dbSettings?.restaurantName || dbSettings?.name || 'Restaurant';
-    const restUpi = upiVpa || dbSettings?.upiId || 'spicegarden@okhdfcbank';
+    const restUpi = (upiVpa && upiVpa !== 'spicegarden@upi') ? upiVpa : (dbSettings?.upiId || dbSettings?.upiVpa || upiVpa || 'spicegarden@okhdfcbank');
     const amount = Number(total || 0);
 
     let text = customMessage || '';

@@ -157,8 +157,8 @@ export const AdminOrdersPage = () => {
     const mobile = rawMobile.length === 10 ? `91${rawMobile}` : rawMobile;
 
     const restName = (order?.restaurantName || order?.restaurantTitle || settings?.restaurantName || settings?.name || 'Spice Garden');
-    const upiVpa = order?.upiVpa || settings?.upiVpa || 'spicegarden@upi';
-    const slug = order?.restaurantSlug || settings?.restaurantSlug || 'the-spice-garden';
+    const upiVpa = order?.upiVpa || order?.upiId || settings?.upiId || settings?.upiVpa || '';
+    const slug = order?.restaurantSlug || settings?.restaurantSlug || 'spice-garden';
 
     // Automated Silent Backend API Dispatch (Zero Browser Redirects, Zero Popups!)
     try {

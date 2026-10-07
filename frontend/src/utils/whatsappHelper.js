@@ -31,7 +31,7 @@ const getRestaurantName = (order = {}, settings = {}) => {
 };
 
 const getRestaurantUpi = (order = {}, settings = {}) => {
-  return order.upiVpa || settings.upiVpa || settings.upiId || 'spicegarden@upi';
+  return order.upiVpa || order.upiId || settings.upiId || settings.upiVpa || 'spicegarden@okhdfcbank';
 };
 
 const getReviewUrl = (order = {}, settings = {}) => {
