@@ -70,9 +70,8 @@ export const orderService = {
     const history = storage.get(STORAGE_KEYS.ORDER_HISTORY, []);
     storage.set(STORAGE_KEYS.ORDER_HISTORY, [newOrder, ...history]);
 
-    // Fire simulated notification events
+    // Fire single order confirmation notification
     notificationService.sendOrderConfirmation(newOrder);
-    notificationService.sendPaymentRequest(newOrder);
 
     return newOrder;
   },
