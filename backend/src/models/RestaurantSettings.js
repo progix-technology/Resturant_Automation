@@ -22,12 +22,12 @@ const restaurantSettingsSchema = new mongoose.Schema(
     },
     tagline: {
       type: String,
-      default: 'Authentic flavors, freshly prepared.',
+      default: '',
       trim: true,
     },
     cuisine: {
       type: String,
-      default: 'North Indian • Chinese • Tandoor',
+      default: '',
       trim: true,
     },
     rating: {
@@ -38,21 +38,21 @@ const restaurantSettingsSchema = new mongoose.Schema(
     },
     reviewCount: {
       type: Number,
-      default: 320,
+      default: 0,
       min: 0,
     },
     address: {
       type: String,
-      default: '14, Palm Grove Road, Indiranagar, Bengaluru',
+      default: '',
       trim: true,
     },
     logo: {
       type: String,
-      default: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=200&q=80',
+      default: '',
     },
     banner: {
       type: String,
-      default: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80',
+      default: '',
     },
     openTime: {
       type: String,
@@ -72,19 +72,19 @@ const restaurantSettingsSchema = new mongoose.Schema(
     },
     phone: {
       type: String,
-      default: '+91 98765 43210',
+      default: '',
     },
     email: {
       type: String,
-      default: 'contact@spicegarden.com',
+      default: '',
     },
     gstin: {
       type: String,
-      default: '29ABCDE1234F1Z5',
+      default: '',
     },
     upiId: {
       type: String,
-      default: 'spicegarden@okhdfcbank',
+      default: '',
     },
     currency: {
       type: String,
@@ -100,27 +100,27 @@ const restaurantSettingsSchema = new mongoose.Schema(
     },
     bankName: {
       type: String,
-      default: 'HDFC Bank',
+      default: '',
     },
     accountHolderName: {
       type: String,
-      default: 'Spice Garden Hospitality',
+      default: '',
     },
     accountNumber: {
       type: String,
-      default: '50200084920184',
+      default: '',
     },
     ifscCode: {
       type: String,
-      default: 'HDFC0000128',
+      default: '',
     },
     accountType: {
       type: String,
-      default: 'Current Account',
+      default: '',
     },
     branchName: {
       type: String,
-      default: 'Indiranagar Branch, Bengaluru',
+      default: '',
     },
     whatsappEnabled: {
       type: Boolean,

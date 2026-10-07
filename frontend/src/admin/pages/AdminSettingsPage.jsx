@@ -564,16 +564,16 @@ export const AdminSettingsPage = () => {
   const currentSlug = currentAdmin?.restaurantSlug || settings?.restaurantSlug || 'spice-garden';
   const [activeTab, setActiveTab] = useState('PROFILE'); // PROFILE, ORDERS, PAYMENTS, NOTIFICATIONS, PREFERENCES
 
-  // Form states initialized with settings or sensible defaults
+  // Form states initialized with settings
   const [formData, setFormData] = useState({
     // Visual Branding & Identity
-    name: settings.restaurantName || settings.name || 'Spice Garden',
-    tagline: settings.tagline || 'Authentic flavors, freshly prepared.',
-    cuisine: settings.cuisine || 'North Indian • Chinese • Tandoor',
+    name: settings.restaurantName || settings.name || 'My Restaurant',
+    tagline: settings.tagline || '',
+    cuisine: settings.cuisine || '',
     rating: settings.rating || 4.8,
-    reviewCount: settings.reviewCount || 320,
-    logo: settings.logo || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=200&q=80',
-    banner: settings.banner || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80',
+    reviewCount: settings.reviewCount || 0,
+    logo: settings.logo || '',
+    banner: settings.banner || '',
 
     // Operating Hours & Kitchen Status
     openTime: settings.openTime || '11:30 AM',
@@ -581,10 +581,10 @@ export const AdminSettingsPage = () => {
     isKitchenOpen: settings.isKitchenOpen !== false,
 
     // Contact & Location
-    email: settings.email || 'contact@spicegarden.com',
-    phone: settings.phone || '+91 98765 43210',
-    address: settings.address || '14, Palm Grove Road, Indiranagar, Bengaluru',
-    gstin: settings.gstin || '29ABCDE1234F1Z5',
+    email: settings.email || '',
+    phone: settings.phone || '',
+    address: settings.address || '',
+    gstin: settings.gstin || '',
 
     // Order Settings
     acceptOrders: settings.isAcceptingOrders !== false,
@@ -595,19 +595,19 @@ export const AdminSettingsPage = () => {
     // Payment & UPI Settings
     currency: settings.currency || 'INR',
     taxPercentage: settings.taxPercentage || 5,
-    upiId: settings.upiId || 'spicegarden@okhdfcbank',
+    upiId: settings.upiId || '',
 
     // Bank Account & Settlement Details
-    bankName: settings.bankName || 'HDFC Bank',
-    accountHolderName: settings.accountHolderName || 'Spice Garden Hospitality',
-    accountNumber: settings.accountNumber || '50200084920184',
-    ifscCode: settings.ifscCode || 'HDFC0000128',
-    accountType: settings.accountType || 'Current Account',
-    branchName: settings.branchName || 'Indiranagar Branch, Bengaluru',
+    bankName: settings.bankName || '',
+    accountHolderName: settings.accountHolderName || '',
+    accountNumber: settings.accountNumber || '',
+    ifscCode: settings.ifscCode || '',
+    accountType: settings.accountType || '',
+    branchName: settings.branchName || '',
 
     // Notifications
     whatsappEnabled: settings.whatsappEnabled !== false,
-    whatsappPhone: settings.whatsappPhone || settings.phone || '9876543210',
+    whatsappPhone: settings.whatsappPhone || settings.phone || '',
     orderAcceptAlert: true,
     preparingAlert: true,
     readyAlert: true,
@@ -627,27 +627,27 @@ export const AdminSettingsPage = () => {
         ...prev,
         name: settings.restaurantName || settings.name || prev.name,
         tagline: settings.tagline !== undefined ? settings.tagline : prev.tagline,
-        cuisine: settings.cuisine || prev.cuisine,
+        cuisine: settings.cuisine !== undefined ? settings.cuisine : prev.cuisine,
         rating: settings.rating !== undefined ? settings.rating : prev.rating,
         reviewCount: settings.reviewCount !== undefined ? settings.reviewCount : prev.reviewCount,
-        logo: settings.logo || prev.logo,
-        banner: settings.banner || prev.banner,
+        logo: settings.logo !== undefined ? settings.logo : prev.logo,
+        banner: settings.banner !== undefined ? settings.banner : prev.banner,
         openTime: settings.openTime || prev.openTime,
         closeTime: settings.closeTime || prev.closeTime,
         isKitchenOpen: settings.isKitchenOpen !== undefined ? settings.isKitchenOpen : prev.isKitchenOpen,
-        email: settings.email || prev.email,
-        phone: settings.phone || prev.phone,
+        email: settings.email !== undefined ? settings.email : prev.email,
+        phone: settings.phone !== undefined ? settings.phone : prev.phone,
         whatsappPhone: settings.whatsappPhone || settings.phone || prev.whatsappPhone,
-        address: settings.address || prev.address,
-        gstin: settings.gstin || prev.gstin,
-        upiId: settings.upiId || prev.upiId,
+        address: settings.address !== undefined ? settings.address : prev.address,
+        gstin: settings.gstin !== undefined ? settings.gstin : prev.gstin,
+        upiId: settings.upiId !== undefined ? settings.upiId : prev.upiId,
         taxPercentage: settings.taxPercentage !== undefined ? settings.taxPercentage : prev.taxPercentage,
-        bankName: settings.bankName || prev.bankName,
-        accountHolderName: settings.accountHolderName || prev.accountHolderName,
-        accountNumber: settings.accountNumber || prev.accountNumber,
-        ifscCode: settings.ifscCode || prev.ifscCode,
-        accountType: settings.accountType || prev.accountType,
-        branchName: settings.branchName || prev.branchName,
+        bankName: settings.bankName !== undefined ? settings.bankName : prev.bankName,
+        accountHolderName: settings.accountHolderName !== undefined ? settings.accountHolderName : prev.accountHolderName,
+        accountNumber: settings.accountNumber !== undefined ? settings.accountNumber : prev.accountNumber,
+        ifscCode: settings.ifscCode !== undefined ? settings.ifscCode : prev.ifscCode,
+        accountType: settings.accountType !== undefined ? settings.accountType : prev.accountType,
+        branchName: settings.branchName !== undefined ? settings.branchName : prev.branchName,
         whatsappEnabled: settings.whatsappEnabled !== undefined ? settings.whatsappEnabled : prev.whatsappEnabled,
         orderAcceptAlert: settings.orderAcceptAlert !== undefined ? settings.orderAcceptAlert : prev.orderAcceptAlert,
         preparingAlert: settings.preparingAlert !== undefined ? settings.preparingAlert : prev.preparingAlert,
@@ -894,7 +894,7 @@ export const AdminSettingsPage = () => {
                             alt="Logo Preview"
                             className="w-full h-full object-cover"
                             onError={(e) => {
-                              e.target.src = 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=200&q=80';
+                              e.target.style.display = 'none';
                             }}
                           />
                         ) : (
@@ -968,7 +968,7 @@ export const AdminSettingsPage = () => {
                           alt="Banner Preview"
                           className="w-full h-full object-cover brightness-90"
                           onError={(e) => {
-                            e.target.src = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80';
+                            e.target.style.display = 'none';
                           }}
                         />
                       ) : (

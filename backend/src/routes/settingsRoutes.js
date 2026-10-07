@@ -12,6 +12,7 @@ const DEFAULT_SLUG = 'spice-garden';
 async function getOrCreateSettings(slug = DEFAULT_SLUG) {
   let settings = null;
   const cleanSlug = slug.toLowerCase().trim();
+  const displayName = cleanSlug.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ') || 'Restaurant';
 
   if (mongoose.connection && mongoose.connection.readyState === 1) {
     try {
@@ -19,15 +20,15 @@ async function getOrCreateSettings(slug = DEFAULT_SLUG) {
       if (!settings) {
         settings = await RestaurantSettings.create({
           slug: cleanSlug,
-          name: 'Spice Garden',
-          restaurantName: 'Spice Garden',
-          tagline: 'Authentic flavors, freshly prepared.',
-          cuisine: 'North Indian • Chinese • Tandoor',
+          name: displayName,
+          restaurantName: displayName,
+          tagline: '',
+          cuisine: '',
           rating: 4.8,
-          reviewCount: 320,
-          address: '14, Palm Grove Road, Indiranagar, Bengaluru',
-          logo: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=200&q=80',
-          banner: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80',
+          reviewCount: 0,
+          address: '',
+          logo: '',
+          banner: '',
           openTime: '11:30 AM',
           closeTime: '11:00 PM',
           isKitchenOpen: true,
@@ -41,27 +42,45 @@ async function getOrCreateSettings(slug = DEFAULT_SLUG) {
 
   if (!settings) {
     const restaurants = db.get('restaurants') || [];
-    const localMatch = restaurants.find((r) => r.slug === cleanSlug) || restaurants[0] || {};
+    const localMatch = restaurants.find((r) => r.slug === cleanSlug) || {};
     settings = {
       slug: cleanSlug,
-      name: localMatch.name || 'Spice Garden',
-      restaurantName: localMatch.name || 'Spice Garden',
-      tagline: localMatch.tagline || 'Authentic flavors, freshly prepared.',
-      cuisine: localMatch.cuisine || 'North Indian • Chinese • Tandoor',
+      name: localMatch.name || displayName,
+      restaurantName: localMatch.name || displayName,
+      tagline: localMatch.tagline || '',
+      cuisine: localMatch.cuisine || '',
       rating: localMatch.rating || 4.8,
-      reviewCount: localMatch.reviewCount || 320,
-      address: localMatch.address || '14, Palm Grove Road, Indiranagar, Bengaluru',
-      logo: localMatch.logo || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=200&q=80',
-      banner: localMatch.banner || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80',
+      reviewCount: localMatch.reviewCount || 0,
+      address: localMatch.address || '',
+      logo: localMatch.logo || '',
+      banner: localMatch.banner || '',
       openTime: localMatch.openTime || '11:30 AM',
       closeTime: localMatch.closeTime || '11:00 PM',
       isKitchenOpen: localMatch.isKitchenOpen !== false,
       isAcceptingOrders: localMatch.isAcceptingOrders !== false,
-      phone: localMatch.phone || '+91 98765 43210',
-      email: localMatch.email || 'contact@spicegarden.com',
-      gstin: localMatch.gstin || '29ABCDE1234F1Z5',
-      upiId: localMatch.upiId || 'spicegarden@okhdfcbank',
+      phone: localMatch.phone || '',
+      email: localMatch.email || '',
+      gstin: localMatch.gstin || '',
+      upiId: localMatch.upiId || '',
     };
+  }
+
+  // Auto-scrub legacy dummy unsplash URLs and dummy addresses from existing settings
+  let needsScrub = false;
+  if (settings.logo && (settings.logo.includes('unsplash.com') || settings.logo === '🌿')) {
+    settings.logo = '';
+    needsScrub = true;
+  }
+  if (settings.banner && settings.banner.includes('unsplash.com')) {
+    settings.banner = '';
+    needsScrub = true;
+  }
+  if (settings.address && (settings.address.includes('Indiranagar') || settings.address.includes('High Street') || settings.address.includes('Palm Grove'))) {
+    settings.address = '';
+    needsScrub = true;
+  }
+  if (needsScrub && settings.save && typeof settings.save === 'function') {
+    await settings.save().catch(() => {});
   }
 
   return settings;
