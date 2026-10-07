@@ -67,9 +67,9 @@ export const RestaurantWelcomePage = () => {
 
 
   return (
-    <div className="min-h-screen sm:min-h-0 bg-warm-100 flex flex-col justify-start gap-3 sm:gap-4 max-w-lg mx-auto p-3.5 sm:p-6 antialiased">
+    <div className="min-h-screen bg-warm-100 flex flex-col justify-center gap-3 sm:gap-4 max-w-lg mx-auto p-3.5 sm:p-6 antialiased">
       {/* Top Branding Section */}
-      <div className="pt-2 sm:pt-4 flex flex-col items-center text-center">
+      <div className="flex flex-col items-center text-center">
         {/* Restaurant Logo */}
         <div className="w-24 h-24 rounded-3xl overflow-hidden bg-brand-800 shadow-xl border-4 border-white mb-2 animate-fade-in flex items-center justify-center text-white font-black text-2xl shrink-0">
           {restaurant.logo ? (
