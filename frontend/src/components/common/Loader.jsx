@@ -1,22 +1,18 @@
 import React from 'react';
 
-export const Loader = ({ size = 'md', text = 'Loading...', fullScreen = false }) => {
-  const sizeClasses = {
-    sm: 'w-5 h-5 border-2',
-    md: 'w-8 h-8 border-3',
-    lg: 'w-12 h-12 border-4',
-  };
-
+export const Loader = ({ text = 'Welcome to the restaurant...', fullScreen = false }) => {
   const spinner = (
-    <div className="flex flex-col items-center justify-center gap-3">
-      <div
-        className={`
-          ${sizeClasses[size] || sizeClasses.md}
-          rounded-full border-brand-200 border-t-brand-800 animate-spin
-        `}
-      />
+    <div className="flex flex-col items-center justify-center gap-6 p-4">
+      <div className="cube-spinner">
+        <div />
+        <div />
+        <div />
+        <div />
+        <div />
+        <div />
+      </div>
       {text && (
-        <p className="text-xs sm:text-sm font-medium text-charcoal-600 animate-pulse-subtle">
+        <p className="text-sm sm:text-base font-semibold text-charcoal-700 tracking-wide animate-pulse-subtle">
           {text}
         </p>
       )}
@@ -25,11 +21,11 @@ export const Loader = ({ size = 'md', text = 'Loading...', fullScreen = false })
 
   if (fullScreen) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-warm-100/90 backdrop-blur-xs">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-warm-100/95 backdrop-blur-md">
         {spinner}
       </div>
     );
   }
 
-  return <div className="py-8 flex justify-center items-center">{spinner}</div>;
+  return <div className="py-12 flex justify-center items-center">{spinner}</div>;
 };

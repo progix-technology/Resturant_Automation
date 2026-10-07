@@ -22,7 +22,7 @@ export const RestaurantWelcomePage = () => {
   }, [restaurantSlug]);
 
   if (isLoading) {
-    return <Loader fullScreen text="Welcome to Spice Garden..." />;
+    return <Loader fullScreen text="Welcome to the restaurant..." />;
   }
 
   if (error || !restaurant) {
