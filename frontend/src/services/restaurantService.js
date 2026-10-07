@@ -87,6 +87,12 @@ export const restaurantService = {
       upiId: adminSettings.upiId || defaultRestaurant.upiId,
       phone: adminSettings.phone || defaultRestaurant.phone,
       email: adminSettings.email || defaultRestaurant.email,
+      bankName: adminSettings.bankName,
+      accountHolderName: adminSettings.accountHolderName || adminSettings.accountHolder,
+      accountNumber: adminSettings.accountNumber,
+      ifscCode: adminSettings.ifscCode,
+      accountType: adminSettings.accountType,
+      branchName: adminSettings.branchName,
     };
   },
 
