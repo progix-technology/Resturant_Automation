@@ -79,7 +79,7 @@ export const notificationService = {
   },
 
   async sendPaymentConfirmation(order, openChat = false) {
-    const text = `Payment of ₹${order.total || 0} confirmed for Order #${order.orderId || order.id}! Your food is being prepared. 👨‍🍳`;
+    const text = whatsappHelper.createPaymentConfirmationMessage(order);
     const slug = getActiveSlug(order);
     logNotification('PAYMENT_CONFIRMATION', order, text, order.mobile);
     return await dispatchWhatsAppMessage(order.mobile, text, openChat, slug);

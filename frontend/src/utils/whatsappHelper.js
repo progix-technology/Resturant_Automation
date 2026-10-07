@@ -173,6 +173,31 @@ export const whatsappHelper = {
   },
 
   /**
+   * Generates Instant Payment Confirmed Alert Message
+   */
+  createPaymentConfirmationMessage(order = {}, settings = {}) {
+    const restName = getRestaurantName(order, settings).toUpperCase();
+    const amount = order.total || order.amount || 0;
+    const orderId = order.orderId || order.id || 'ORD-001';
+
+    return (
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `💳  *PAYMENT CONFIRMED ALERT*  💳\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `Hello *${order.customerName || 'Guest'}* 👋\n` +
+      `Payment of *₹${amount}* has been confirmed for your order!\n\n` +
+      `📌 *PAYMENT DETAILS*\n` +
+      `• *Customer:* ${order.customerName || 'Guest'}\n` +
+      `• *Table:* Table ${order.tableNumber || '01'}\n` +
+      `• *Order ID:* \`#${orderId}\`\n` +
+      `• *Amount Paid:* *₹${amount}* (via UPI)\n` +
+      `• *Status:* ✅ *PAID & VERIFIED*\n\n` +
+      `👨‍🍳 *STATUS:* \`Kitchen Preparing Your Meal\`\n` +
+      `Our chef is preparing your food fresh & hot at *${getRestaurantName(order, settings)}*. Enjoy!`
+    );
+  },
+
+  /**
    * Generates Google Review / Feedback Request Message
    */
   createGoogleReviewMessage(order = {}, settings = {}) {
@@ -200,6 +225,7 @@ export const whatsappHelper = {
     if (type === 'ORDER_CONFIRMATION') msg = this.createOrderConfirmationMessage(order, settings);
     else if (type === 'KITCHEN_ETA') msg = this.createKitchenEtaMessage(order, extra.etaMinutes || 20, settings);
     else if (type === 'TABLE_BILL') msg = this.createTableBillMessage(order, settings);
+    else if (type === 'PAYMENT_CONFIRMATION') msg = this.createPaymentConfirmationMessage(order, settings);
     else if (type === 'GOOGLE_REVIEW') msg = this.createGoogleReviewMessage(order, settings);
     else msg = extra.customText || `${getRestaurantName(order, settings)} Alert: Order #${order.orderId || order.id} updated.`;
 
