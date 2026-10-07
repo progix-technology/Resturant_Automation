@@ -67,11 +67,11 @@ export const RestaurantWelcomePage = () => {
 
 
   return (
-    <div className="h-screen sm:h-auto max-h-screen sm:max-h-none bg-warm-100 flex flex-col justify-between max-w-lg mx-auto p-3 sm:p-6 antialiased overflow-hidden">
+    <div className="h-screen sm:h-auto max-h-screen sm:max-h-none bg-warm-100 flex flex-col justify-between max-w-lg mx-auto p-3 sm:p-5 antialiased overflow-hidden">
       {/* Top Branding Section */}
-      <div className="pt-1 sm:pt-6 flex flex-col items-center text-center">
+      <div className="pt-1 sm:pt-4 flex flex-col items-center text-center">
         {/* Restaurant Logo */}
-        <div className="w-24 h-24 rounded-3xl overflow-hidden bg-brand-800 shadow-xl border-4 border-white mb-2 sm:mb-4 animate-fade-in flex items-center justify-center text-white font-black text-2xl shrink-0">
+        <div className="w-24 h-24 rounded-3xl overflow-hidden bg-brand-800 shadow-xl border-4 border-white mb-2 animate-fade-in flex items-center justify-center text-white font-black text-2xl shrink-0">
           {restaurant.logo ? (
             <img
               src={restaurant.logo}
@@ -89,17 +89,17 @@ export const RestaurantWelcomePage = () => {
         </div>
 
         {/* Restaurant Name & Tagline */}
-        <h1 className="text-2xl sm:text-4xl font-black text-charcoal-900 tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-black text-charcoal-900 tracking-tight">
           {restaurant.name}
         </h1>
         {restaurant.tagline && restaurant.tagline.trim() && (
-          <p className="text-xs sm:text-base text-charcoal-600 mt-1 font-medium max-w-xs line-clamp-1">
+          <p className="text-xs sm:text-sm text-charcoal-600 mt-0.5 font-medium max-w-xs line-clamp-1">
             "{restaurant.tagline}"
           </p>
         )}
 
         {/* Rating and Cuisine Chips */}
-        <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 mt-2">
+        <div className="flex flex-wrap items-center justify-center gap-1.5 mt-1.5">
           <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-900 border border-amber-200 text-xs font-bold">
             <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
             <span>{restaurant.rating}</span>
@@ -113,7 +113,7 @@ export const RestaurantWelcomePage = () => {
       </div>
 
       {/* Center Hero Card */}
-      <div className="my-2 sm:my-5 rounded-3xl overflow-hidden shadow-card border border-warm-200 relative bg-white shrink-0">
+      <div className="my-1.5 sm:my-3 rounded-3xl overflow-hidden shadow-card border border-warm-200 relative bg-white shrink-0">
         <div className="h-48 w-full relative bg-gradient-to-br from-charcoal-900 via-brand-950 to-charcoal-950 flex items-center justify-center">
           {restaurant.banner ? (
             <img
