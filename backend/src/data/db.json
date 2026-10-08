@@ -190,17 +190,12 @@
       "restaurantSlug": "spice-garden",
       "isAddon": false,
       "isRecommended": false,
-      "hasVariants": true,
+      "hasVariants": false,
       "variantFullPrice": "",
       "variantHalfPrice": "",
       "variantQuarterPrice": "",
       "variantPiecePrice": 30,
-      "variants": [
-        {
-          "name": "Piece",
-          "price": 30
-        }
-      ]
+      "variants": []
     },
     {
       "id": "item-779978",
