@@ -21,15 +21,24 @@ export const FoodCard = ({
   const hasVariants = Array.isArray(item.variants) && item.variants.length > 0;
   const hasAddons = hasVariants || (Array.isArray(item.addons) && item.addons.length > 0);
   
-  let minPrice = Number(item.price || 0);
-  if (hasVariants) {
-    const prices = item.variants
-      .map((v) => Number(v?.price || item.price || 0))
-      .filter((p) => !isNaN(p) && p > 0);
-    if (prices.length > 0) {
-      minPrice = Math.min(...prices);
+  const getVariantSuffix = (name) => {
+    if (!name) return '';
+    const lower = String(name).toLowerCase().trim();
+    if (lower === 'piece') return '/piece';
+    if (lower === 'half') return '/half-plate';
+    if (lower === 'full') return '/full-plate';
+    if (lower === 'quarter') return '/quarter-plate';
+    return `/${lower}`;
+  };
+
+  const renderPriceText = () => {
+    if (!hasVariants) {
+      return formatCurrency(item.price);
     }
-  }
+    return item.variants
+      .map((v) => `${formatCurrency(v.price)}${getVariantSuffix(v.name)}`)
+      .join('  •  ');
+  };
 
   const handleAddDirect = (e) => {
     e?.stopPropagation();
@@ -91,8 +100,8 @@ export const FoodCard = ({
           </h3>
 
           {/* Price */}
-          <div className="text-sm font-extrabold text-charcoal-900 mt-1 flex items-center gap-1">
-            <span>{hasVariants ? `From ${formatCurrency(minPrice)}` : formatCurrency(item.price)}</span>
+          <div className="text-xs sm:text-sm font-extrabold text-charcoal-900 mt-1 flex items-center gap-1 flex-wrap">
+            <span>{renderPriceText()}</span>
           </div>
 
           {/* Short Description */}
