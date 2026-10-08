@@ -70,7 +70,7 @@ export const StickyCartBar = ({ restaurantSlug, onFocusSearch }) => {
 
       {/* On Cart/Review Page: render floating Need Help pill cleanly without double bottom bars */}
       {isCartPage ? (
-        <div className="fixed bottom-20 right-4 z-[999] pointer-events-auto">
+        <div className="sticky-cart-bar-container fixed bottom-20 right-4 z-[999] pointer-events-auto">
           <button
             type="button"
             onClick={handleCallWaiter}
@@ -83,7 +83,7 @@ export const StickyCartBar = ({ restaurantSlug, onFocusSearch }) => {
       ) : (
         /* Floating container fixed firmly at bottom of screen with highest z-index */
         <div
-          className="fixed bottom-0 left-0 right-0 z-[999] p-3 sm:p-4 pointer-events-none flex flex-col items-center justify-end"
+          className="sticky-cart-bar-container fixed bottom-0 left-0 right-0 z-[999] p-3 sm:p-4 pointer-events-none flex flex-col items-center justify-end"
           style={{ position: 'fixed', bottom: 0, left: 0, right: 0 }}
         >
           <div className="w-full max-w-md pointer-events-auto flex flex-col gap-2.5">
