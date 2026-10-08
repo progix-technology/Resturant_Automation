@@ -43,11 +43,8 @@ export const FoodCard = ({
   const handleAddDirect = (e) => {
     e?.stopPropagation();
     if (!item.isAvailable) return;
-    if (hasVariants) {
-      onOpenDetails(item);
-    } else {
-      addItem(item, 1, []);
-    }
+    const defaultVariant = hasVariants ? item.variants[0] : null;
+    addItem(item, 1, [], defaultVariant);
   };
 
   const handleDecrementDirect = (e) => {
