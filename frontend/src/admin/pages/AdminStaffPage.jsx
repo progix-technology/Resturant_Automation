@@ -32,10 +32,14 @@ const initialStaff = [
 ];
 
 export const AdminStaffPage = () => {
-  const { showToast } = useAdminData();
+  const { showToast, settings } = useAdminData();
   const [staffList, setStaffList] = useState(() => {
     return storage.get(STORAGE_KEYS.ADMIN_STAFF, initialStaff);
   });
+
+  const maxStaffLimit = Number(settings?.maxStaffAccounts || settings?.staffAccounts || 2);
+  const activeStaffCount = staffList.filter((s) => s.status === 'ACTIVE').length;
+  const isLimitReached = !isNaN(maxStaffLimit) && activeStaffCount >= maxStaffLimit;
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState(null);
@@ -57,6 +61,10 @@ export const AdminStaffPage = () => {
     const updated = staffList.map((s) => {
       if (s.id === staffId) {
         const nextStatus = s.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+        if (nextStatus === 'ACTIVE' && isLimitReached) {
+          showToast(`Cannot activate: Staff Limit reached (${activeStaffCount}/${maxStaffLimit}). Upgrade plan with SuperAdmin.`, 'error');
+          return s;
+        }
         showToast(`${s.name} is now ${nextStatus}`, 'info');
         return { ...s, status: nextStatus };
       }
@@ -68,6 +76,11 @@ export const AdminStaffPage = () => {
   const handleAddSubmit = (e) => {
     e.preventDefault();
     if (!formData.name || !formData.email) return;
+
+    if (!editingStaff && isLimitReached) {
+      showToast(`Staff limit reached (${activeStaffCount}/${maxStaffLimit})! Upgrade subscription plan with SuperAdmin.`, 'error');
+      return;
+    }
 
     if (editingStaff) {
       const updated = staffList.map((s) =>
@@ -182,17 +195,48 @@ export const AdminStaffPage = () => {
           <button
             type="button"
             onClick={() => {
+              if (isLimitReached) {
+                showToast(`Staff limit reached (${activeStaffCount}/${maxStaffLimit})! Upgrade subscription plan with SuperAdmin.`, 'error');
+                return;
+              }
               setEditingStaff(null);
               setFormData({ name: '', email: '', phone: '', role: ADMIN_ROLES.STAFF, shift: 'Evening Shift' });
               setIsAddModalOpen(true);
             }}
-            className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs"
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs ${
+              isLimitReached
+                ? 'bg-amber-100 text-amber-950 border border-amber-300 cursor-not-allowed'
+                : 'bg-slate-900 hover:bg-slate-800 text-white cursor-pointer'
+            }`}
           >
             <Plus className="w-4 h-4" />
             <span>Add Staff Member</span>
           </button>
         }
       />
+
+      {/* Staff Account Capacity Usage Card */}
+      <div className={`p-4 rounded-2xl border flex items-center justify-between gap-3 ${
+        isLimitReached ? 'bg-amber-50 border-amber-300 text-amber-950' : 'bg-white border-slate-200 text-slate-800'
+      }`}>
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-xl border ${
+            isLimitReached ? 'bg-amber-100 border-amber-300 text-amber-900' : 'bg-slate-100 border-slate-200 text-slate-700'
+          }`}>
+            <UserCheck className="w-5 h-5 stroke-[2.5]" />
+          </div>
+          <div>
+            <span className="font-extrabold text-xs sm:text-sm block">
+              Staff Accounts Usage: {activeStaffCount} / {maxStaffLimit} Active Logins Used
+            </span>
+            <span className="text-xs text-slate-500 block mt-0.5">
+              {isLimitReached
+                ? '⚠️ Account limit reached for your current subscription plan. Contact SuperAdmin to add more logins.'
+                : `You can create ${maxStaffLimit - activeStaffCount} more staff accounts on your current plan.`}
+            </span>
+          </div>
+        </div>
+      </div>
 
       {/* Staff Table */}
       <DataTable
