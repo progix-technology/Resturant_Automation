@@ -150,8 +150,34 @@ export const tableController = {
 
   async addTable(req, res) {
     try {
-      const { number, capacity, section } = req.body;
+      const { number, capacity, section, restaurantSlug } = req.body;
       const tables = db.get('tables') || [];
+
+      // Fetch restaurant settings for plan limit check
+      const restaurants = db.get('restaurants') || [];
+      const cleanSlug = (restaurantSlug || 'spice-garden').toLowerCase().trim().replace(/_/g, '-');
+      const restSettings = restaurants.find((r) => (r.slug || '').toLowerCase().replace(/_/g, '-') === cleanSlug) || {};
+
+      const planName = (restSettings.planName || '').toLowerCase();
+      const planId = (restSettings.planId || '').toLowerCase();
+
+      let maxTables = restSettings.maxTables;
+      if (maxTables === undefined) {
+        if (planId.includes('enterprise') || planName.includes('enterprise')) {
+          maxTables = 50;
+        } else if (planId.includes('growth') || planName.includes('growth') || planName.includes('pro')) {
+          maxTables = 30;
+        } else {
+          maxTables = 10; // Starter plan limit
+        }
+      }
+
+      if (tables.length >= maxTables) {
+        return res.status(403).json({
+          success: false,
+          message: `Table limit reached (${tables.length}/${maxTables}). Please upgrade your plan to add more tables.`,
+        });
+      }
 
       const newTable = {
         id: `tbl-${Date.now().toString().slice(-4)}`,

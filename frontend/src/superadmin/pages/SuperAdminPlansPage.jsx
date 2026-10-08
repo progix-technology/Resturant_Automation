@@ -19,9 +19,11 @@ export const SuperAdminPlansPage = () => {
     tagline: '',
     monthlyPrice: 1999,
     annualPrice: 19990,
-    maxTables: 25,
+    maxTables: 10,
+    maxDishes: 30,
+    maxAdminLogins: 1,
     maxOrdersPerMonth: 'Unlimited',
-    staffAccounts: 5,
+    staffAccounts: 0,
     featuresText: '',
   });
 
@@ -34,6 +36,8 @@ export const SuperAdminPlansPage = () => {
       monthlyPrice: plan.monthlyPrice,
       annualPrice: plan.annualPrice,
       maxTables: plan.maxTables,
+      maxDishes: plan.maxDishes || 30,
+      maxAdminLogins: plan.maxAdminLogins || 1,
       maxOrdersPerMonth: plan.maxOrdersPerMonth,
       staffAccounts: plan.staffAccounts,
       featuresText: (plan.features || []).join('\n'),
@@ -49,10 +53,12 @@ export const SuperAdminPlansPage = () => {
       tagline: '',
       monthlyPrice: 1499,
       annualPrice: 14990,
-      maxTables: 20,
+      maxTables: 10,
+      maxDishes: 30,
+      maxAdminLogins: 1,
       maxOrdersPerMonth: 'Unlimited',
-      staffAccounts: 3,
-      featuresText: 'Digital Table QR Codes\nLive Order Tracking\nWhatsApp Notifications\nBasic Revenue Reports',
+      staffAccounts: 0,
+      featuresText: 'Digital Table QR Codes\nLive Order Tracking\nInteractive QR Menu',
     });
     setIsModalOpen(true);
   };
@@ -64,30 +70,25 @@ export const SuperAdminPlansPage = () => {
       .map((s) => s.trim())
       .filter(Boolean);
 
+    const planData = {
+      name: formData.name,
+      badge: formData.badge,
+      tagline: formData.tagline,
+      monthlyPrice: Number(formData.monthlyPrice),
+      annualPrice: Number(formData.annualPrice),
+      maxTables: Number(formData.maxTables) || formData.maxTables,
+      maxDishes: Number(formData.maxDishes) || formData.maxDishes,
+      maxAdminLogins: Number(formData.maxAdminLogins) || formData.maxAdminLogins,
+      maxOrdersPerMonth: formData.maxOrdersPerMonth,
+      maxStaffAccounts: Number(formData.staffAccounts) || 0,
+      staffAccounts: Number(formData.staffAccounts) || 0,
+      features,
+    };
+
     if (editingPlan) {
-      await updatePlan(editingPlan.id, {
-        name: formData.name,
-        badge: formData.badge,
-        tagline: formData.tagline,
-        monthlyPrice: Number(formData.monthlyPrice),
-        annualPrice: Number(formData.annualPrice),
-        maxTables: formData.maxTables,
-        maxOrdersPerMonth: formData.maxOrdersPerMonth,
-        staffAccounts: formData.staffAccounts,
-        features,
-      });
+      await updatePlan(editingPlan.id, planData);
     } else {
-      await addPlan({
-        name: formData.name,
-        badge: formData.badge,
-        tagline: formData.tagline,
-        monthlyPrice: Number(formData.monthlyPrice),
-        annualPrice: Number(formData.annualPrice),
-        maxTables: formData.maxTables,
-        maxOrdersPerMonth: formData.maxOrdersPerMonth,
-        staffAccounts: formData.staffAccounts,
-        features,
-      });
+      await addPlan(planData);
     }
     setIsModalOpen(false);
   };
@@ -165,16 +166,16 @@ export const SuperAdminPlansPage = () => {
                     <span className="font-bold text-slate-950">{plan.maxTables} Tables</span>
                   </div>
                   <div>
-                    <span className="text-slate-500 block text-[10px]">Monthly Orders</span>
-                    <span className="font-bold text-slate-950">{plan.maxOrdersPerMonth}</span>
+                    <span className="text-slate-500 block text-[10px]">Menu Dishes</span>
+                    <span className="font-bold text-slate-950">{plan.maxDishes || (plan.id === 'plan-enterprise' ? 100 : plan.id === 'plan-growth' ? 60 : 30)} Dishes</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-[10px]">Admin Logins</span>
+                    <span className="font-bold text-slate-950">{plan.maxAdminLogins || (plan.id === 'plan-enterprise' ? 8 : plan.id === 'plan-growth' ? 4 : 1)} Admins</span>
                   </div>
                   <div>
                     <span className="text-slate-500 block text-[10px]">Staff Accounts</span>
-                    <span className="font-bold text-slate-950">{plan.staffAccounts} Logins</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 block text-[10px]">Active Tenants</span>
-                    <span className="font-bold text-amber-800">{subscriberCount} Subscribed</span>
+                    <span className="font-bold text-slate-950">{plan.staffAccounts ?? plan.maxStaffAccounts ?? 0} Staff</span>
                   </div>
                 </div>
 
@@ -289,23 +290,45 @@ export const SuperAdminPlansPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Table Capacity</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Table Limit</label>
                   <input
-                    type="text"
+                    type="number"
                     value={formData.maxTables}
                     onChange={(e) => setFormData({ ...formData, maxTables: e.target.value })}
-                    placeholder="e.g. 50 or Unlimited"
+                    placeholder="e.g. 10"
                     className="w-full h-9 px-3 bg-amber-50/20 border border-amber-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-amber-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Staff Logins</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Menu Dishes Limit</label>
                   <input
-                    type="text"
+                    type="number"
+                    value={formData.maxDishes}
+                    onChange={(e) => setFormData({ ...formData, maxDishes: e.target.value })}
+                    placeholder="e.g. 30"
+                    className="w-full h-9 px-3 bg-amber-50/20 border border-amber-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Admin Logins Limit</label>
+                  <input
+                    type="number"
+                    value={formData.maxAdminLogins}
+                    onChange={(e) => setFormData({ ...formData, maxAdminLogins: e.target.value })}
+                    placeholder="e.g. 1"
+                    className="w-full h-9 px-3 bg-amber-50/20 border border-amber-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Staff Accounts Limit</label>
+                  <input
+                    type="number"
                     value={formData.staffAccounts}
                     onChange={(e) => setFormData({ ...formData, staffAccounts: e.target.value })}
-                    placeholder="e.g. 10"
+                    placeholder="0 for Starter"
                     className="w-full h-9 px-3 bg-amber-50/20 border border-amber-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-amber-500"
                   />
                 </div>

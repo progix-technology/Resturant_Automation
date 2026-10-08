@@ -102,8 +102,6 @@ export const mockTables = [
   { id: 'tbl-8', number: '8', capacity: 2, section: 'Garden Terrace', status: 'AVAILABLE', currentOrderId: null, customerName: null, occupiedSince: null, amount: 0 },
   { id: 'tbl-9', number: '9', capacity: 8, section: 'Family Lounge', status: 'AVAILABLE', currentOrderId: null, customerName: null, occupiedSince: null, amount: 0 },
   { id: 'tbl-10', number: '10', capacity: 8, section: 'Family Lounge', status: 'AVAILABLE', currentOrderId: null, customerName: null, occupiedSince: null, amount: 0 },
-  { id: 'tbl-11', number: '11', capacity: 4, section: 'Family Lounge', status: 'AVAILABLE', currentOrderId: null, customerName: null, occupiedSince: null, amount: 0 },
-  { id: 'tbl-12', number: '12', capacity: 4, section: 'Indoor Ground', status: 'AVAILABLE', currentOrderId: null, customerName: null, occupiedSince: null, amount: 0 },
 ];
 
 export const mockInitialOrders = [];

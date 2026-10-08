@@ -8,6 +8,7 @@ import { storage } from '../../utils/storage';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
 import { apiRequest } from '../../services/apiConfig';
 import { notificationService } from '../../services/notificationService';
+import { getPlanLimits } from '../utils/planLimits';
 
 const AdminDataContext = createContext(null);
 
@@ -321,12 +322,19 @@ export const AdminDataProvider = ({ children }) => {
 
   const addTable = async (tableData) => {
     try {
+      const planLimits = getPlanLimits(settings);
+      if (tables.length >= planLimits.maxTables) {
+        showToast(`Table limit reached (${tables.length}/${planLimits.maxTables}). Upgrade your subscription plan.`, 'error');
+        throw new Error(`Table limit reached (${tables.length}/${planLimits.maxTables}) for your plan.`);
+      }
+
       const created = await adminTableService.addTable(tableData);
       setTables((prev) => [...prev, created]);
       showToast(`Table #${created.number} added successfully`, 'success');
       return created;
     } catch (err) {
       showToast(err.message, 'error');
+      throw err;
     }
   };
 

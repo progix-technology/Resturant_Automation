@@ -222,13 +222,55 @@ export const superAdminController = {
     }
   },
 
+  async deleteTenant(req, res) {
+    try {
+      const { id } = req.params;
+      const tenants = db.get('platformTenants') || [];
+      const filtered = tenants.filter((t) => t.id !== id && t.tenantId !== id);
+      db.set('platformTenants', filtered);
+
+      if (mongoose.connection && mongoose.connection.readyState === 1) {
+        Tenant.deleteOne({ $or: [{ id }, { tenantId: id }] }).catch(() => {});
+      }
+
+      return res.status(200).json({ success: true, message: 'Tenant deleted successfully' });
+    } catch (err) {
+      return res.status(500).json({ success: false, message: 'Failed to delete tenant' });
+    }
+  },
+
   // Packaging Plans
   async getPlans(req, res) {
     try {
-      const plans = db.get('pricingPlans');
+      const plans = db.get('pricingPlans') || [];
       return res.status(200).json({ success: true, data: plans });
     } catch (err) {
       return res.status(500).json({ success: false, message: 'Failed to fetch plans' });
+    }
+  },
+
+  async addPlan(req, res) {
+    try {
+      const planData = req.body;
+      const plans = db.get('pricingPlans') || [];
+      const newPlan = {
+        ...planData,
+        id: planData.id || `plan-${Date.now().toString().slice(-4)}`,
+        activeSubscribers: 0,
+        monthlyPrice: Number(planData.monthlyPrice) || 999,
+        annualPrice: Number(planData.annualPrice) || 9990,
+        maxTables: Number(planData.maxTables) || 10,
+        maxDishes: Number(planData.maxDishes) || 30,
+        maxAdminLogins: Number(planData.maxAdminLogins) || 1,
+        maxStaffAccounts: Number(planData.maxStaffAccounts || planData.staffAccounts) || 0,
+        analyticsEnabled: Boolean(planData.analyticsEnabled),
+        features: Array.isArray(planData.features) ? planData.features : (planData.features || '').split('\n').filter(Boolean),
+      };
+
+      db.set('pricingPlans', [...plans, newPlan]);
+      return res.status(201).json({ success: true, data: newPlan });
+    } catch (err) {
+      return res.status(500).json({ success: false, message: 'Failed to add plan' });
     }
   },
 
@@ -236,7 +278,7 @@ export const superAdminController = {
     try {
       const { id } = req.params;
       const updates = req.body;
-      const plans = db.get('pricingPlans');
+      const plans = db.get('pricingPlans') || [];
       let updated = null;
 
       const next = plans.map((p) => {
@@ -257,17 +299,34 @@ export const superAdminController = {
   // Invoices & Revenue
   async getInvoices(req, res) {
     try {
-      const invoices = db.get('invoices');
+      const invoices = db.get('invoices') || [];
       return res.status(200).json({ success: true, data: invoices });
     } catch (err) {
       return res.status(500).json({ success: false, message: 'Failed to fetch invoices' });
     }
   },
 
+  async addInvoice(req, res) {
+    try {
+      const invData = req.body;
+      const invoices = db.get('invoices') || [];
+      const newInvoice = {
+        id: invData.id || `INV-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+        ...invData,
+        issuedDate: invData.issuedDate || new Date().toISOString().split('T')[0],
+        dueDate: invData.dueDate || new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+      };
+      db.set('invoices', [newInvoice, ...invoices]);
+      return res.status(201).json({ success: true, data: newInvoice });
+    } catch (err) {
+      return res.status(500).json({ success: false, message: 'Failed to add invoice' });
+    }
+  },
+
   async markInvoicePaid(req, res) {
     try {
       const { id } = req.params;
-      const invoices = db.get('invoices');
+      const invoices = db.get('invoices') || [];
       let updated = null;
 
       const next = invoices.map((inv) => {

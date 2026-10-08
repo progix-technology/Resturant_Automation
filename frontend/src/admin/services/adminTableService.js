@@ -87,17 +87,23 @@ export const adminTableService = {
   async addTable(tableData) {
     const currentSlug = getCurrentSlug();
     const key = `${STORAGE_KEYS.ADMIN_TABLES}_${currentSlug}`;
+    let backendCreated = null;
+
     try {
-      await apiRequest('/tables', {
+      const res = await apiRequest('/tables', {
         method: 'POST',
         body: JSON.stringify({ ...tableData, restaurantSlug: currentSlug }),
       });
+      if (res && res.data) {
+        backendCreated = res.data;
+      }
     } catch (err) {
-      console.warn('Backend add table fallback:', err.message);
+      console.error('[TABLE SERVICE ERROR] Add table failed:', err.message);
+      throw err;
     }
 
     const tables = storage.get(key, defaultTables);
-    const newTbl = {
+    const newTbl = backendCreated || {
       ...tableData,
       id: `tbl-${Date.now().toString().slice(-4)}`,
       amount: 0,

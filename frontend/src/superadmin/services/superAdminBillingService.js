@@ -1,23 +1,41 @@
+import { apiRequest } from '../../services/apiConfig';
 import { storage } from '../../utils/storage';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
 import { mockTenantInvoices } from '../data/mockSuperAdminData';
-import { simulateDelay } from '../../services/apiConfig';
 
 export const superAdminBillingService = {
   async getInvoices() {
-    await simulateDelay(150);
+    try {
+      const res = await apiRequest('/superadmin/invoices');
+      if (res && res.success && Array.isArray(res.data)) {
+        storage.set(STORAGE_KEYS.SUPERADMIN_INVOICES, res.data);
+        return res.data;
+      }
+    } catch (err) {
+      console.warn('Backend getInvoices failed, falling back to local storage:', err.message);
+    }
     const invoices = storage.get(STORAGE_KEYS.SUPERADMIN_INVOICES, mockTenantInvoices) || [];
     const mockInvIdsToRemove = ['INV-2026-0084', 'INV-2026-0093', 'INV-2026-0095', 'INV-2026-0098'];
     const mockTenantIdsToRemove = ['tenant-002', 'tenant-003', 'tenant-004', 'tenant-005', 'tenant-006', 'tenant-007'];
     const cleanInvoices = invoices.filter((i) => !mockInvIdsToRemove.includes(i.id) && !mockTenantIdsToRemove.includes(i.tenantId));
-    if (cleanInvoices.length !== invoices.length) {
-      storage.set(STORAGE_KEYS.SUPERADMIN_INVOICES, cleanInvoices);
-    }
     return cleanInvoices;
   },
 
   async markInvoicePaid(invoiceId) {
-    await simulateDelay(200);
+    try {
+      const res = await apiRequest(`/superadmin/invoices/${invoiceId}/pay`, {
+        method: 'PATCH',
+      });
+      if (res && res.success && res.data) {
+        const invoices = storage.get(STORAGE_KEYS.SUPERADMIN_INVOICES, mockTenantInvoices);
+        const nextInvoices = invoices.map((inv) => (inv.id === invoiceId ? { ...inv, ...res.data } : inv));
+        storage.set(STORAGE_KEYS.SUPERADMIN_INVOICES, nextInvoices);
+        return res.data;
+      }
+    } catch (err) {
+      console.warn('Backend markInvoicePaid failed, falling back to local storage:', err.message);
+    }
+
     const invoices = storage.get(STORAGE_KEYS.SUPERADMIN_INVOICES, mockTenantInvoices);
     let updatedInv = null;
     const nextInvoices = invoices.map((inv) => {
@@ -36,8 +54,6 @@ export const superAdminBillingService = {
   },
 
   async generateInvoice(tenant, plan) {
-    await simulateDelay(200);
-    const invoices = storage.get(STORAGE_KEYS.SUPERADMIN_INVOICES, mockTenantInvoices);
     const amount = Number(tenant.planAmount) || 2499;
     const tax = Math.round(amount * 0.18 * 100) / 100;
     const newInvoice = {
@@ -55,6 +71,23 @@ export const superAdminBillingService = {
       paidAt: null,
       paymentMethod: 'UPI / NetBanking',
     };
+
+    try {
+      const res = await apiRequest('/superadmin/invoices', {
+        method: 'POST',
+        body: JSON.stringify(newInvoice),
+      });
+      if (res && res.success && res.data) {
+        const invoices = storage.get(STORAGE_KEYS.SUPERADMIN_INVOICES, mockTenantInvoices);
+        const nextInvoices = [res.data, ...invoices];
+        storage.set(STORAGE_KEYS.SUPERADMIN_INVOICES, nextInvoices);
+        return res.data;
+      }
+    } catch (err) {
+      console.warn('Backend generateInvoice failed, falling back to local storage:', err.message);
+    }
+
+    const invoices = storage.get(STORAGE_KEYS.SUPERADMIN_INVOICES, mockTenantInvoices);
     const nextInvoices = [newInvoice, ...invoices];
     storage.set(STORAGE_KEYS.SUPERADMIN_INVOICES, nextInvoices);
     return newInvoice;

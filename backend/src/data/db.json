@@ -177,6 +177,174 @@
   ],
   "menuItems": [
     {
+      "id": "item-140454",
+      "name": "Coca Cola 500ml",
+      "categoryId": "starters",
+      "price": 40,
+      "description": "",
+      "image": "",
+      "isVeg": true,
+      "isRecommended": false,
+      "isAddon": false,
+      "isAvailable": true,
+      "preparationTime": "15 mins",
+      "hasVariants": true,
+      "variantFullPrice": "",
+      "variantHalfPrice": "",
+      "variantQuarterPrice": "",
+      "variantPiecePrice": "40",
+      "variants": [
+        {
+          "name": "Piece",
+          "price": 40
+        }
+      ],
+      "restaurantSlug": "spice-garden",
+      "rating": 4.8,
+      "addons": [],
+      "itemId": "item-140454"
+    },
+    {
+      "id": "item-100234",
+      "name": "TAWA PULAW",
+      "categoryId": "starters",
+      "price": 150,
+      "description": "",
+      "image": "",
+      "isVeg": true,
+      "isRecommended": false,
+      "isAddon": false,
+      "isAvailable": true,
+      "preparationTime": "15 mins",
+      "hasVariants": true,
+      "variantFullPrice": "150",
+      "variantHalfPrice": "",
+      "variantQuarterPrice": "",
+      "variantPiecePrice": "",
+      "variants": [
+        {
+          "name": "Full",
+          "price": 150
+        }
+      ],
+      "restaurantSlug": "spice-garden",
+      "rating": 4.8,
+      "addons": [],
+      "itemId": "item-100234"
+    },
+    {
+      "id": "item-072886",
+      "name": "STEAM MOMOS",
+      "categoryId": "chinese",
+      "price": 80,
+      "description": "",
+      "image": "",
+      "isVeg": true,
+      "isRecommended": false,
+      "isAddon": false,
+      "isAvailable": true,
+      "preparationTime": "15 mins",
+      "hasVariants": true,
+      "variantFullPrice": "80",
+      "variantHalfPrice": "",
+      "variantQuarterPrice": "",
+      "variantPiecePrice": "",
+      "variants": [
+        {
+          "name": "Full",
+          "price": 80
+        }
+      ],
+      "restaurantSlug": "spice-garden",
+      "rating": 4.8,
+      "addons": [],
+      "itemId": "item-072886"
+    },
+    {
+      "id": "item-022936",
+      "name": "Fruit Custurd",
+      "categoryId": "starters",
+      "price": 180,
+      "description": "",
+      "image": "",
+      "isVeg": true,
+      "isRecommended": false,
+      "isAddon": false,
+      "isAvailable": true,
+      "preparationTime": "15 mins",
+      "hasVariants": true,
+      "variantFullPrice": "",
+      "variantHalfPrice": "",
+      "variantQuarterPrice": "180",
+      "variantPiecePrice": "",
+      "variants": [
+        {
+          "name": "Quarter",
+          "price": 180
+        }
+      ],
+      "restaurantSlug": "spice-garden",
+      "rating": 4.8,
+      "addons": [],
+      "itemId": "item-022936"
+    },
+    {
+      "id": "item-996033",
+      "name": "Razma Chawal",
+      "categoryId": "starters",
+      "price": 320,
+      "description": "",
+      "image": "",
+      "isVeg": true,
+      "isRecommended": false,
+      "isAddon": false,
+      "isAvailable": true,
+      "preparationTime": "15 mins",
+      "hasVariants": true,
+      "variantFullPrice": "320",
+      "variantHalfPrice": "",
+      "variantQuarterPrice": "",
+      "variantPiecePrice": "",
+      "variants": [
+        {
+          "name": "Full",
+          "price": 320
+        }
+      ],
+      "restaurantSlug": "spice-garden",
+      "rating": 4.8,
+      "addons": [],
+      "itemId": "item-996033"
+    },
+    {
+      "id": "item-966625",
+      "name": "paneer vada",
+      "categoryId": "starters",
+      "price": 45,
+      "description": "",
+      "image": "",
+      "isVeg": true,
+      "isRecommended": false,
+      "isAddon": false,
+      "isAvailable": true,
+      "preparationTime": "15 mins",
+      "hasVariants": true,
+      "variantFullPrice": "",
+      "variantHalfPrice": "",
+      "variantQuarterPrice": "",
+      "variantPiecePrice": "45",
+      "variants": [
+        {
+          "name": "Piece",
+          "price": 45
+        }
+      ],
+      "restaurantSlug": "spice-garden",
+      "rating": 4.8,
+      "addons": [],
+      "itemId": "item-966625"
+    },
+    {
       "id": "item-970190",
       "name": "Rasmalai",
       "categoryId": "desserts",
@@ -190,12 +358,17 @@
       "restaurantSlug": "spice-garden",
       "isAddon": false,
       "isRecommended": false,
-      "hasVariants": false,
+      "hasVariants": true,
       "variantFullPrice": "",
       "variantHalfPrice": "",
       "variantQuarterPrice": "",
       "variantPiecePrice": 30,
-      "variants": []
+      "variants": [
+        {
+          "name": "Piece",
+          "price": 30
+        }
+      ]
     },
     {
       "id": "item-779978",
@@ -575,6 +748,131 @@
       "isPopular": true,
       "isAvailable": true,
       "preparationTime": 8
+    },
+    {
+      "id": "item-0445",
+      "name": "Coca Cola 500ml",
+      "categoryId": "beverages",
+      "price": 40,
+      "description": "Coca Cola Drink",
+      "image": "",
+      "isVeg": true,
+      "isRecommended": false,
+      "isAddon": true,
+      "isAvailable": true,
+      "preparationTime": "1 mins",
+      "hasVariants": true,
+      "variantFullPrice": "",
+      "variantHalfPrice": "",
+      "variantQuarterPrice": "",
+      "variantPiecePrice": 40,
+      "variants": [
+        {
+          "name": "Piece",
+          "price": 40
+        }
+      ],
+      "restaurantSlug": "spice-garden"
+    },
+    {
+      "id": "item-2927",
+      "name": "Fruit Custurd",
+      "categoryId": "desserts",
+      "price": 180,
+      "description": "",
+      "image": "",
+      "isVeg": true,
+      "isRecommended": false,
+      "isAddon": true,
+      "isAvailable": true,
+      "preparationTime": "10 mins",
+      "hasVariants": true,
+      "variantFullPrice": "",
+      "variantHalfPrice": "180",
+      "variantQuarterPrice": "",
+      "variantPiecePrice": "",
+      "variants": [
+        {
+          "name": "Half",
+          "price": 180
+        }
+      ],
+      "restaurantSlug": "spice-garden"
+    },
+    {
+      "id": "item-0226",
+      "name": "TAWA PULAW",
+      "categoryId": "main-course",
+      "price": 150,
+      "description": "",
+      "image": "",
+      "isVeg": true,
+      "isRecommended": false,
+      "isAddon": false,
+      "isAvailable": true,
+      "preparationTime": "15 mins",
+      "hasVariants": true,
+      "variantFullPrice": 150,
+      "variantHalfPrice": "",
+      "variantQuarterPrice": "",
+      "variantPiecePrice": "",
+      "variants": [
+        {
+          "name": "Full",
+          "price": 150
+        }
+      ],
+      "restaurantSlug": "spice-garden"
+    },
+    {
+      "id": "item-2878",
+      "name": "STEAM MOMOS",
+      "categoryId": "chinese",
+      "price": 80,
+      "description": "",
+      "image": "",
+      "isVeg": true,
+      "isRecommended": false,
+      "isAddon": false,
+      "isAvailable": true,
+      "preparationTime": "15 mins",
+      "hasVariants": true,
+      "variantFullPrice": 80,
+      "variantHalfPrice": "",
+      "variantQuarterPrice": "",
+      "variantPiecePrice": "",
+      "variants": [
+        {
+          "name": "Full",
+          "price": 80
+        }
+      ],
+      "restaurantSlug": "spice-garden"
+    },
+    {
+      "id": "item-6024",
+      "name": "Razma Chawal",
+      "categoryId": "main-course",
+      "price": 320,
+      "description": "",
+      "image": "",
+      "isVeg": true,
+      "isRecommended": false,
+      "isAddon": false,
+      "isAvailable": true,
+      "preparationTime": "20 mins",
+      "hasVariants": true,
+      "variantFullPrice": 320,
+      "variantHalfPrice": "",
+      "variantQuarterPrice": "",
+      "variantPiecePrice": "",
+      "variants": [
+        {
+          "name": "Full",
+          "price": 320
+        }
+      ],
+      "restaurantSlug": "spice-garden"
     }
   ],
   "tables": [
@@ -660,6 +958,42 @@
       "number": "08",
       "capacity": 2,
       "section": "Garden Terrace",
+      "status": "AVAILABLE",
+      "currentOrderId": null,
+      "customerName": null,
+      "amount": 0,
+      "occupiedSince": null
+    },
+    {
+      "id": "tbl-2160",
+      "tableId": "tbl-2160",
+      "number": "09",
+      "capacity": 4,
+      "section": "Indoor Ground",
+      "status": "AVAILABLE",
+      "currentOrderId": null,
+      "customerName": null,
+      "amount": 0,
+      "occupiedSince": null
+    },
+    {
+      "id": "tbl-7182",
+      "tableId": "tbl-7182",
+      "number": "10",
+      "capacity": 4,
+      "section": "Indoor Ground",
+      "status": "AVAILABLE",
+      "currentOrderId": null,
+      "customerName": null,
+      "amount": 0,
+      "occupiedSince": null
+    },
+    {
+      "id": "tbl-2710",
+      "tableId": "tbl-2710",
+      "number": "11",
+      "capacity": 4,
+      "section": "Indoor Ground",
       "status": "AVAILABLE",
       "currentOrderId": null,
       "customerName": null,
@@ -1023,10 +1357,27 @@
       "tagline": "Ideal for small cafes, food trucks & dessert stalls",
       "monthlyPrice": 999,
       "annualPrice": 9990,
-      "maxTables": 15,
+      "maxTables": 10,
+      "maxDishes": 30,
+      "maxAdminLogins": 1,
+      "maxStaffAccounts": 0,
+      "staffAccounts": 0,
+      "analyticsEnabled": false,
       "maxOrdersPerMonth": 500,
-      "staffAccounts": 2,
-      "popular": false
+      "features": [
+        "Up to 10 Table QR Codes",
+        "Up to 30 Menu Catalog Dishes",
+        "1 Admin Login Account",
+        "0 Staff Accounts (Owner Only)",
+        "Digital QR Menu with Veg/Spicy Tags",
+        "Direct Table Cart & Order Booking",
+        "Live Kitchen Display System (KDS)",
+        "Live Order Status Tracking",
+        "Standard In-App & Ticket Support"
+      ],
+      "popular": false,
+      "color": "slate",
+      "activeSubscribers": 0
     },
     {
       "id": "plan-growth",
@@ -1035,10 +1386,27 @@
       "tagline": "Best for bustling casual dining, bistros & fine dining restaurants",
       "monthlyPrice": 2499,
       "annualPrice": 24990,
-      "maxTables": 40,
+      "maxTables": 30,
+      "maxDishes": 60,
+      "maxAdminLogins": 4,
+      "maxStaffAccounts": 4,
+      "staffAccounts": 4,
+      "analyticsEnabled": false,
       "maxOrdersPerMonth": "Unlimited",
-      "staffAccounts": 8,
-      "popular": true
+      "features": [
+        "Up to 30 Table QR Codes",
+        "Up to 60 Menu Catalog Dishes",
+        "Up to 4 Admin Logins",
+        "Up to 4 Staff Logins (Chef / Waiter)",
+        "Automated WhatsApp Alerts (Bill & Order Updates)",
+        "Instant UPI Payment QR Code",
+        "Instant \"Call Waiter / Need Help\" Alerts",
+        "Table Status & Turnover Tracker",
+        "Priority Call & WhatsApp Support"
+      ],
+      "popular": true,
+      "color": "indigo",
+      "activeSubscribers": 1
     },
     {
       "id": "plan-enterprise",
@@ -1047,10 +1415,27 @@
       "tagline": "For large multi-floor restaurants, breweries & franchise outlets",
       "monthlyPrice": 4999,
       "annualPrice": 49990,
-      "maxTables": 120,
+      "maxTables": 50,
+      "maxDishes": 100,
+      "maxAdminLogins": 8,
+      "maxStaffAccounts": 8,
+      "staffAccounts": 8,
+      "analyticsEnabled": true,
       "maxOrdersPerMonth": "Unlimited",
-      "staffAccounts": "Unlimited",
-      "popular": false
+      "features": [
+        "Up to 50 Table QR Codes (Multi-floor)",
+        "100+ Menu Catalog Dishes",
+        "Up to 8 Admin Logins",
+        "Up to 8 Staff Logins with Roles",
+        "Full Sales & Revenue Analytics Dashboard",
+        "Full WhatsApp & SMS Automation Suite",
+        "Instant CSV Sales Data Export",
+        "Customer CRM & Dining Analytics",
+        "Dedicated 24/7 Relationship Manager & Phone Support"
+      ],
+      "popular": false,
+      "color": "emerald",
+      "activeSubscribers": 0
     }
   ],
   "platformTenants": [

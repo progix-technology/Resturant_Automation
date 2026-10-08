@@ -26,6 +26,7 @@ import {
   Image as ImageIcon,
   CheckCircle2,
   AlertCircle,
+  Lock,
 } from 'lucide-react';
 import { useAdminData } from '../context/AdminDataContext';
 import { AdminPageHeader } from '../components/AdminPageHeader';
@@ -33,6 +34,9 @@ import { DataTable } from '../components/DataTable';
 import { SearchInput } from '../components/SearchInput';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { formatCurrency } from '../../utils/currency';
+import { PlanUpgradeModal } from '../components/PlanUpgradeModal';
+import { getPlanLimits } from '../utils/planLimits';
+import { API_BASE_URL } from '../../services/apiConfig';
 
 // Official Indian Food Veg/Non-Veg Badges
 const VegBadge = ({ className = 'w-4 h-4' }) => (
@@ -72,7 +76,10 @@ export const AdminMenuPage = () => {
     toggleMenuItemAvailability,
     saveMenuItem,
     deleteMenuItem,
+    settings,
   } = useAdminData();
+
+  const limits = useMemo(() => getPlanLimits(settings), [settings]);
 
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -80,6 +87,7 @@ export const AdminMenuPage = () => {
   const [deletingId, setDeletingId] = useState(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [uploadError, setUploadError] = useState('');
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
   // Category Modal State
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
@@ -217,6 +225,10 @@ export const AdminMenuPage = () => {
   };
 
   const openAddModal = () => {
+    if (menuItems.length >= limits.maxDishes) {
+      setIsUpgradeModalOpen(true);
+      return;
+    }
     setUploadError('');
     const firstCat = categories.find((c) => c.id !== 'ALL')?.id || 'starters';
     setFormData({
@@ -430,9 +442,18 @@ export const AdminMenuPage = () => {
       {/* Top Header */}
       <AdminPageHeader
         title="Menu Catalog & Stock"
-        subtitle="Configure dish pricing, categories, live availability, and real-time QR ordering sync."
+        subtitle={`Configure dish pricing & stock. Usage: ${menuItems.length} / ${limits.maxDishes} dishes (${limits.planName}).`}
         actions={
           <div className="flex flex-wrap items-center gap-3">
+            <span className={`px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 ${
+              menuItems.length >= limits.maxDishes
+                ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                : 'bg-slate-100 text-slate-700'
+            }`}>
+              {menuItems.length >= limits.maxDishes && <Lock className="w-3.5 h-3.5 text-amber-600" />}
+              <span>{menuItems.length} / {limits.maxDishes} Dishes</span>
+            </span>
+
             <button
               type="button"
               onClick={() => {
@@ -1333,6 +1354,17 @@ export const AdminMenuPage = () => {
         isDestructive={true}
         onConfirm={confirmDeleteCategory}
         onCancel={() => setDeletingCategory(null)}
+      />
+
+      {/* Plan Limit Upgrade Popup Alert */}
+      <PlanUpgradeModal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
+        title="Menu Dish Limit Reached"
+        featureName="Menu Catalog Dishes"
+        currentPlan={limits.planName}
+        limitText={`Your current ${limits.planName} plan limit is ${limits.maxDishes} menu dishes.`}
+        message="Please purchase this plan to perform this action."
       />
     </div>
   );

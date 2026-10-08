@@ -1,16 +1,38 @@
+import { apiRequest } from '../../services/apiConfig';
 import { storage } from '../../utils/storage';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
 import { mockPricingPlans } from '../data/mockSuperAdminData';
-import { simulateDelay } from '../../services/apiConfig';
 
 export const superAdminPlanService = {
   async getPlans() {
-    await simulateDelay(150);
+    try {
+      const res = await apiRequest('/superadmin/plans');
+      if (res && res.success && Array.isArray(res.data)) {
+        storage.set(STORAGE_KEYS.SUPERADMIN_PLANS, res.data);
+        return res.data;
+      }
+    } catch (err) {
+      console.warn('Backend getPlans failed, falling back to local storage:', err.message);
+    }
     return storage.get(STORAGE_KEYS.SUPERADMIN_PLANS, mockPricingPlans);
   },
 
   async updatePlan(id, updates) {
-    await simulateDelay(200);
+    try {
+      const res = await apiRequest(`/superadmin/plans/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(updates),
+      });
+      if (res && res.success && res.data) {
+        const plans = storage.get(STORAGE_KEYS.SUPERADMIN_PLANS, mockPricingPlans);
+        const next = plans.map((p) => (p.id === id ? { ...p, ...res.data } : p));
+        storage.set(STORAGE_KEYS.SUPERADMIN_PLANS, next);
+        return res.data;
+      }
+    } catch (err) {
+      console.warn('Backend updatePlan failed, applying to local storage fallback:', err.message);
+    }
+
     const plans = storage.get(STORAGE_KEYS.SUPERADMIN_PLANS, mockPricingPlans);
     let updatedPlan = null;
     const nextPlans = plans.map((p) => {
@@ -25,7 +47,20 @@ export const superAdminPlanService = {
   },
 
   async addPlan(planData) {
-    await simulateDelay(200);
+    try {
+      const res = await apiRequest('/superadmin/plans', {
+        method: 'POST',
+        body: JSON.stringify(planData),
+      });
+      if (res && res.success && res.data) {
+        const plans = storage.get(STORAGE_KEYS.SUPERADMIN_PLANS, mockPricingPlans);
+        storage.set(STORAGE_KEYS.SUPERADMIN_PLANS, [...plans, res.data]);
+        return res.data;
+      }
+    } catch (err) {
+      console.warn('Backend addPlan failed, saving to local storage fallback:', err.message);
+    }
+
     const plans = storage.get(STORAGE_KEYS.SUPERADMIN_PLANS, mockPricingPlans);
     const newPlan = {
       ...planData,

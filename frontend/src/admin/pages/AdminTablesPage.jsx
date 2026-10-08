@@ -11,18 +11,24 @@ import {
   X,
   IndianRupee,
   BellRing,
+  Lock,
 } from 'lucide-react';
 import { useAdminData } from '../context/AdminDataContext';
 import { AdminPageHeader } from '../components/AdminPageHeader';
 import { StatusBadge } from '../components/StatusBadge';
 import { formatCurrency } from '../../utils/currency';
+import { PlanUpgradeModal } from '../components/PlanUpgradeModal';
+import { getPlanLimits } from '../utils/planLimits';
 
 export const AdminTablesPage = () => {
-  const { tables, updateTableStatus, addTable, orders, waiterCalls = [], resolveWaiterCall } = useAdminData();
+  const { tables, updateTableStatus, addTable, orders, waiterCalls = [], resolveWaiterCall, settings } = useAdminData();
+
+  const limits = useMemo(() => getPlanLimits(settings), [settings]);
 
   const [activeFilter, setActiveFilter] = useState('ALL');
   const [sectionFilter, setSectionFilter] = useState('ALL');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
   // New table form state
   const [newTable, setNewTable] = useState({
@@ -42,37 +48,92 @@ export const AdminTablesPage = () => {
     });
   }, [tables, activeFilter, sectionFilter]);
 
-  const handleAddSubmit = (e) => {
+  const handleOpenAddModal = () => {
+    if (tables.length >= limits.maxTables) {
+      setIsUpgradeModalOpen(true);
+    } else {
+      setIsAddModalOpen(true);
+    }
+  };
+
+  const handleAddSubmit = async (e) => {
     e.preventDefault();
     if (!newTable.number.trim()) return;
-    addTable({
-      number: newTable.number.trim(),
-      capacity: Number(newTable.capacity),
-      section: newTable.section,
-      status: newTable.status,
-    });
-    setNewTable({ number: '', capacity: 4, section: 'Indoor Ground', status: 'AVAILABLE' });
-    setIsAddModalOpen(false);
+
+    if (tables.length >= limits.maxTables) {
+      setIsAddModalOpen(false);
+      setIsUpgradeModalOpen(true);
+      return;
+    }
+
+    try {
+      await addTable({
+        number: newTable.number.trim(),
+        capacity: Number(newTable.capacity),
+        section: newTable.section,
+        status: newTable.status,
+      });
+      setNewTable({ number: '', capacity: 4, section: 'Indoor Ground', status: 'AVAILABLE' });
+      setIsAddModalOpen(false);
+    } catch (err) {
+      setIsAddModalOpen(false);
+      setIsUpgradeModalOpen(true);
+    }
   };
 
   return (
     <div className="space-y-6 animate-fade-in">
       <AdminPageHeader
         title="Dining Table Management"
-        subtitle="Live floor layout, occupancy tracking, and table turnover statuses."
+        subtitle={`Live floor layout & occupancy. Usage: ${tables.length} / ${limits.maxTables} tables (${limits.planName}).`}
         actions={
-          <button
-            type="button"
-            onClick={() => setIsAddModalOpen(true)}
-            className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add New Table</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <span className={`px-2.5 py-1 rounded-xl text-xs font-bold flex items-center gap-1 ${
+              tables.length >= limits.maxTables
+                ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                : 'bg-slate-100 text-slate-700'
+            }`}>
+              {tables.length >= limits.maxTables && <Lock className="w-3 h-3 text-amber-600" />}
+              <span>{tables.length} / {limits.maxTables} Tables</span>
+            </span>
+
+            <button
+              type="button"
+              onClick={handleOpenAddModal}
+              className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add New Table</span>
+            </button>
+          </div>
         }
       />
 
-      {/* Filter and Section Selector */}
+      {/* Over-Limit Alert Banner */}
+      {tables.length > limits.maxTables && (
+        <div className="p-4 rounded-2xl bg-rose-50 border border-rose-300 text-rose-950 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-rose-100 border border-rose-300 text-rose-700 flex items-center justify-center shrink-0">
+              <Lock className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-xs font-black uppercase tracking-wider text-rose-900">
+                Plan Table Limit Exceeded ({tables.length} / {limits.maxTables} Tables)
+              </h4>
+              <p className="text-xs text-rose-700 mt-0.5">
+                Your restaurant currently has {tables.length} tables, which exceeds your current {limits.planName} plan limit of {limits.maxTables} tables. Please upgrade your subscription plan to maintain full table management features.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsUpgradeModalOpen(true)}
+            className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shrink-0 transition-colors shadow-xs"
+          >
+            Upgrade Plan
+          </button>
+        </div>
+      )}
       <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
         {/* Status Pills */}
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
@@ -420,6 +481,17 @@ export const AdminTablesPage = () => {
           </div>
         </div>
       )}
+
+      {/* Plan Upgrade Modal Alert */}
+      <PlanUpgradeModal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
+        title="Table Limit Reached"
+        featureName="Dining Tables"
+        currentPlan={limits.planName}
+        limitText={`Your current ${limits.planName} plan limit is ${limits.maxTables} tables.`}
+        message="Please purchase this plan to perform this action."
+      />
     </div>
   );
 };
