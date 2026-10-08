@@ -197,7 +197,8 @@
       "isAvailable": true,
       "preparationTime": "5 mins",
       "itemId": "item-970190",
-      "restaurantSlug": "spice-garden"
+      "restaurantSlug": "spice-garden",
+      "isAddon": true
     },
     {
       "id": "item-779978",
@@ -223,62 +224,6 @@
       "isAvailable": true,
       "preparationTime": "15 mins",
       "itemId": "item-743409",
-      "restaurantSlug": "spice-garden"
-    },
-    {
-      "id": "item-addon-water",
-      "name": "Mineral Water Bottle (1L)",
-      "categoryId": "beverages",
-      "price": 20,
-      "description": "Chilled packaged mineral water bottle (1 Litre).",
-      "image": "https://images.unsplash.com/photo-1548839140-29a749e1cf4e?auto=format&fit=crop&w=400&q=80",
-      "isVeg": true,
-      "isAvailable": true,
-      "isAddon": true,
-      "preparationTime": "1 min",
-      "itemId": "item-addon-water",
-      "restaurantSlug": "spice-garden"
-    },
-    {
-      "id": "item-addon-butter",
-      "name": "Amul Butter Portion (20g)",
-      "categoryId": "beverages",
-      "price": 15,
-      "description": "Fresh premium salted Amul butter portion.",
-      "image": "https://images.unsplash.com/photo-1589985270826-4b7bb135bc9d?auto=format&fit=crop&w=400&q=80",
-      "isVeg": true,
-      "isAvailable": true,
-      "isAddon": true,
-      "preparationTime": "1 min",
-      "itemId": "item-addon-butter",
-      "restaurantSlug": "spice-garden"
-    },
-    {
-      "id": "item-addon-pickle",
-      "name": "House Special Mixed Pickle",
-      "categoryId": "beverages",
-      "price": 10,
-      "description": "Traditional tangy mango & chilli Indian homemade pickle.",
-      "image": "https://images.unsplash.com/photo-1599488615731-7e5c2823ff28?auto=format&fit=crop&w=400&q=80",
-      "isVeg": true,
-      "isAvailable": true,
-      "isAddon": true,
-      "preparationTime": "1 min",
-      "itemId": "item-addon-pickle",
-      "restaurantSlug": "spice-garden"
-    },
-    {
-      "id": "item-addon-papad",
-      "name": "Roasted Masala Papad (2 Pcs)",
-      "categoryId": "beverages",
-      "price": 25,
-      "description": "Crispy roasted papad topped with spicy onion, tomato & chaat masala.",
-      "image": "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=400&q=80",
-      "isVeg": true,
-      "isAvailable": true,
-      "isAddon": true,
-      "preparationTime": "3 mins",
-      "itemId": "item-addon-papad",
       "restaurantSlug": "spice-garden"
     },
     {
@@ -561,7 +506,8 @@
       "isPopular": true,
       "isAvailable": true,
       "preparationTime": 10,
-      "categoryId": "desserts"
+      "categoryId": "desserts",
+      "isAddon": true
     },
     {
       "id": "item-royal-biryani-101",

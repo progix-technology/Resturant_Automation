@@ -37,7 +37,7 @@ export const CartPage = () => {
   };
 
   return (
-    <div className="space-y-4 animate-fade-in pb-12">
+    <div className="space-y-4 animate-fade-in pb-36 sm:pb-44">
       {/* Top Header Card */}
       {session && (
         <CustomerBadge
