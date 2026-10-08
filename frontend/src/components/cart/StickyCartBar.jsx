@@ -5,6 +5,7 @@ import { useCart } from '../../hooks/useCart';
 import { useSession } from '../../hooks/useSession';
 import { formatCurrency } from '../../utils/currency';
 import { notificationService } from '../../services/notificationService';
+import { Toast } from '../common/Toast';
 
 export const StickyCartBar = ({ restaurantSlug, onFocusSearch }) => {
   const navigate = useNavigate();

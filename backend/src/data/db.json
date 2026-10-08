@@ -1020,5 +1020,16 @@
       "dueDate": "2026-09-22",
       "paymentMethod": "Auto-Debit (UPI)"
     }
+  ],
+  "waiterCalls": [
+    {
+      "id": "wcall-1791443167878",
+      "tableNumber": "02",
+      "customerName": "Raj Tiwari",
+      "restaurantSlug": "spice-garden",
+      "notes": "Assistance requested at table",
+      "requestedAt": "2026-10-08T07:06:07.878Z",
+      "status": "PENDING"
+    }
   ]
 }

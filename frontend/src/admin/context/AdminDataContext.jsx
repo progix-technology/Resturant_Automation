@@ -7,6 +7,7 @@ import { mockCategories } from '../../data/mockCategories';
 import { storage } from '../../utils/storage';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
 import { apiRequest } from '../../services/apiConfig';
+import { notificationService } from '../../services/notificationService';
 
 const AdminDataContext = createContext(null);
 
