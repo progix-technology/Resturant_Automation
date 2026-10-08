@@ -596,12 +596,12 @@
       "id": "tbl-02",
       "number": "02",
       "capacity": 4,
-      "status": "AVAILABLE",
+      "status": "OCCUPIED",
       "section": "Main Dining",
-      "currentOrderId": null,
-      "customerName": null,
-      "amount": 0,
-      "occupiedSince": null
+      "currentOrderId": "ORD-5457",
+      "customerName": "Raj Tiwari",
+      "amount": 399,
+      "occupiedSince": "2026-10-08T07:34:18.334Z"
     },
     {
       "id": "tbl-03",
@@ -671,6 +671,39 @@
     }
   ],
   "orders": [
+    {
+      "orderId": "ORD-5457",
+      "id": "ORD-5457",
+      "restaurantSlug": "spice-garden",
+      "customerName": "Raj Tiwari",
+      "mobile": "9569881374",
+      "tableNumber": "02",
+      "items": [
+        {
+          "id": "item-101",
+          "name": "Crispy Corn Chilli Pepper",
+          "price": 240,
+          "quantity": 1,
+          "isVeg": true
+        },
+        {
+          "id": "item-970190",
+          "name": "Rasmalai",
+          "price": 140,
+          "quantity": 1,
+          "isVeg": true
+        }
+      ],
+      "subtotal": 380,
+      "taxes": 19,
+      "total": 399,
+      "orderStatus": "CONFIRMED",
+      "paymentStatus": "PENDING",
+      "paymentMethod": "UPI",
+      "etaMinutes": 25,
+      "notes": "",
+      "createdAt": "2026-10-08T07:34:18.320Z"
+    },
     {
       "orderId": "ORD-7351",
       "id": "ORD-7351",

@@ -1,4 +1,4 @@
-import makeWASocket, { useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } from '@whiskeysockets/baileys';
+import makeWASocket, { useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, Browsers } from '@whiskeysockets/baileys';
 import QRCode from 'qrcode';
 import fs from 'fs';
 import path from 'path';
@@ -29,6 +29,7 @@ const getSessionState = (slug = 'spice-garden') => {
       connectedUserPhone: null,
       isInitializing: false,
       isConnected: false,
+      reconnectAttempts: 0,
     };
   }
   return sessions[safeSlug];
@@ -107,10 +108,12 @@ export const whatsappService = {
         version,
         auth: state,
         printQRInTerminal: false,
-        browser: ['Ubuntu', 'Chrome', '20.0.04'],
+        browser: Browsers.macOS('Desktop'),
         connectTimeoutMs: 60000,
+        defaultQueryTimeoutMs: 60000,
         keepAliveIntervalMs: 25000,
         markOnlineOnConnect: true,
+        syncFullHistory: false,
       });
 
       sess.socket.ev.on('creds.update', saveCreds);
@@ -134,6 +137,7 @@ export const whatsappService = {
           sess.isInitializing = false;
           sess.connectionStatus = 'CONNECTED';
           sess.qrCodeDataUrl = null;
+          sess.reconnectAttempts = 0;
 
           const userJid = sess.socket?.user?.id || '';
           sess.connectedUserPhone = userJid.split(':')[0] || userJid.split('@')[0] || getSavedPhone(safeSlug) || 'Restaurant Phone';
@@ -143,7 +147,7 @@ export const whatsappService = {
 
         if (connection === 'close') {
           const statusCode = lastDisconnect?.error?.output?.statusCode;
-          const isLoggedOut = statusCode === DisconnectReason.loggedOut;
+          const isLoggedOut = statusCode === DisconnectReason.loggedOut || statusCode === 401;
 
           console.log(`[WhatsApp Tenant ${safeSlug}] Closed: ${lastDisconnect?.error?.message || statusCode}. Logged out: ${isLoggedOut}`);
 
@@ -154,7 +158,7 @@ export const whatsappService = {
             sess.connectedUserPhone = null;
             this.clearSessionFiles(safeSlug);
           } else {
-            // Temporary restart/network drop — KEEP isConnected TRUE if registered on disk
+            // Temporary network drop / 515 restart / socket reset — KEEP session active on disk
             if (isRegisteredSession(safeSlug)) {
               sess.isConnected = true;
               sess.connectionStatus = 'CONNECTED';
@@ -163,9 +167,12 @@ export const whatsappService = {
               sess.connectionStatus = 'CONNECTING';
             }
             sess.isInitializing = false;
+            sess.reconnectAttempts = (sess.reconnectAttempts || 0) + 1;
+            const delay = Math.min(3000 * sess.reconnectAttempts, 15000);
+
             setTimeout(() => {
               this.init(safeSlug, true);
-            }, 3000);
+            }, delay);
           }
         }
       });
