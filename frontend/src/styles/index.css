@@ -54,8 +54,9 @@
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom, 16px);
   }
-  /* Hide floating bottom nav and Need Help button when any modal is open */
-  body.modal-open .sticky-cart-bar-container {
+  /* Hide top header and floating bottom nav when any modal is open */
+  body.modal-open .sticky-cart-bar-container,
+  body.modal-open .customer-restaurant-header {
     display: none !important;
   }
 }

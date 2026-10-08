@@ -29,7 +29,7 @@ export const RestaurantHeader = ({
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-warm-100/95 backdrop-blur-md border-b border-warm-200/80 px-4 py-3 transition-all">
+    <header className="customer-restaurant-header sticky top-0 z-30 bg-warm-100/95 backdrop-blur-md border-b border-warm-200/80 px-4 py-3 transition-all">
       <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
         {/* Left Side: Back button or Restaurant identity */}
         <div className="flex items-center gap-3 min-w-0">
