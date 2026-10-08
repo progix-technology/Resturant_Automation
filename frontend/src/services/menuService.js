@@ -83,39 +83,11 @@ export const menuService = {
   },
 
   /**
-   * Fetches quick add-on items for cart suggestions (Water, Butter, Pickle, Papad, Drinks, etc.)
+   * Fetches quick add-on items for cart suggestions set explicitly by Admin
    */
   async getAddonItems(restaurantSlug) {
     const items = await this.getMenuItems({ restaurantSlug });
-    const available = items.filter((i) => i.isAvailable !== false);
-    
-    // 1. Explicitly tagged by admin as isAddon
-    const explicitAddons = available.filter((item) => item.isAddon);
-
-    // 2. Intelligent keyword/category matching for defaults
-    const keywords = ['water', 'butter', 'pickle', 'papad', 'curd', 'raita', 'soda', 'coke', 'sprite', 'cold drink', 'lassi', 'roti', 'naan', 'ice cream'];
-    const autoAddons = available.filter((item) => {
-      const name = (item.name || '').toLowerCase();
-      const cat = (item.categoryId || item.category || '').toLowerCase();
-      const matchKey = keywords.some((kw) => name.includes(kw));
-      const matchCat = ['beverages', 'extras', 'breads', 'desserts', 'add-ons', 'south-indian'].includes(cat);
-      return matchKey || (matchCat && item.price <= 140);
-    });
-
-    const merged = [...explicitAddons];
-    autoAddons.forEach((item) => {
-      const itemKey = item.id || item.itemId;
-      if (!merged.some((m) => (m.id || m.itemId) === itemKey)) {
-        merged.push(item);
-      }
-    });
-
-    // If still empty, grab lowest price available items
-    if (merged.length === 0) {
-      return [...available].sort((a, b) => (a.price || 0) - (b.price || 0)).slice(0, 6);
-    }
-
-    return merged.slice(0, 8);
+    return items.filter((item) => item.isAddon && item.isAvailable !== false);
   },
 
   /**
