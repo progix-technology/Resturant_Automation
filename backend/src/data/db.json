@@ -180,15 +180,27 @@
       "id": "item-970190",
       "name": "Rasmalai",
       "categoryId": "desserts",
-      "price": 140,
+      "price": 30,
       "description": "Soft cottage-cheese dumplings served in chilled saffron-cardamom milk.",
       "image": "https://res.cloudinary.com/dbp97xecb/image/upload/v1791201969/restaurant-menu/5z1uh4cqpis-dxlka4kq3c0kntwh1k-1791201965954.jpg",
       "isVeg": true,
-      "isAvailable": false,
+      "isAvailable": true,
       "preparationTime": "5 mins",
       "itemId": "item-970190",
       "restaurantSlug": "spice-garden",
-      "isAddon": false
+      "isAddon": false,
+      "isRecommended": false,
+      "hasVariants": true,
+      "variantFullPrice": "",
+      "variantHalfPrice": "",
+      "variantQuarterPrice": "",
+      "variantPiecePrice": 30,
+      "variants": [
+        {
+          "name": "Piece",
+          "price": 30
+        }
+      ]
     },
     {
       "id": "item-779978",

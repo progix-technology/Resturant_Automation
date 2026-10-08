@@ -13,11 +13,23 @@ export const FoodCard = ({
   className = '',
 }) => {
   const { addItem, decrementItem, getItemCartQuantity } = useCart();
-  const cartCount = getItemCartQuantity(item.id);
-  const hasVariants = Boolean(item.variants && item.variants.length > 0);
-  const minPrice = hasVariants 
-    ? Math.min(...item.variants.map((v) => Number(v.price || item.price)))
-    : item.price;
+
+  if (!item) return null;
+
+  const itemId = item.id || item.itemId;
+  const cartCount = getItemCartQuantity(itemId);
+  const hasVariants = Array.isArray(item.variants) && item.variants.length > 0;
+  const hasAddons = hasVariants || (Array.isArray(item.addons) && item.addons.length > 0);
+  
+  let minPrice = Number(item.price || 0);
+  if (hasVariants) {
+    const prices = item.variants
+      .map((v) => Number(v?.price || item.price || 0))
+      .filter((p) => !isNaN(p) && p > 0);
+    if (prices.length > 0) {
+      minPrice = Math.min(...prices);
+    }
+  }
 
   const handleAddDirect = (e) => {
     e?.stopPropagation();

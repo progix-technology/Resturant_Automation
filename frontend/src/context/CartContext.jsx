@@ -117,9 +117,10 @@ export const CartProvider = ({ children }) => {
    * Computes total quantity of a base food item in cart (across any addon permutations)
    */
   const getItemCartQuantity = (foodId) => {
+    if (!foodId) return 0;
     return items
-      .filter((item) => item.id === foodId)
-      .reduce((sum, item) => sum + item.quantity, 0);
+      .filter((item) => item.id === foodId || item.id === String(foodId) || item.itemId === foodId)
+      .reduce((sum, item) => sum + (item.quantity || 0), 0);
   };
 
   // Memoized financial calculations
