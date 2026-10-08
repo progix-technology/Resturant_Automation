@@ -13,6 +13,7 @@ async function getOrCreateSettings(slug = DEFAULT_SLUG) {
   let settings = null;
   const rawSlug = (slug || DEFAULT_SLUG).toLowerCase().trim();
   const cleanSlug = rawSlug.replace(/_/g, '-');
+  const fallbackTitle = cleanSlug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
   if (mongoose.connection && mongoose.connection.readyState === 1) {
     try {
@@ -27,53 +28,40 @@ async function getOrCreateSettings(slug = DEFAULT_SLUG) {
           settings.slug = cleanSlug;
           await settings.save().catch(() => {});
         }
-      } else {
-        settings = await RestaurantSettings.create({
-          slug: cleanSlug,
-          name: 'Spice Garden',
-          restaurantName: 'Spice Garden',
-          tagline: '',
-          cuisine: 'North Indian • Chinese • Tandoor',
-          rating: 4.8,
-          reviewCount: 320,
-          address: '14, Palm Grove Road, Indiranagar, Bengaluru',
-          logo: '',
-          banner: '',
-          openTime: '11:30 AM',
-          closeTime: '11:00 PM',
-          isKitchenOpen: true,
-          isAcceptingOrders: true,
-        });
       }
     } catch (mErr) {
       console.warn('[SETTINGS] MongoDB query error:', mErr.message);
     }
   }
 
+  const restaurants = db.get('restaurants') || [];
+  const localMatch = restaurants.find((r) => r.slug === cleanSlug || r.slug === rawSlug);
+
   if (!settings) {
-    const restaurants = db.get('restaurants') || [];
-    const localMatch =
-      restaurants.find((r) => r.slug === cleanSlug || r.slug === rawSlug) || restaurants[0] || {};
-    settings = {
-      slug: cleanSlug,
-      name: localMatch.name || 'Spice Garden',
-      restaurantName: localMatch.name || 'Spice Garden',
-      tagline: localMatch.tagline || '',
-      cuisine: localMatch.cuisine || 'North Indian • Chinese • Tandoor',
-      rating: localMatch.rating || 4.8,
-      reviewCount: localMatch.reviewCount || 320,
-      address: localMatch.address || '14, Palm Grove Road, Indiranagar, Bengaluru',
-      logo: localMatch.logo || '',
-      banner: localMatch.banner || '',
-      openTime: localMatch.openTime || '11:30 AM',
-      closeTime: localMatch.closeTime || '11:00 PM',
-      isKitchenOpen: localMatch.isKitchenOpen !== false,
-      isAcceptingOrders: localMatch.isAcceptingOrders !== false,
-      phone: localMatch.phone || '+91 98765 43210',
-      email: localMatch.email || 'contact@spicegarden.com',
-      gstin: localMatch.gstin || '29ABCDE1234F1Z5',
-      upiId: localMatch.upiId || 'spicegarden@okhdfcbank',
-    };
+    if (localMatch) {
+      settings = { ...localMatch, slug: cleanSlug };
+    } else {
+      settings = {
+        slug: cleanSlug,
+        name: fallbackTitle,
+        restaurantName: fallbackTitle,
+        tagline: '',
+        cuisine: 'Multi-Cuisine',
+        rating: 4.8,
+        reviewCount: 50,
+        address: '',
+        logo: '',
+        banner: '',
+        openTime: '11:00 AM',
+        closeTime: '11:00 PM',
+        isKitchenOpen: true,
+        isAcceptingOrders: true,
+        phone: '',
+        email: '',
+        gstin: '',
+        upiId: '',
+      };
+    }
   }
 
   return settings;
@@ -158,12 +146,22 @@ router.put('/:slug?', async (req, res) => {
     // Always update local db.json as local backup sync
     try {
       const localRestaurants = db.get('restaurants') || [];
+      let matchFound = false;
       const updatedLocal = localRestaurants.map((r) => {
         if (r.slug === cleanSlug || r.slug === rawSlug) {
+          matchFound = true;
           return { ...r, ...updateData, slug: cleanSlug };
         }
         return r;
       });
+
+      if (!matchFound) {
+        updatedLocal.push({
+          id: `rest-${Date.now()}`,
+          slug: cleanSlug,
+          ...updateData,
+        });
+      }
       db.set('restaurants', updatedLocal);
     } catch (dbErr) {
       console.warn('Local db sync warning for settings:', dbErr.message);

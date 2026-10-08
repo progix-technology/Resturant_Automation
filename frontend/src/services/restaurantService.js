@@ -60,13 +60,10 @@ export const restaurantService = {
       // Fallback silently
     }
 
-    const perSlugSettings = storage.get(`${STORAGE_KEYS.ADMIN_SETTINGS}_${cleanSlug}`, {}) || storage.get(`${STORAGE_KEYS.ADMIN_SETTINGS}_${rawSlug}`, {});
-    const globalAdminSettings = storage.get(STORAGE_KEYS.ADMIN_SETTINGS, {});
-
-    const storedAdminSettings = { ...globalAdminSettings, ...perSlugSettings };
+    const perSlugSettings = storage.get(`${STORAGE_KEYS.ADMIN_SETTINGS}_${cleanSlug}`, {}) || storage.get(`${STORAGE_KEYS.ADMIN_SETTINGS}_${rawSlug}`, {}) || {};
 
     const adminSettings = {
-      ...storedAdminSettings,
+      ...perSlugSettings,
       ...backendSettings,
     };
 

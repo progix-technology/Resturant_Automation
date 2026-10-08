@@ -21,7 +21,9 @@ export const AdminDataProvider = ({ children }) => {
     return storage.get(STORAGE_KEYS.ADMIN_TABLES, []);
   });
   const [settings, setSettings] = useState(() => {
-    return storage.get(STORAGE_KEYS.ADMIN_SETTINGS, mockRestaurantSettings);
+    const session = storage.get(STORAGE_KEYS.ADMIN_SESSION, null);
+    const slug = (session?.restaurantSlug || 'spice-garden').toLowerCase().trim().replace(/_/g, '-');
+    return storage.get(`${STORAGE_KEYS.ADMIN_SETTINGS}_${slug}`, {});
   });
   const [toast, setToast] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -102,14 +104,7 @@ export const AdminDataProvider = ({ children }) => {
       const currentSlug = rawSlug.replace(/_/g, '-');
       const data = await apiRequest(`/settings/${currentSlug}`);
       if (data && data.success && data.settings) {
-        setSettings((prev) => ({
-          ...prev,
-          ...data.settings,
-        }));
-        storage.set(STORAGE_KEYS.ADMIN_SETTINGS, {
-          ...storage.get(STORAGE_KEYS.ADMIN_SETTINGS, {}),
-          ...data.settings,
-        });
+        setSettings(data.settings);
         storage.set(`${STORAGE_KEYS.ADMIN_SETTINGS}_${currentSlug}`, data.settings);
         storage.set(`${STORAGE_KEYS.ADMIN_SETTINGS}_${rawSlug}`, data.settings);
       }
@@ -463,15 +458,15 @@ export const AdminDataProvider = ({ children }) => {
     const updated = {
       ...settings,
       ...partialSettings,
+      slug: currentSlug,
       restaurantSlug: currentSlug,
     };
 
     setSettings(updated);
-    storage.set(STORAGE_KEYS.ADMIN_SETTINGS, updated);
     storage.set(`${STORAGE_KEYS.ADMIN_SETTINGS}_${currentSlug}`, updated);
     storage.set(`${STORAGE_KEYS.ADMIN_SETTINGS}_${rawSlug}`, updated);
 
-    // Also persist to MongoDB backend for this specific restaurant slug
+    // Also persist to MongoDB/local backend for this specific restaurant slug
     try {
       await apiRequest(`/settings/${currentSlug}`, {
         method: 'PUT',
