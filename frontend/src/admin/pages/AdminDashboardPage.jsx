@@ -23,8 +23,16 @@ import { StatusBadge } from '../components/StatusBadge';
 import { formatCurrency } from '../../utils/currency';
 
 export const AdminDashboardPage = () => {
-  const { orders, tables, menuItems, updateOrderStatus, waiterCalls = [], resolveWaiterCall } = useAdminData();
+  const { orders, tables, menuItems, updateOrderStatus, waiterCalls = [], resolveWaiterCall, settings } = useAdminData();
   const navigate = useNavigate();
+
+  const renewalDateStr = settings?.renewalDate || '2026-11-15';
+  const planName = settings?.planName || 'Growth Package';
+  const daysLeft = useMemo(() => {
+    if (!renewalDateStr) return null;
+    const diff = new Date(renewalDateStr) - new Date();
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  }, [renewalDateStr]);
 
   const getLocalDateStr = (dateInput) => {
     if (!dateInput) return '';
@@ -208,6 +216,45 @@ export const AdminDashboardPage = () => {
           </div>
         }
       />
+
+      {/* Subscription Plan & Validity Expiry Banner */}
+      {renewalDateStr && (
+        <div className={`p-3.5 sm:p-4 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs ${
+          daysLeft !== null && daysLeft <= 7
+            ? 'bg-amber-50 border-amber-300 text-amber-950'
+            : 'bg-emerald-50/60 border-emerald-200 text-emerald-950'
+        }`}>
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-xl border shrink-0 ${
+              daysLeft !== null && daysLeft <= 7 ? 'bg-amber-100 border-amber-300 text-amber-900' : 'bg-emerald-100 border-emerald-200 text-emerald-800'
+            }`}>
+              <Sparkles className="w-5 h-5 stroke-[2.5]" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-extrabold text-xs sm:text-sm">
+                  Active Subscription: {planName}
+                </span>
+                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${
+                  daysLeft !== null && daysLeft <= 7
+                    ? 'bg-amber-200/80 text-amber-950 border-amber-300'
+                    : 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                }`}>
+                  {daysLeft !== null ? (daysLeft > 0 ? `${daysLeft} Days Remaining` : 'Expired') : 'Active'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 mt-0.5">
+                Plan Expiry / Renewal Date: <strong className="font-mono text-slate-900">{renewalDateStr}</strong>
+                {daysLeft !== null && daysLeft <= 7 && ' — Please contact SuperAdmin to extend your validity.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="text-xs font-semibold text-slate-500 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shrink-0">
+            Auto-Renew: <span className="text-emerald-700 font-bold">Enabled</span>
+          </div>
+        </div>
+      )}
 
       {/* Live Waiter Assistance Requests Banner */}
       {waiterCalls && waiterCalls.length > 0 && (
