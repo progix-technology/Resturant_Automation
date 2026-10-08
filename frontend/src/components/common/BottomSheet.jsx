@@ -39,7 +39,7 @@ export const BottomSheet = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center p-0 pt-16 sm:p-4">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/60 transition-opacity"
@@ -54,7 +54,7 @@ export const BottomSheet = ({
         aria-label={title || 'Dialog'}
         className={`
           relative z-10 w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl
-          shadow-2xl max-h-[90vh] sm:max-h-[85vh] flex flex-col overflow-hidden
+          shadow-2xl max-h-[78vh] sm:max-h-[85vh] flex flex-col overflow-hidden
           transition-all duration-200 ease-out
           ${className}
         `}
