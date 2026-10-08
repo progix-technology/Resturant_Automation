@@ -173,6 +173,7 @@ export const menuController = {
               description: itemData.description || '',
               image: itemData.image || '',
               isVeg: itemData.isVeg ?? true,
+              isAddon: itemData.isAddon ?? false,
               isAvailable: itemData.isAvailable ?? true,
               preparationTime: Number(String(itemData.preparationTime || 15).replace(/\D/g, '') || 15),
             },
@@ -188,6 +189,7 @@ export const menuController = {
           itemId: newItemId,
           price: Number(itemData.price),
           isAvailable: itemData.isAvailable !== false,
+          isAddon: Boolean(itemData.isAddon),
           restaurantSlug: itemData.restaurantSlug || 'spice-garden',
         };
 
@@ -207,6 +209,7 @@ export const menuController = {
             description: newItem.description || '',
             image: newItem.image || '',
             isVeg: newItem.isVeg ?? true,
+            isAddon: newItem.isAddon ?? false,
             isAvailable: newItem.isAvailable ?? true,
             preparationTime: Number(String(newItem.preparationTime || 15).replace(/\D/g, '') || 15),
           }).catch(() => {});

@@ -31,6 +31,7 @@ export const adminMenuService = {
           isVeg: i.isVeg ?? true,
           isSpicy: i.isSpicy ?? false,
           isRecommended: i.isRecommended ?? i.isPopular ?? false,
+          isAddon: i.isAddon ?? false,
           isAvailable: i.isAvailable ?? true,
           preparationTime: i.preparationTime || '15 mins',
           addons: i.addons || [],

@@ -227,6 +227,7 @@ export const AdminMenuPage = () => {
       description: '',
       image: '',
       isVeg: true,
+      isAddon: false,
       isAvailable: true,
       preparationTime: '15 mins',
     });
@@ -243,6 +244,7 @@ export const AdminMenuPage = () => {
       description: item.description,
       image: item.image,
       isVeg: item.isVeg,
+      isAddon: item.isAddon || false,
       isAvailable: item.isAvailable,
       preparationTime: item.preparationTime || '15 mins',
     });
@@ -276,6 +278,11 @@ export const AdminMenuPage = () => {
             <div className="flex items-center gap-2">
               {row.isVeg ? <VegBadge className="w-3.5 h-3.5" /> : <NonVegBadge className="w-3.5 h-3.5" />}
               <span className="font-bold text-slate-900 truncate">{row.name}</span>
+              {row.isAddon && (
+                <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-extrabold border border-amber-300">
+                  ⚡ Cart Add-on
+                </span>
+              )}
             </div>
             <p className="text-xs text-slate-500 truncate max-w-xs mt-0.5">{row.description}</p>
           </div>
@@ -685,6 +692,44 @@ export const AdminMenuPage = () => {
                           </span>
                         </button>
                       </div>
+                    </div>
+
+                    {/* Quick Add-on Toggle for Cart Page */}
+                    <div className="pt-1">
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Cart Checkout Suggestion (Quick Add-on)
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, isAddon: !formData.isAddon })}
+                        className={`w-full p-3 rounded-xl border flex items-center justify-between text-xs font-bold transition-all cursor-pointer ${formData.isAddon
+                            ? 'border-amber-500 bg-amber-50/90 text-amber-900 ring-2 ring-amber-500/20 shadow-xs'
+                            : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                          }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className={`p-1.5 rounded-lg ${formData.isAddon ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                            <Sparkles className="w-4 h-4" />
+                          </div>
+                          <div className="text-left">
+                            <div className="font-extrabold text-slate-900 text-xs">
+                              {formData.isAddon ? '⚡ Active Quick Add-on Item' : 'Standard Menu Item'}
+                            </div>
+                            <div className="text-[10px] text-slate-500 font-medium">
+                              Show as 1-tap add-on suggestion on customer cart checkout page (Water, Butter, Pickle, etc.)
+                            </div>
+                          </div>
+                        </div>
+                        {formData.isAddon ? (
+                          <span className="px-2.5 py-1 rounded-md bg-amber-500 text-white text-[10px] font-extrabold shadow-2xs">
+                            ACTIVE
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-500 text-[10px] font-bold">
+                            OFF
+                          </span>
+                        )}
+                      </button>
                     </div>
                   </div>
 

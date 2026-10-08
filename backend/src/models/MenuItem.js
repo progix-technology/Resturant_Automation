@@ -51,6 +51,10 @@ const menuItemSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isAddon: {
+      type: Boolean,
+      default: false,
+    },
     isAvailable: {
       type: Boolean,
       default: true,

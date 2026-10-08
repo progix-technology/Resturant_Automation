@@ -6,6 +6,7 @@ import { useSession } from '../hooks/useSession';
 import { useRestaurant } from '../hooks/useRestaurant';
 import { CartItem } from '../components/cart/CartItem';
 import { CartSummary } from '../components/cart/CartSummary';
+import { CartAddons } from '../components/cart/CartAddons';
 import { Button } from '../components/common/Button';
 import { EmptyState } from '../components/common/EmptyState';
 import { CustomerBadge } from '../components/restaurant/CustomerBadge';
@@ -70,6 +71,9 @@ export const CartPage = () => {
           ))}
         </div>
       </div>
+
+      {/* Complete Your Meal Quick Add-ons */}
+      <CartAddons restaurantSlug={restaurantSlug || session?.restaurantSlug} />
 
       {/* Bill Breakdown Summary */}
       <CartSummary
