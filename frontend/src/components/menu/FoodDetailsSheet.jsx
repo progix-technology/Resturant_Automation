@@ -183,7 +183,7 @@ export const FoodDetailsSheet = ({
         )}
 
         {/* Special Instructions Note */}
-        <div className="pt-2 border-t border-warm-200">
+        <div className="pt-2 mb-4 border-t border-warm-200">
           <label className="text-xs font-semibold text-charcoal-700 mb-1.5 block">
             Special Instructions (optional)
           </label>
@@ -198,7 +198,7 @@ export const FoodDetailsSheet = ({
         </div>
 
         {/* Bottom Bar: Quantity & Add to Cart CTA */}
-        <div className="sticky bottom-0 pt-3 pb-1 bg-white border-t border-warm-200 flex items-center gap-3">
+        <div className="sticky bottom-0 pt-3.5 pb-5 sm:pb-6 bg-white border-t border-warm-200 flex items-center gap-3">
           <QuantitySelector
             quantity={quantity}
             onIncrement={() => setQuantity((q) => q + 1)}
