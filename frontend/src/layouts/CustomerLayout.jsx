@@ -42,7 +42,7 @@ export const CustomerLayout = () => {
         tableNumber={session?.tableNumber}
       />
       
-      <main className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 py-4 pb-40">
+      <main className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 py-4 pb-20 sm:pb-24">
         <Outlet context={{ restaurant }} />
       </main>
 
