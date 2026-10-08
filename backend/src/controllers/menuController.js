@@ -176,6 +176,7 @@ export const menuController = {
               isRecommended: itemData.isRecommended ?? false,
               isAddon: itemData.isAddon ?? false,
               isAvailable: itemData.isAvailable ?? true,
+              variants: itemData.variants || [],
               preparationTime: Number(String(itemData.preparationTime || 15).replace(/\D/g, '') || 15),
             },
             { upsert: true }
@@ -192,6 +193,7 @@ export const menuController = {
           isAvailable: itemData.isAvailable !== false,
           isRecommended: Boolean(itemData.isRecommended),
           isAddon: Boolean(itemData.isAddon),
+          variants: itemData.variants || [],
           restaurantSlug: itemData.restaurantSlug || 'spice-garden',
         };
 
@@ -214,6 +216,7 @@ export const menuController = {
             isRecommended: newItem.isRecommended ?? false,
             isAddon: newItem.isAddon ?? false,
             isAvailable: newItem.isAvailable ?? true,
+            variants: newItem.variants || [],
             preparationTime: Number(String(newItem.preparationTime || 15).replace(/\D/g, '') || 15),
           }).catch(() => {});
         }

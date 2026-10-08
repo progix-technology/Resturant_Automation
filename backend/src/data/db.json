@@ -9,16 +9,6 @@
       "title": "Platform Founder & Owner",
       "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
       "company": "Progix Technology Pvt Ltd"
-    },
-    {
-      "id": "sa-owner-02",
-      "name": "Alexander Vance",
-      "email": "owner@orderflow.io",
-      "passwordHash": "$2a$10$jDM5zTwozsC/xmfQBafnDecUDO3jjKyPnq8popt3lGUn4JAie45Am",
-      "role": "PLATFORM_SUPERADMIN",
-      "title": "Platform Co-Founder",
-      "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=200&q=80",
-      "company": "OrderFlow HQ"
     }
   ],
   "restaurantAdmins": [

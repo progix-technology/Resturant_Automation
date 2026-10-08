@@ -231,12 +231,24 @@ export const AdminMenuPage = () => {
       isAddon: false,
       isAvailable: true,
       preparationTime: '15 mins',
+      hasVariants: false,
+      variantFullPrice: '',
+      variantHalfPrice: '',
+      variantQuarterPrice: '',
+      variantPiecePrice: '',
     });
     setEditingItem('NEW');
   };
 
   const openEditModal = (item) => {
     setUploadError('');
+    const vList = item.variants || [];
+    const hasV = vList.length > 0;
+    const fullP = vList.find((v) => v.name?.toLowerCase() === 'full')?.price || (hasV ? '' : item.price);
+    const halfP = vList.find((v) => v.name?.toLowerCase() === 'half')?.price || '';
+    const quarterP = vList.find((v) => v.name?.toLowerCase() === 'quarter')?.price || '';
+    const pieceP = vList.find((v) => v.name?.toLowerCase().includes('piece'))?.price || '';
+
     setFormData({
       id: item.id,
       name: item.name,
@@ -249,14 +261,38 @@ export const AdminMenuPage = () => {
       isAddon: item.isAddon || false,
       isAvailable: item.isAvailable,
       preparationTime: item.preparationTime || '15 mins',
+      hasVariants: hasV,
+      variantFullPrice: fullP,
+      variantHalfPrice: halfP,
+      variantQuarterPrice: quarterP,
+      variantPiecePrice: pieceP,
     });
     setEditingItem(item);
   };
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.price) return;
-    await saveMenuItem(formData);
+    if (!formData.name.trim()) return;
+
+    const variants = [];
+    if (formData.hasVariants) {
+      if (formData.variantFullPrice) variants.push({ name: 'Full', price: Number(formData.variantFullPrice) });
+      if (formData.variantHalfPrice) variants.push({ name: 'Half', price: Number(formData.variantHalfPrice) });
+      if (formData.variantQuarterPrice) variants.push({ name: 'Quarter', price: Number(formData.variantQuarterPrice) });
+      if (formData.variantPiecePrice) variants.push({ name: 'Piece', price: Number(formData.variantPiecePrice) });
+    }
+
+    const basePrice = variants.length > 0 
+      ? variants[0].price 
+      : Number(formData.price || 0);
+
+    const submissionData = {
+      ...formData,
+      price: basePrice,
+      variants,
+    };
+
+    await saveMenuItem(submissionData);
     setEditingItem(null);
   };
 
@@ -309,9 +345,20 @@ export const AdminMenuPage = () => {
       header: 'Price',
       accessor: 'price',
       render: (row) => (
-        <span className="font-extrabold text-slate-900 text-sm">
-          {formatCurrency(row.price)}
-        </span>
+        <div className="flex flex-col gap-0.5">
+          <span className="font-extrabold text-slate-900 text-sm">
+            {formatCurrency(row.price)}
+          </span>
+          {row.variants && row.variants.length > 0 && (
+            <div className="flex items-center gap-1 flex-wrap">
+              {row.variants.map((v) => (
+                <span key={v.name} className="text-[10px] font-bold text-amber-900 bg-amber-100/80 px-1.5 py-0.5 rounded border border-amber-200">
+                  {v.name}: ₹{v.price}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
       ),
     },
     {
@@ -569,25 +616,108 @@ export const AdminMenuPage = () => {
                       </div>
 
                       <div>
-                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                          Price (₹) *
-                        </label>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            Base Price (₹) {!formData.hasVariants && '*'}
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, hasVariants: !formData.hasVariants })}
+                            className="text-[11px] font-extrabold text-amber-700 hover:text-amber-900 underline cursor-pointer"
+                          >
+                            {formData.hasVariants ? '← Standard Price' : '⚡ Enable Portions (Half/Full)'}
+                          </button>
+                        </div>
                         <div className="relative">
                           <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-sm">
                             ₹
                           </span>
                           <input
                             type="number"
-                            required
+                            required={!formData.hasVariants}
+                            disabled={formData.hasVariants}
                             min={0}
                             placeholder="240"
                             value={formData.price}
                             onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                            className="w-full h-11 pl-8 pr-3.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 bg-slate-50/60"
+                            className={`w-full h-11 pl-8 pr-3.5 rounded-xl border text-sm font-bold focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all ${
+                              formData.hasVariants
+                                ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
+                                : 'bg-slate-50/60 border-slate-200 text-slate-900 focus:border-amber-500'
+                            }`}
                           />
                         </div>
                       </div>
                     </div>
+
+                    {/* Portion / Variant Pricing Box (Half, Full, Quarter, Piece) */}
+                    {formData.hasVariants && (
+                      <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200 space-y-2.5 animate-fade-in">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-extrabold text-amber-950 flex items-center gap-1.5">
+                            <Layers className="w-3.5 h-3.5 text-amber-600" />
+                            Portion & Variant Prices (Enter applicable portions)
+                          </span>
+                          <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
+                            Multiple Portions Active
+                          </span>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-700 uppercase mb-1">
+                              Full Plate (₹)
+                            </label>
+                            <input
+                              type="number"
+                              placeholder="e.g. 320"
+                              value={formData.variantFullPrice}
+                              onChange={(e) => setFormData({ ...formData, variantFullPrice: e.target.value })}
+                              className="w-full h-9 px-2.5 rounded-lg border border-amber-300 bg-white text-xs font-bold text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-700 uppercase mb-1">
+                              Half Plate (₹)
+                            </label>
+                            <input
+                              type="number"
+                              placeholder="e.g. 180"
+                              value={formData.variantHalfPrice}
+                              onChange={(e) => setFormData({ ...formData, variantHalfPrice: e.target.value })}
+                              className="w-full h-9 px-2.5 rounded-lg border border-amber-300 bg-white text-xs font-bold text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-700 uppercase mb-1">
+                              Quarter (₹)
+                            </label>
+                            <input
+                              type="number"
+                              placeholder="e.g. 100"
+                              value={formData.variantQuarterPrice}
+                              onChange={(e) => setFormData({ ...formData, variantQuarterPrice: e.target.value })}
+                              className="w-full h-9 px-2.5 rounded-lg border border-amber-300 bg-white text-xs font-bold text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-700 uppercase mb-1">
+                              Per Piece (₹)
+                            </label>
+                            <input
+                              type="number"
+                              placeholder="e.g. 40"
+                              value={formData.variantPiecePrice}
+                              onChange={(e) => setFormData({ ...formData, variantPiecePrice: e.target.value })}
+                              className="w-full h-9 px-2.5 rounded-lg border border-amber-300 bg-white text-xs font-bold text-slate-900 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Dietary Classification (Veg / Non-Veg) */}
                     <div>

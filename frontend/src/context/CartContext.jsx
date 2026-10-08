@@ -17,23 +17,29 @@ export const CartProvider = ({ children }) => {
   }, [items]);
 
   /**
-   * Generates unique composite ID for item + customized addons
+   * Generates unique composite ID for item + customized addons + portion variant
    */
-  const generateCartItemId = (itemId, addons = []) => {
+  const generateCartItemId = (itemId, addons = [], selectedVariant = null) => {
     const addonKey = addons
       .map((a) => a.id)
       .sort()
       .join('-');
-    return addonKey ? `${itemId}__${addonKey}` : itemId;
+    const variantKey = selectedVariant ? `var_${selectedVariant.name.replace(/\s+/g, '_')}` : '';
+    const parts = [itemId, variantKey, addonKey].filter(Boolean);
+    return parts.join('__');
   };
 
   /**
    * Adds item to cart or increments quantity if already identical
    */
-  const addItem = (foodItem, quantity = 1, selectedAddons = [], specialInstructions = '') => {
-    const cartItemId = generateCartItemId(foodItem.id, selectedAddons);
+  const addItem = (foodItem, quantity = 1, selectedAddons = [], specialInstructions = '', selectedVariant = null) => {
+    const cartItemId = generateCartItemId(foodItem.id || foodItem.itemId, selectedAddons, selectedVariant);
     const addonsTotal = selectedAddons.reduce((sum, addon) => sum + (addon.price || 0), 0);
-    const unitPrice = foodItem.price + addonsTotal;
+    const basePrice = selectedVariant ? Number(selectedVariant.price) : Number(foodItem.price || 0);
+    const unitPrice = basePrice + addonsTotal;
+
+    const variantLabel = selectedVariant ? selectedVariant.name : null;
+    const displayName = variantLabel ? `${foodItem.name} (${variantLabel})` : foodItem.name;
 
     setItems((prevItems) => {
       const existingIndex = prevItems.findIndex((item) => item.cartItemId === cartItemId);
@@ -52,9 +58,12 @@ export const CartProvider = ({ children }) => {
 
       const newItem = {
         cartItemId,
-        id: foodItem.id,
-        name: foodItem.name,
-        price: foodItem.price,
+        id: foodItem.id || foodItem.itemId,
+        name: displayName,
+        rawName: foodItem.name,
+        variantName: variantLabel,
+        selectedVariant,
+        price: basePrice,
         image: foodItem.image,
         isVeg: foodItem.isVeg,
         quantity,

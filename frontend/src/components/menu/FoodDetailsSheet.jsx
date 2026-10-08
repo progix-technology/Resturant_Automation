@@ -15,14 +15,20 @@ export const FoodDetailsSheet = ({
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [selectedAddons, setSelectedAddons] = useState([]);
+  const [selectedVariant, setSelectedVariant] = useState(null);
   const [specialInstructions, setSpecialInstructions] = useState('');
 
   // Reset state when opening a new item
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && item) {
       setQuantity(1);
       setSelectedAddons([]);
       setSpecialInstructions('');
+      if (item.variants && item.variants.length > 0) {
+        setSelectedVariant(item.variants[0]);
+      } else {
+        setSelectedVariant(null);
+      }
     }
   }, [isOpen, item]);
 
@@ -39,12 +45,13 @@ export const FoodDetailsSheet = ({
     });
   };
 
+  const basePrice = selectedVariant ? Number(selectedVariant.price) : Number(item.price || 0);
   const addonsTotal = selectedAddons.reduce((sum, a) => sum + (a.price || 0), 0);
-  const unitPrice = item.price + addonsTotal;
+  const unitPrice = basePrice + addonsTotal;
   const totalPrice = unitPrice * quantity;
 
   const handleAddToCart = () => {
-    addItem(item, quantity, selectedAddons, specialInstructions);
+    addItem(item, quantity, selectedAddons, specialInstructions, selectedVariant);
     onClose();
   };
 
@@ -70,7 +77,7 @@ export const FoodDetailsSheet = ({
               {item.name}
             </h2>
             <span className="text-lg font-extrabold text-brand-800 shrink-0">
-              {formatCurrency(item.price)}
+              {formatCurrency(basePrice)}
             </span>
           </div>
 
@@ -85,6 +92,47 @@ export const FoodDetailsSheet = ({
             {item.description}
           </p>
         </div>
+
+        {/* Portion / Quantity Size Variants Selection */}
+        {item.variants && item.variants.length > 0 && (
+          <div className="pt-2 border-t border-warm-200">
+            <div className="flex items-center justify-between mb-2.5">
+              <h3 className="text-sm font-bold text-charcoal-900">
+                Choose Portion / Size *
+              </h3>
+              <span className="text-[11px] text-brand-800 font-bold bg-brand-50 px-2 py-0.5 rounded">
+                Required
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              {item.variants.map((v) => {
+                const isSelected = selectedVariant?.name === v.name;
+
+                return (
+                  <button
+                    key={v.name}
+                    type="button"
+                    onClick={() => setSelectedVariant(v)}
+                    className={`p-3 rounded-xl border flex flex-col items-start justify-between transition-all cursor-pointer ${
+                      isSelected
+                        ? 'border-brand-700 bg-brand-50/80 text-brand-900 ring-2 ring-brand-700/20 shadow-xs'
+                        : 'border-warm-200 bg-white text-charcoal-700 hover:border-warm-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full mb-1">
+                      <span className="font-extrabold text-xs">{v.name}</span>
+                      {isSelected && <Check className="w-4 h-4 text-brand-800 stroke-[3]" />}
+                    </div>
+                    <span className="font-bold text-sm text-brand-800">
+                      {formatCurrency(v.price)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Add-ons Options Section */}
         {item.addons && item.addons.length > 0 && (

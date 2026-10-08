@@ -14,13 +14,19 @@ export const FoodCard = ({
 }) => {
   const { addItem, decrementItem, getItemCartQuantity } = useCart();
   const cartCount = getItemCartQuantity(item.id);
-  const hasAddons = Boolean(item.addons && item.addons.length > 0);
+  const hasVariants = Boolean(item.variants && item.variants.length > 0);
+  const minPrice = hasVariants 
+    ? Math.min(...item.variants.map((v) => Number(v.price || item.price)))
+    : item.price;
 
   const handleAddDirect = (e) => {
     e?.stopPropagation();
     if (!item.isAvailable) return;
-    // Always add directly to cart
-    addItem(item, 1, []);
+    if (hasVariants) {
+      onOpenDetails(item);
+    } else {
+      addItem(item, 1, []);
+    }
   };
 
   const handleDecrementDirect = (e) => {
@@ -47,7 +53,7 @@ export const FoodCard = ({
         {/* Left Side: Information */}
         <div className="flex-1 min-w-0 pr-1">
           {/* Header row: Veg dot & Rating */}
-          <div className="flex items-center gap-2 mb-1.5">
+          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
             <VegIndicator isVeg={item.isVeg} size="sm" />
             {item.rating && (
               <div className="flex items-center gap-0.5 text-amber-500 font-bold text-xs">
@@ -60,6 +66,11 @@ export const FoodCard = ({
                 MUST TRY
               </span>
             )}
+            {hasVariants && (
+              <span className="text-[9px] font-extrabold text-amber-900 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300">
+                PORTIONS
+              </span>
+            )}
           </div>
 
           {/* Dish Name */}
@@ -68,8 +79,8 @@ export const FoodCard = ({
           </h3>
 
           {/* Price */}
-          <div className="text-sm font-extrabold text-charcoal-900 mt-1">
-            {formatCurrency(item.price)}
+          <div className="text-sm font-extrabold text-charcoal-900 mt-1 flex items-center gap-1">
+            <span>{hasVariants ? `From ${formatCurrency(minPrice)}` : formatCurrency(item.price)}</span>
           </div>
 
           {/* Short Description */}

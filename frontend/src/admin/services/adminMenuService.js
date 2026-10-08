@@ -35,6 +35,7 @@ export const adminMenuService = {
           isAvailable: i.isAvailable ?? true,
           preparationTime: i.preparationTime || '15 mins',
           addons: i.addons || [],
+          variants: i.variants || [],
           rating: i.rating || 4.8,
         }));
 
