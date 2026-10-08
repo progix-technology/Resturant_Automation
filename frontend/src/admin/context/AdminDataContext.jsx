@@ -112,15 +112,41 @@ export const AdminDataProvider = ({ children }) => {
     }
   };
 
-  // Initial load & 6-second live polling for new customer orders
+  const [waiterCalls, setWaiterCalls] = useState([]);
+
+  const loadWaiterCalls = async () => {
+    try {
+      const session = storage.get(STORAGE_KEYS.ADMIN_SESSION, null);
+      const currentSlug = (session?.restaurantSlug || 'spice-garden').toLowerCase().trim();
+      const calls = await notificationService.getWaiterCalls(currentSlug);
+      if (Array.isArray(calls)) setWaiterCalls(calls);
+    } catch (e) {}
+  };
+
+  const resolveWaiterCall = async (id, tableNumber) => {
+    const cleanTable = String(tableNumber || '').replace(/^Table\s*/i, '').trim();
+    setWaiterCalls((prev) => prev.filter((c) => c.id !== id && c.tableNumber !== cleanTable));
+    showToast(`Assistance for Table ${cleanTable || '01'} marked as attended`, 'success');
+    try {
+      const session = storage.get(STORAGE_KEYS.ADMIN_SESSION, null);
+      const currentSlug = (session?.restaurantSlug || 'spice-garden').toLowerCase().trim();
+      await notificationService.resolveWaiterCall(id, cleanTable, currentSlug);
+    } catch (e) {}
+  };
+
+  // Initial load & 4-second live polling for new customer orders & waiter calls
   useEffect(() => {
     loadOrders();
     loadMenuItems();
     loadCategories();
     loadTables();
     loadSettings();
+    loadWaiterCalls();
 
     const interval = setInterval(() => {
+      const session = storage.get(STORAGE_KEYS.ADMIN_SESSION, null);
+      const currentSlug = (session?.restaurantSlug || 'spice-garden').toLowerCase().trim();
+
       adminOrderService.getOrders().then((latest) => {
         if (latest && Array.isArray(latest)) {
           setOrders(latest);
@@ -131,7 +157,12 @@ export const AdminDataProvider = ({ children }) => {
           setTables(latestTbls);
         }
       });
-    }, 6000);
+      notificationService.getWaiterCalls(currentSlug).then((calls) => {
+        if (Array.isArray(calls)) {
+          setWaiterCalls(calls);
+        }
+      });
+    }, 4000);
 
     return () => clearInterval(interval);
   }, []);
@@ -504,6 +535,8 @@ export const AdminDataProvider = ({ children }) => {
     menuItems,
     categories,
     tables,
+    waiterCalls,
+    resolveWaiterCall,
     settings,
     stats,
     payments,

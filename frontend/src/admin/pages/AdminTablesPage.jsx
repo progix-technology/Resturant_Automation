@@ -10,6 +10,7 @@ import {
   Calendar,
   X,
   IndianRupee,
+  BellRing,
 } from 'lucide-react';
 import { useAdminData } from '../context/AdminDataContext';
 import { AdminPageHeader } from '../components/AdminPageHeader';
@@ -17,7 +18,7 @@ import { StatusBadge } from '../components/StatusBadge';
 import { formatCurrency } from '../../utils/currency';
 
 export const AdminTablesPage = () => {
-  const { tables, updateTableStatus, addTable, orders } = useAdminData();
+  const { tables, updateTableStatus, addTable, orders, waiterCalls = [], resolveWaiterCall } = useAdminData();
 
   const [activeFilter, setActiveFilter] = useState('ALL');
   const [sectionFilter, setSectionFilter] = useState('ALL');
@@ -148,6 +149,30 @@ export const AdminTablesPage = () => {
                 <Users className="w-3.5 h-3.5 text-slate-400" />
                 <span>Seats {tbl.capacity} Guests</span>
               </div>
+
+              {/* Active Waiter Help Request Badge */}
+              {(() => {
+                const cleanTbl = String(tbl.number || '').replace(/^Table\s*/i, '').trim();
+                const helpCall = (waiterCalls || []).find(
+                  (c) => String(c.tableNumber).replace(/^Table\s*/i, '').trim() === cleanTbl
+                );
+                if (!helpCall) return null;
+                return (
+                  <div className="mt-2.5 p-2 rounded-xl bg-rose-600 text-white flex items-center justify-between shadow-md animate-pulse">
+                    <span className="text-[11px] font-black flex items-center gap-1">
+                      <BellRing className="w-3.5 h-3.5 text-white" />
+                      <span>Help Needed!</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => resolveWaiterCall(helpCall.id, tbl.number)}
+                      className="px-2.5 py-0.5 rounded-lg bg-white text-rose-950 font-black text-[10px] hover:bg-rose-100 cursor-pointer shadow-2xs"
+                    >
+                      Mark Assisted
+                    </button>
+                  </div>
+                );
+              })()}
 
               {/* Occupied / Details information (100% Dynamic from live orders) */}
               {tbl.status === 'OCCUPIED' && (() => {

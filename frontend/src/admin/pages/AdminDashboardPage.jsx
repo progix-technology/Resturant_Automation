@@ -23,7 +23,7 @@ import { StatusBadge } from '../components/StatusBadge';
 import { formatCurrency } from '../../utils/currency';
 
 export const AdminDashboardPage = () => {
-  const { orders, tables, menuItems, updateOrderStatus } = useAdminData();
+  const { orders, tables, menuItems, updateOrderStatus, waiterCalls = [], resolveWaiterCall } = useAdminData();
   const navigate = useNavigate();
 
   const getLocalDateStr = (dateInput) => {
@@ -208,6 +208,37 @@ export const AdminDashboardPage = () => {
           </div>
         }
       />
+
+      {/* Live Waiter Assistance Requests Banner */}
+      {waiterCalls && waiterCalls.length > 0 && (
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-rose-950 via-rose-900 to-slate-900 text-white border-2 border-rose-500 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-lg animate-bounce">
+              <BellRing className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-xs font-black tracking-wider text-rose-300 uppercase flex items-center gap-2">
+                <span>🚨 Table Assistance Requested ({waiterCalls.length})</span>
+              </h3>
+              <p className="text-xs text-slate-200 mt-0.5">
+                {waiterCalls.map((c) => `Table ${c.tableNumber} (${c.customerName || 'Diner'})`).join(' • ')} requested waiter help!
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {waiterCalls.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => resolveWaiterCall(c.id, c.tableNumber)}
+                className="px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs shadow-md cursor-pointer transition-all"
+              >
+                Attend Table {c.tableNumber}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Top Metric Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

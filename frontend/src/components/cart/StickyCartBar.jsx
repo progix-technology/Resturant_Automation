@@ -4,13 +4,14 @@ import { ShoppingBag, ArrowRight, HelpCircle, Utensils, Search } from 'lucide-re
 import { useCart } from '../../hooks/useCart';
 import { useSession } from '../../hooks/useSession';
 import { formatCurrency } from '../../utils/currency';
-import { Toast } from '../common/Toast';
+import { notificationService } from '../../services/notificationService';
 
 export const StickyCartBar = ({ restaurantSlug, onFocusSearch }) => {
   const navigate = useNavigate();
   const { itemCount, total } = useCart();
   const { session } = useSession();
   const [showHelpToast, setShowHelpToast] = useState(false);
+  const [isCallingWaiter, setIsCallingWaiter] = useState(false);
 
   const slug = restaurantSlug || session?.restaurantSlug || 'spice-garden';
 
@@ -34,8 +35,22 @@ export const StickyCartBar = ({ restaurantSlug, onFocusSearch }) => {
     }
   };
 
-  const handleCallWaiter = () => {
-    setShowHelpToast(true);
+  const handleCallWaiter = async () => {
+    const tableNum = session?.tableNumber || '01';
+    const name = session?.customerName || 'Guest Diner';
+    setIsCallingWaiter(true);
+    try {
+      await notificationService.requestWaiter({
+        tableNumber: tableNum,
+        customerName: name,
+        restaurantSlug: slug,
+      });
+      setShowHelpToast(true);
+    } catch (err) {
+      setShowHelpToast(true);
+    } finally {
+      setIsCallingWaiter(false);
+    }
   };
 
   return (

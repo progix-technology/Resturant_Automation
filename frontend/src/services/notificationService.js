@@ -103,6 +103,76 @@ export const notificationService = {
     return whatsappHelper.openWhatsAppChat(mobile, text);
   },
 
+  async requestWaiter({ tableNumber, customerName, restaurantSlug, notes }) {
+    const cleanSlug = (restaurantSlug || 'spice-garden').toLowerCase().trim().replace(/_/g, '-');
+    const tableNum = String(tableNumber || '01').replace(/^Table\s*/i, '').trim();
+
+    try {
+      const res = await fetch(`${API_URL}/notifications/waiter-call`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tableNumber: tableNum,
+          customerName: customerName || 'Guest Diner',
+          restaurantSlug: cleanSlug,
+          notes: notes || 'Assistance requested at table',
+        }),
+      });
+      const data = await res.json();
+      return data;
+    } catch (err) {
+      console.warn('Backend waiter call failed, using local storage:', err.message);
+      const newCall = {
+        id: `wcall-${Date.now()}`,
+        tableNumber: tableNum,
+        customerName: customerName || 'Guest Diner',
+        restaurantSlug: cleanSlug,
+        requestedAt: new Date().toISOString(),
+        status: 'PENDING',
+      };
+      const current = storage.get('restaurant_waiter_calls', []);
+      storage.set('restaurant_waiter_calls', [newCall, ...current]);
+      return { success: true, data: newCall };
+    }
+  },
+
+  async getWaiterCalls(slug = 'spice-garden') {
+    const cleanSlug = (slug || 'spice-garden').toLowerCase().trim().replace(/_/g, '-');
+    try {
+      const res = await fetch(`${API_URL}/notifications/waiter-calls?slug=${cleanSlug}`);
+      const data = await res.json();
+      if (data && data.success && Array.isArray(data.data)) {
+        return data.data;
+      }
+    } catch (err) {
+      // Fallback
+    }
+
+    const current = storage.get('restaurant_waiter_calls', []);
+    return current.filter((c) => (c.restaurantSlug || 'spice-garden') === cleanSlug && c.status === 'PENDING');
+  },
+
+  async resolveWaiterCall(id, tableNumber, slug = 'spice-garden') {
+    const cleanSlug = (slug || 'spice-garden').toLowerCase().trim().replace(/_/g, '-');
+    try {
+      await fetch(`${API_URL}/notifications/waiter-calls/${id}/resolve`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tableNumber, slug: cleanSlug }),
+      });
+    } catch (err) {}
+
+    const current = storage.get('restaurant_waiter_calls', []);
+    const updated = current.map((c) => {
+      if (c.id === id || (tableNumber && c.tableNumber === String(tableNumber))) {
+        return { ...c, status: 'RESOLVED' };
+      }
+      return c;
+    });
+    storage.set('restaurant_waiter_calls', updated);
+    return true;
+  },
+
   async getWhatsAppStatus(slug = 'spice-garden') {
     try {
       const res = await fetch(`${API_URL}/whatsapp/status?slug=${slug}`);

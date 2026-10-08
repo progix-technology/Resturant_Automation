@@ -670,6 +670,13 @@
   ],
   "orders": [
     {
+      "orderId": "ORD-7351",
+      "id": "ORD-7351",
+      "orderStatus": "CANCELLED",
+      "status": "CANCELLED",
+      "updatedAt": "2026-10-08T06:30:46.007Z"
+    },
+    {
       "orderId": "ORD-8193",
       "id": "ORD-8193",
       "restaurantSlug": "spice-garden",
@@ -688,12 +695,14 @@
       "subtotal": 240,
       "taxes": 12,
       "total": 252,
-      "orderStatus": "CONFIRMED",
+      "orderStatus": "CANCELLED",
       "paymentStatus": "PENDING",
       "paymentMethod": "UPI",
       "etaMinutes": 25,
       "notes": "",
-      "createdAt": "2026-10-07T08:23:15.623Z"
+      "createdAt": "2026-10-07T08:23:15.623Z",
+      "status": "CANCELLED",
+      "updatedAt": "2026-10-08T06:30:30.967Z"
     },
     {
       "orderId": "ORD-2975",
