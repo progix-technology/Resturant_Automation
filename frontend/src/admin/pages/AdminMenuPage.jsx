@@ -227,6 +227,7 @@ export const AdminMenuPage = () => {
       description: '',
       image: '',
       isVeg: true,
+      isRecommended: false,
       isAddon: false,
       isAvailable: true,
       preparationTime: '15 mins',
@@ -244,6 +245,7 @@ export const AdminMenuPage = () => {
       description: item.description,
       image: item.image,
       isVeg: item.isVeg,
+      isRecommended: item.isRecommended || false,
       isAddon: item.isAddon || false,
       isAvailable: item.isAvailable,
       preparationTime: item.preparationTime || '15 mins',
@@ -275,9 +277,14 @@ export const AdminMenuPage = () => {
             />
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 flex-wrap">
               {row.isVeg ? <VegBadge className="w-3.5 h-3.5" /> : <NonVegBadge className="w-3.5 h-3.5" />}
               <span className="font-bold text-slate-900 truncate">{row.name}</span>
+              {row.isRecommended && (
+                <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-extrabold border border-emerald-300">
+                  ⭐ Chef's Special
+                </span>
+              )}
               {row.isAddon && (
                 <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-extrabold border border-amber-300">
                   ⚡ Cart Add-on
@@ -692,6 +699,44 @@ export const AdminMenuPage = () => {
                           </span>
                         </button>
                       </div>
+                    </div>
+
+                    {/* Chef's Recommendation / Speciality Toggle */}
+                    <div className="pt-1">
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        ⭐ Chef's Speciality / Recommendation
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, isRecommended: !formData.isRecommended })}
+                        className={`w-full p-3 rounded-xl border flex items-center justify-between text-xs font-bold transition-all cursor-pointer ${formData.isRecommended
+                            ? 'border-emerald-500 bg-emerald-50/90 text-emerald-900 ring-2 ring-emerald-500/20 shadow-xs'
+                            : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                          }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className={`p-1.5 rounded-lg ${formData.isRecommended ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                            <Star className="w-4 h-4" />
+                          </div>
+                          <div className="text-left">
+                            <div className="font-extrabold text-slate-900 text-xs">
+                              {formData.isRecommended ? '⭐ Chef Speciality Dish' : 'Standard Menu Dish'}
+                            </div>
+                            <div className="text-[10px] text-slate-500 font-medium">
+                              Highlight in top "Chef's Recommendations" carousel on customer QR menu
+                            </div>
+                          </div>
+                        </div>
+                        {formData.isRecommended ? (
+                          <span className="px-2.5 py-1 rounded-md bg-emerald-600 text-white text-[10px] font-extrabold shadow-2xs">
+                            RECOMMENDED
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-500 text-[10px] font-bold">
+                            OFF
+                          </span>
+                        )}
+                      </button>
                     </div>
 
                     {/* Quick Add-on Toggle for Cart Page */}
