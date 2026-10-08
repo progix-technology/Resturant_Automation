@@ -585,23 +585,23 @@
       "id": "tbl-01",
       "number": "01",
       "capacity": 2,
+      "status": "OCCUPIED",
+      "section": "Main Dining",
+      "currentOrderId": "ORD-9662",
+      "customerName": "Kumar Sanu",
+      "amount": 252,
+      "occupiedSince": "2026-10-08T07:44:18.805Z"
+    },
+    {
+      "id": "tbl-02",
+      "number": "02",
+      "capacity": 4,
       "status": "AVAILABLE",
       "section": "Main Dining",
       "currentOrderId": null,
       "customerName": null,
       "amount": 0,
       "occupiedSince": null
-    },
-    {
-      "id": "tbl-02",
-      "number": "02",
-      "capacity": 4,
-      "status": "OCCUPIED",
-      "section": "Main Dining",
-      "currentOrderId": "ORD-5457",
-      "customerName": "Raj Tiwari",
-      "amount": 399,
-      "occupiedSince": "2026-10-08T07:34:18.334Z"
     },
     {
       "id": "tbl-03",
@@ -672,6 +672,34 @@
   ],
   "orders": [
     {
+      "orderId": "ORD-9662",
+      "id": "ORD-9662",
+      "restaurantSlug": "spice-garden",
+      "customerName": "Kumar Sanu",
+      "mobile": "9569881374",
+      "tableNumber": "01",
+      "items": [
+        {
+          "id": "item-101",
+          "name": "Crispy Corn Chilli Pepper",
+          "price": 240,
+          "quantity": 1,
+          "isVeg": true
+        }
+      ],
+      "subtotal": 240,
+      "taxes": 12,
+      "total": 252,
+      "orderStatus": "CANCELLED",
+      "paymentStatus": "PENDING",
+      "paymentMethod": "UPI",
+      "etaMinutes": 25,
+      "notes": "",
+      "createdAt": "2026-10-08T07:44:18.793Z",
+      "status": "CANCELLED",
+      "updatedAt": "2026-10-08T07:45:35.668Z"
+    },
+    {
       "orderId": "ORD-5457",
       "id": "ORD-5457",
       "restaurantSlug": "spice-garden",
@@ -697,12 +725,14 @@
       "subtotal": 380,
       "taxes": 19,
       "total": 399,
-      "orderStatus": "CONFIRMED",
+      "orderStatus": "CANCELLED",
       "paymentStatus": "PENDING",
       "paymentMethod": "UPI",
       "etaMinutes": 25,
       "notes": "",
-      "createdAt": "2026-10-08T07:34:18.320Z"
+      "createdAt": "2026-10-08T07:34:18.320Z",
+      "status": "CANCELLED",
+      "updatedAt": "2026-10-08T07:45:40.707Z"
     },
     {
       "orderId": "ORD-7351",

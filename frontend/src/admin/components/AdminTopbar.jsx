@@ -22,7 +22,7 @@ import { formatCurrency } from '../../utils/currency';
 
 export const AdminTopbar = ({ onOpenMobileMenu }) => {
   const { currentAdmin, logout } = useAdminAuth();
-  const { orders, stats, waiterCalls = [], resolveWaiterCall } = useAdminData();
+  const { orders, stats, waiterCalls = [], resolveWaiterCall, whatsappStatus } = useAdminData();
   const navigate = useNavigate();
 
   const [profileOpen, setProfileOpen] = useState(false);
@@ -60,7 +60,7 @@ export const AdminTopbar = ({ onOpenMobileMenu }) => {
 
   return (
     <header className="sticky top-0 z-30 h-16 bg-white/95 backdrop-blur-md border-b border-amber-100 px-4 sm:px-6 flex items-center justify-between gap-4 shadow-2xs">
-      {/* Left: Mobile hamburger & Context */}
+      {/* Left: Mobile hamburger & WhatsApp Live Status Toggle */}
       <div className="flex items-center gap-3">
         <button
           type="button"
@@ -71,16 +71,33 @@ export const AdminTopbar = ({ onOpenMobileMenu }) => {
           <Menu className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-2">
-          <span className="hidden sm:inline-block w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
-          <span className="text-xs font-semibold text-slate-600 hidden sm:inline">
-            {currentAdmin?.name || 'Restaurant'} Live Session
+        {/* WhatsApp Alert Status Toggle Button */}
+        <button
+          type="button"
+          onClick={() => navigate('/admin/settings?tab=NOTIFICATIONS')}
+          className={`px-3 py-1.5 rounded-full text-xs font-extrabold transition-all flex items-center gap-1.5 cursor-pointer border shadow-2xs ${
+            whatsappStatus?.isConnected
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
+              : 'bg-rose-50 text-rose-800 border-rose-300 hover:bg-rose-100 animate-pulse'
+          }`}
+          title={
+            whatsappStatus?.isConnected
+              ? 'WhatsApp Connected! Click to manage WhatsApp alerts'
+              : 'WhatsApp Disconnected! Click to connect WhatsApp'
+          }
+        >
+          <span
+            className={`w-2.5 h-2.5 rounded-full ${
+              whatsappStatus?.isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500 animate-ping'
+            }`}
+          />
+          <span className="font-extrabold">
+            {whatsappStatus?.isConnected ? 'WhatsApp ON' : 'WhatsApp OFF'}
           </span>
-          <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            Open Now
+          <span className="text-[10px] font-semibold opacity-75 hidden md:inline">
+            ({whatsappStatus?.isConnected ? 'Connected' : 'Click to Pair'})
           </span>
-        </div>
+        </button>
       </div>
 
 

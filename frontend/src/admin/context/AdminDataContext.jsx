@@ -25,6 +25,11 @@ export const AdminDataProvider = ({ children }) => {
   });
   const [toast, setToast] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [whatsappStatus, setWhatsappStatus] = useState({
+    isConnected: false,
+    connectedUserPhone: null,
+    connectionStatus: 'DISCONNECTED',
+  });
 
   // Sync tables to storage
   useEffect(() => {
@@ -135,6 +140,21 @@ export const AdminDataProvider = ({ children }) => {
     } catch (e) {}
   };
 
+  const checkWhatsAppStatus = async () => {
+    try {
+      const session = storage.get(STORAGE_KEYS.ADMIN_SESSION, null);
+      const currentSlug = (session?.restaurantSlug || 'spice-garden').toLowerCase().trim();
+      const res = await notificationService.getWhatsAppStatus(currentSlug);
+      if (res) {
+        setWhatsappStatus({
+          isConnected: Boolean(res.connected || res.isConnected || res.status === 'CONNECTED'),
+          connectedUserPhone: res.connectedUserPhone || res.phone || null,
+          connectionStatus: res.status || (res.connected ? 'CONNECTED' : 'DISCONNECTED'),
+        });
+      }
+    } catch (e) {}
+  };
+
   // Initial load & 4-second live polling for new customer orders & waiter calls
   useEffect(() => {
     loadOrders();
@@ -143,6 +163,7 @@ export const AdminDataProvider = ({ children }) => {
     loadTables();
     loadSettings();
     loadWaiterCalls();
+    checkWhatsAppStatus();
 
     const interval = setInterval(() => {
       const session = storage.get(STORAGE_KEYS.ADMIN_SESSION, null);
@@ -161,6 +182,15 @@ export const AdminDataProvider = ({ children }) => {
       notificationService.getWaiterCalls(currentSlug).then((calls) => {
         if (Array.isArray(calls)) {
           setWaiterCalls(calls);
+        }
+      });
+      notificationService.getWhatsAppStatus(currentSlug).then((st) => {
+        if (st) {
+          setWhatsappStatus({
+            isConnected: Boolean(st.connected || st.isConnected || st.status === 'CONNECTED'),
+            connectedUserPhone: st.connectedUserPhone || st.phone || null,
+            connectionStatus: st.status || (st.connected ? 'CONNECTED' : 'DISCONNECTED'),
+          });
         }
       });
     }, 4000);
@@ -538,6 +568,8 @@ export const AdminDataProvider = ({ children }) => {
     tables,
     waiterCalls,
     resolveWaiterCall,
+    whatsappStatus,
+    checkWhatsAppStatus,
     settings,
     stats,
     payments,

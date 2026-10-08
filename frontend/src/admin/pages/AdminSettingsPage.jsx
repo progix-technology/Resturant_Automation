@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { useAdminData } from '../context/AdminDataContext';
 import { AdminPageHeader } from '../components/AdminPageHeader';
 import {
@@ -568,8 +569,18 @@ const WhatsAppQrCard = ({ showToast, currentPhone, onUpdatePhone, currentSlug = 
 export const AdminSettingsPage = () => {
   const { currentAdmin } = useAdminAuth();
   const { settings, updateSettings, showToast } = useAdminData();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const queryTab = searchParams.get('tab') || location.state?.tab;
+
   const currentSlug = currentAdmin?.restaurantSlug || settings?.restaurantSlug || 'spice-garden';
-  const [activeTab, setActiveTab] = useState('PROFILE'); // PROFILE, ORDERS, PAYMENTS, NOTIFICATIONS, PREFERENCES
+  const [activeTab, setActiveTab] = useState(() => queryTab || 'PROFILE');
+
+  useEffect(() => {
+    if (queryTab) {
+      setActiveTab(queryTab);
+    }
+  }, [queryTab]);
 
   // Form states initialized with settings or sensible defaults
   const [formData, setFormData] = useState({
