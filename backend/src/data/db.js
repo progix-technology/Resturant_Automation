@@ -351,7 +351,7 @@ const getInitialSeed = () => {
         billingCycle: 'MONTHLY',
         planAmount: 2499,
         status: 'ACTIVE',
-        renewalDate: '2026-10-15',
+        renewalDate: '2026-11-08',
         activeTables: 24,
         monthlyOrders: 1420,
         monthlyGMV: 482500,

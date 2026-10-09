@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -28,6 +28,7 @@ import { useAdminData } from '../context/AdminDataContext';
 import { storage } from '../../utils/storage';
 import { STORAGE_KEYS } from '../../constants/storageKeys';
 import { mockPricingPlans } from '../../superadmin/data/mockSuperAdminData';
+import { PlanUpgradeModal } from './PlanUpgradeModal';
 
 export const AdminSidebar = ({
   isCollapsed,
@@ -40,21 +41,38 @@ export const AdminSidebar = ({
   const navigate = useNavigate();
   const [showPlanDetails, setShowPlanDetails] = useState(false);
   const [planModalTab, setPlanModalTab] = useState('CURRENT');
+  const [upgradeModalPlan, setUpgradeModalPlan] = useState(null);
 
   const [activePlanId, setActivePlanId] = useState(() => {
-    return storage.get(STORAGE_KEYS.RESTAURANT_ACTIVE_SAAS_PLAN, 'plan-growth');
+    return settings?.planId || storage.get(STORAGE_KEYS.RESTAURANT_ACTIVE_SAAS_PLAN, 'plan-starter');
   });
 
+  useEffect(() => {
+    if (settings?.planId) {
+      setActivePlanId(settings.planId);
+    }
+  }, [settings?.planId]);
+
+  useEffect(() => {
+    const handlePlanUpdate = () => {
+      const currentPlan = settings?.planId || storage.get(STORAGE_KEYS.RESTAURANT_ACTIVE_SAAS_PLAN, 'plan-starter');
+      setActivePlanId(currentPlan);
+    };
+
+    window.addEventListener('saasPlanUpdated', handlePlanUpdate);
+    window.addEventListener('storage', handlePlanUpdate);
+    return () => {
+      window.removeEventListener('saasPlanUpdated', handlePlanUpdate);
+      window.removeEventListener('storage', handlePlanUpdate);
+    };
+  }, [settings]);
+
   const availablePlans = storage.get(STORAGE_KEYS.SUPERADMIN_PLANS, mockPricingPlans) || mockPricingPlans;
-  const activePlan = availablePlans.find((p) => p.id === activePlanId) || availablePlans[1] || mockPricingPlans[1];
+  const activePlan = availablePlans.find((p) => p.id === activePlanId || p.name?.toLowerCase() === settings?.planName?.toLowerCase()) || availablePlans.find((p) => p.id === activePlanId) || availablePlans[0];
 
   const handleSwitchPlan = (plan) => {
-    setActivePlanId(plan.id);
-    storage.set(STORAGE_KEYS.RESTAURANT_ACTIVE_SAAS_PLAN, plan.id);
-    if (showToast) {
-      showToast(`SaaS Subscription updated to ${plan.name} (₹${plan.monthlyPrice?.toLocaleString()}/mo)!`, 'success');
-    }
-    setPlanModalTab('CURRENT');
+    setShowPlanDetails(false);
+    setUpgradeModalPlan(plan);
   };
 
   const logoUrl = settings?.logo || settings?.profile?.logo || settings?.logoUrl;
@@ -351,8 +369,17 @@ export const AdminSidebar = ({
                     <span className="font-bold text-slate-800">{activePlan.maxOrdersPerMonth}</span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-500 font-semibold">Billing Cycle & Renewal</span>
-                    <span className="font-bold text-emerald-700">Monthly Auto-Debit (15th Oct)</span>
+                    <span className="text-slate-500 font-semibold">Plan Validity Period</span>
+                    <span className="font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                      {(() => {
+                        const renewalStr = settings?.renewalDate || storage.get('restaurant_admin_settings')?.renewalDate || '2026-11-08';
+                        const expiryDateObj = new Date(renewalStr);
+                        const startDateObj = new Date(expiryDateObj);
+                        startDateObj.setDate(startDateObj.getDate() - 30);
+                        const fmt = (d) => (isNaN(d.getTime()) ? renewalStr : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }));
+                        return `${fmt(startDateObj)} — ${fmt(expiryDateObj)}`;
+                      })()}
+                    </span>
                   </div>
                 </div>
 
@@ -496,6 +523,13 @@ export const AdminSidebar = ({
           </div>
         </div>
       )}
+
+      {/* Plan Upgrade Payment Modal */}
+      <PlanUpgradeModal
+        isOpen={!!upgradeModalPlan}
+        onClose={() => setUpgradeModalPlan(null)}
+        initialPlan={upgradeModalPlan}
+      />
     </>
   );
 };

@@ -14,7 +14,7 @@ export function getPlanLimits(settings = {}) {
   const availablePlans = storage.get(STORAGE_KEYS.SUPERADMIN_PLANS, mockPricingPlans) || mockPricingPlans;
   
   const targetPlanId = settings?.planId || activePlanId;
-  const activePlanObj = availablePlans.find((p) => p.id === targetPlanId) || availablePlans[0];
+  const activePlanObj = availablePlans.find((p) => p.id === targetPlanId || p.name?.toLowerCase() === settings?.planName?.toLowerCase()) || availablePlans[0];
 
   const rawPlanId = String(settings?.planId || activePlanObj?.id || activePlanId || 'plan-starter').toLowerCase();
   const rawPlanName = String(settings?.planName || activePlanObj?.name || 'Starter QR').toLowerCase();

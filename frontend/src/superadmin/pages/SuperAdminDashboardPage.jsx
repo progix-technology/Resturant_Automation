@@ -81,8 +81,12 @@ const StatusBadge = ({ status }) => {
 
 // ─── Main Dashboard Page ───────────────────────────────────────────────────
 export const SuperAdminDashboardPage = () => {
-  const { metrics, tenants, plans, invoices, isLoading } = useSuperAdminData();
+  const { metrics, tenants, plans, invoices, isLoading, markInvoicePaid } = useSuperAdminData();
   const navigate = useNavigate();
+
+  const pendingRecharges = useMemo(() => {
+    return invoices.filter(i => i.status === 'PENDING');
+  }, [invoices]);
 
   // ── Derived analytics from live data ────────────────────────────────────
   const analytics = useMemo(() => {
@@ -150,6 +154,47 @@ export const SuperAdminDashboardPage = () => {
 
   return (
     <div className="space-y-6">
+      {/* ── Pending Payment Recharge Alert Banner ────────────────────────────── */}
+      {pendingRecharges.length > 0 && (
+        <div className="bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 text-white rounded-3xl p-5 shadow-lg border border-amber-400 space-y-3 animate-fade-in">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 font-black text-sm uppercase tracking-wider">
+              <Zap className="w-5 h-5 text-yellow-300 animate-bounce" />
+              <span>New Recharge Payment Received ({pendingRecharges.length})</span>
+            </div>
+            <button
+              onClick={() => navigate('/superadmin/invoices')}
+              className="text-xs font-bold underline hover:text-amber-100 cursor-pointer"
+            >
+              View Invoices →
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {pendingRecharges.map((inv) => (
+              <div key={inv.id} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-3.5 flex items-center justify-between gap-3 text-xs">
+                <div>
+                  <p className="font-black text-white text-sm">{inv.restaurantName}</p>
+                  <p className="text-amber-100 font-medium">
+                    Paid for <strong className="text-white font-bold">{inv.requestedPlanName || inv.planName}</strong> · ₹{inv.total?.toLocaleString()}
+                  </p>
+                  <p className="text-[10px] text-amber-200 font-mono mt-0.5">
+                    UTR: {inv.utrNumber || 'N/A'} · Ref #{inv.id}
+                  </p>
+                </div>
+                <button
+                  onClick={() => markInvoicePaid(inv.id)}
+                  className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-amber-400 rounded-xl font-black text-xs shadow-md transition-all shrink-0 cursor-pointer flex items-center gap-1"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span>Approve & Activate</span>
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ── Hero Header ──────────────────────────────────────────────────── */}
       <div className="relative bg-slate-900 border border-slate-800 rounded-3xl p-6 text-white shadow-md overflow-hidden">
         {/* decorative background blurs */}

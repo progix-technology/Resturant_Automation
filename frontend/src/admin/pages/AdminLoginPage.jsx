@@ -28,7 +28,9 @@ export const AdminLoginPage = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   // Redirect if already authenticated
-  const from = location.state?.from?.pathname || '/admin';
+  const rawFrom = location.state?.from?.pathname;
+  const from = (rawFrom && rawFrom !== '/admin/login') ? rawFrom : '/admin';
+
   React.useEffect(() => {
     if (isAuthenticated) {
       navigate(from, { replace: true });

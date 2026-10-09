@@ -14,7 +14,7 @@
   "restaurantAdmins": [
     {
       "id": "adm-rest-01",
-      "name": "Restaurant 1 Manager",
+      "name": "Vikram Malhotra",
       "email": "resturant1@gmail.com",
       "passwordHash": "$2a$10$xobrR/jXaXi5bzbgJeIdDOnNTU9tlcOzqj0239cr1bn3BGk/lHSvG",
       "role": "SUPER_ADMIN",
@@ -26,7 +26,7 @@
     {
       "id": "adm-vikram-02",
       "name": "Vikram Malhotra",
-      "email": "admin@restaurant.com",
+      "email": "resturant1@gmail.com",
       "passwordHash": "$2a$10$/qJiizbNhfnTe0/HzOIcUe/ncnXZSkVhvJBNcm5StDvkKqiCK.bGi",
       "role": "SUPER_ADMIN",
       "title": "General Manager",
@@ -36,8 +36,8 @@
     },
     {
       "id": "adm-staff-03",
-      "name": "Rohan Verma",
-      "email": "rohan@restaurant.com",
+      "name": "Vikram Malhotra",
+      "email": "resturant1@gmail.com",
       "passwordHash": "$2a$10$5cMFvAkPvuNoRsYfdGCys.1dzXTxVX623ZnmRSV10pBfwukMwDYiq",
       "role": "STAFF",
       "title": "Floor Lead",
@@ -1453,7 +1453,7 @@
       "billingCycle": "MONTHLY",
       "planAmount": 2499,
       "status": "ACTIVE",
-      "renewalDate": "2026-10-15",
+      "renewalDate": "2026-11-09",
       "activeTables": 24,
       "monthlyOrders": 1420,
       "monthlyGMV": 482500
@@ -1479,6 +1479,41 @@
     }
   ],
   "invoices": [
+    {
+      "id": "INV-2026-7674",
+      "tenantId": "rest-001",
+      "restaurantName": "spice-garden",
+      "planName": "Growth Pro",
+      "cycle": "Monthly Subscription (Oct Cycle)",
+      "amount": 2499,
+      "tax": 449.82,
+      "total": 2948.82,
+      "status": "PAID",
+      "issuedDate": "2026-10-09",
+      "dueDate": "2026-10-16",
+      "paidAt": "2026-10-09",
+      "paymentMethod": "UPI / NetBanking",
+      "utrNumber": "UTR-211833",
+      "requestedPlanId": "plan-growth",
+      "requestedPlanName": "Growth Pro",
+      "notificationRead": false,
+      "adminName": "Restaurant 1 Manager"
+    },
+    {
+      "id": "INV-2026-7813",
+      "tenantId": "rest-001",
+      "restaurantName": "spice-garden",
+      "planName": "Growth Pro",
+      "cycle": "Monthly Subscription (Oct Cycle)",
+      "amount": 2499,
+      "tax": 449.82,
+      "total": 2948.82,
+      "status": "PAID",
+      "issuedDate": "2026-10-09",
+      "dueDate": "2026-10-16",
+      "paidAt": "2026-10-09",
+      "paymentMethod": "UPI / NetBanking"
+    },
     {
       "id": "INV-2026-0091",
       "tenantId": "tenant-001",

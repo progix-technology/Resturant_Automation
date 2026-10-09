@@ -27,7 +27,9 @@ export const SuperAdminLoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const from = location.state?.from?.pathname || '/superadmin';
+  const rawFrom = location.state?.from?.pathname;
+  const from = (rawFrom && rawFrom !== '/superadmin/login') ? rawFrom : '/superadmin';
+
   React.useEffect(() => {
     if (isAuthenticated) {
       navigate(from, { replace: true });

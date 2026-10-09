@@ -128,9 +128,51 @@ export const SuperAdminDataProvider = ({ children }) => {
   // Billing Operations
   const markInvoicePaid = async (invoiceId) => {
     try {
+      const targetInv = invoices.find((i) => i.id === invoiceId);
       const updated = await superAdminBillingService.markInvoicePaid(invoiceId);
-      setInvoices((prev) => prev.map((inv) => (inv.id === invoiceId ? updated : inv)));
-      showToast(`Invoice #${invoiceId} marked as settled`, 'success');
+      setInvoices((prev) => prev.map((inv) => (inv.id === invoiceId ? { ...inv, ...updated } : inv)));
+
+      // Auto-assign plan to matching restaurant tenant upon SuperAdmin payment verification
+      if (targetInv && targetInv.tenantId) {
+        const matchingPlanId = targetInv.requestedPlanId || (targetInv.planName?.toLowerCase().includes('enterprise') ? 'plan-enterprise' : targetInv.planName?.toLowerCase().includes('growth') ? 'plan-growth' : 'plan-starter');
+        const matchingPlanName = targetInv.requestedPlanName || targetInv.planName || 'Enterprise Scale';
+        
+        const isAnnual = String(targetInv.cycle || '').toLowerCase().includes('annual');
+        const daysToAdd = isAnnual ? 365 : 30;
+        const newRenewalDate = new Date(Date.now() + daysToAdd * 86400000).toISOString().split('T')[0];
+
+        await updateTenant(targetInv.tenantId, {
+          planId: matchingPlanId,
+          planName: matchingPlanName,
+          status: 'ACTIVE',
+          renewalDate: newRenewalDate,
+        });
+
+        // Sync local storage keys for instant admin view update
+        storage.set(STORAGE_KEYS.RESTAURANT_ACTIVE_SAAS_PLAN, matchingPlanId);
+
+        const session = storage.get(STORAGE_KEYS.ADMIN_SESSION, null);
+        const rawSlug = (session?.restaurantSlug || targetInv.tenantId || 'spice-garden').toLowerCase().trim();
+        const currentAdminSettings = storage.get(`${STORAGE_KEYS.ADMIN_SETTINGS}_${rawSlug}`, {}) || {};
+        const updatedAdminSettings = {
+          ...currentAdminSettings,
+          planId: matchingPlanId,
+          planName: matchingPlanName,
+          renewalDate: newRenewalDate,
+        };
+        storage.set(STORAGE_KEYS.ADMIN_SETTINGS, updatedAdminSettings);
+        storage.set(`${STORAGE_KEYS.ADMIN_SETTINGS}_${rawSlug}`, updatedAdminSettings);
+
+        // Dispatch window events so all components update in real-time
+        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new CustomEvent('saasPlanUpdated', {
+          detail: { planId: matchingPlanId, planName: matchingPlanName, renewalDate: newRenewalDate }
+        }));
+
+        showToast(`Payment verified! ${matchingPlanName} plan activated (Valid until ${newRenewalDate}) for ${targetInv.restaurantName}`, 'success');
+      } else {
+        showToast(`Invoice #${invoiceId} marked as settled`, 'success');
+      }
       return updated;
     } catch (err) {
       showToast(err.message, 'error');

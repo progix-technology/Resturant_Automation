@@ -20,6 +20,10 @@ router.get('/invoices', superAdminController.getInvoices);
 router.post('/invoices', superAdminController.addInvoice);
 router.patch('/invoices/:id/pay', superAdminController.markInvoicePaid);
 
+// Platform Settings & Payment receiving config (Bank & UPI QR)
+router.get('/settings', superAdminController.getSettings);
+router.patch('/settings', superAdminController.updateSettings);
+
 // Protected Platform Admins
 router.get('/admins', authenticateToken, requireRole('PLATFORM_SUPERADMIN'), superAdminController.getSuperAdmins);
 router.delete('/admins', authenticateToken, requireRole('PLATFORM_SUPERADMIN'), superAdminController.deleteSuperAdmin);

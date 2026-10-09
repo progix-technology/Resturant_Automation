@@ -161,10 +161,18 @@ export const AdminDataProvider = ({ children }) => {
     loadWaiterCalls();
     checkWhatsAppStatus();
 
+    const handlePlanUpdate = () => {
+      loadSettings();
+    };
+
+    window.addEventListener('saasPlanUpdated', handlePlanUpdate);
+    window.addEventListener('storage', handlePlanUpdate);
+
     const interval = setInterval(() => {
       const session = storage.get(STORAGE_KEYS.ADMIN_SESSION, null);
       const currentSlug = (session?.restaurantSlug || 'spice-garden').toLowerCase().trim();
 
+      loadSettings();
       adminOrderService.getOrders().then((latest) => {
         if (latest && Array.isArray(latest)) {
           setOrders(latest);
@@ -191,7 +199,11 @@ export const AdminDataProvider = ({ children }) => {
       });
     }, 4000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('saasPlanUpdated', handlePlanUpdate);
+      window.removeEventListener('storage', handlePlanUpdate);
+    };
   }, []);
 
 

@@ -201,6 +201,23 @@ export const superAdminController = {
       });
       db.set('restaurantAdmins', updatedAdmins);
 
+      // Sync matching restaurantSettings if plan details updated
+      if (updates.planId || updates.planName) {
+        const settingsList = db.get('restaurantSettings') || [];
+        const targetSlug = updated.slug || updated.id;
+        const updatedSettingsList = settingsList.map((s) => {
+          if (s.restaurantSlug === targetSlug || s.slug === targetSlug || (s.restaurantSlug && targetSlug.includes(s.restaurantSlug))) {
+            return {
+              ...s,
+              planId: updates.planId || s.planId,
+              planName: updates.planName || s.planName,
+            };
+          }
+          return s;
+        });
+        db.set('restaurantSettings', updatedSettingsList);
+      }
+
       res.status(200).json({ success: true, data: updated });
 
       if (mongoose.connection && mongoose.connection.readyState === 1) {
@@ -337,6 +354,27 @@ export const superAdminController = {
         return inv;
       });
 
+      if (updated && updated.tenantId) {
+        const tenants = db.get('platformTenants') || [];
+        const isAnnual = String(updated.cycle || '').toLowerCase().includes('annual');
+        const daysToAdd = isAnnual ? 365 : 30;
+        const newRenewalDate = new Date(Date.now() + daysToAdd * 86400000).toISOString().split('T')[0];
+
+        const nextTenants = tenants.map((t) => {
+          if (t.id === updated.tenantId || t.tenantId === updated.tenantId) {
+            return {
+              ...t,
+              planId: updated.requestedPlanId || t.planId,
+              planName: updated.requestedPlanName || updated.planName || t.planName,
+              status: 'ACTIVE',
+              renewalDate: newRenewalDate,
+            };
+          }
+          return t;
+        });
+        db.set('platformTenants', nextTenants);
+      }
+
       db.set('invoices', next);
       return res.status(200).json({ success: true, data: updated });
     } catch (err) {
@@ -356,6 +394,40 @@ export const superAdminController = {
       return res.status(200).json({ success: true, data: superAdmins });
     } catch (err) {
       return res.status(500).json({ success: false, message: 'Failed to fetch platform admins' });
+    }
+  },
+
+  // Platform Settings (UPI ID, QR Code image URL, Bank Account details, GSTIN)
+  async getSettings(req, res) {
+    try {
+      const settings = db.get('platformSettings') || {
+        platformName: 'OrderFlow SaaS Engine',
+        companyLegalName: 'Progix Technology Pvt Ltd',
+        taxId: '29AAFCO1234F1Z8',
+        supportEmail: 'progixtechnology@gmail.com',
+        supportPhone: '+91 98765 43210',
+        upiId: 'progixtechnology@upi',
+        upiQrUrl: 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=upi://pay?pa=progixtechnology@upi%26pn=Progix%20SaaS',
+        bankName: 'HDFC Bank',
+        accountHolder: 'Progix Technology Pvt Ltd',
+        accountNumber: '50200012345678',
+        ifscCode: 'HDFC0001234',
+      };
+      return res.status(200).json({ success: true, data: settings });
+    } catch (err) {
+      return res.status(500).json({ success: false, message: 'Failed to fetch settings' });
+    }
+  },
+
+  async updateSettings(req, res) {
+    try {
+      const updates = req.body;
+      const current = db.get('platformSettings') || {};
+      const next = { ...current, ...updates };
+      db.set('platformSettings', next);
+      return res.status(200).json({ success: true, data: next });
+    } catch (err) {
+      return res.status(500).json({ success: false, message: 'Failed to update settings' });
     }
   },
 

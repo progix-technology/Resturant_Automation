@@ -53,14 +53,14 @@ export const superAdminBillingService = {
     return updatedInv;
   },
 
-  async generateInvoice(tenant, plan) {
-    const amount = Number(tenant.planAmount) || 2499;
+  async generateInvoice(tenant, plan, extraDetails = {}) {
+    const amount = Number(tenant.planAmount || plan?.rawPrice) || 2499;
     const tax = Math.round(amount * 0.18 * 100) / 100;
     const newInvoice = {
       id: `INV-2026-${Math.floor(1000 + Math.random() * 9000)}`,
       tenantId: tenant.id,
       restaurantName: tenant.name,
-      planName: tenant.planName,
+      planName: plan?.name || tenant.planName,
       cycle: `${tenant.billingCycle === 'ANNUAL' ? 'Annual' : 'Monthly'} Subscription (${new Date().toLocaleDateString('en-US', { month: 'short' })} Cycle)`,
       amount,
       tax,
@@ -70,6 +70,7 @@ export const superAdminBillingService = {
       dueDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
       paidAt: null,
       paymentMethod: 'UPI / NetBanking',
+      ...extraDetails,
     };
 
     try {
