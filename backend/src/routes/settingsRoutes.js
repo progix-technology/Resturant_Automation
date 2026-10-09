@@ -64,6 +64,17 @@ async function getOrCreateSettings(slug = DEFAULT_SLUG) {
     }
   }
 
+  // Sync tenant's SaaS plan info if available in db.json platformTenants
+  const platformTenants = db.get('platformTenants') || [];
+  const tenantMatch = platformTenants.find((t) => (t.slug || '').toLowerCase() === cleanSlug || (t.slug || '').toLowerCase() === rawSlug);
+  if (tenantMatch) {
+    settings = {
+      ...(typeof settings.toObject === 'function' ? settings.toObject() : settings),
+      planId: tenantMatch.planId || 'plan-starter',
+      planName: tenantMatch.planName || 'Starter QR',
+    };
+  }
+
   return settings;
 }
 

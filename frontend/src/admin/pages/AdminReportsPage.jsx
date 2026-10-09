@@ -12,12 +12,10 @@ import {
   BarChart3,
   PieChart as PieIcon,
   Layers,
-  Clock,
   UtensilsCrossed,
   RefreshCw,
   Sparkles,
   Lock,
-  ShieldAlert,
   Crown,
 } from 'lucide-react';
 import { PlanUpgradeModal } from '../components/PlanUpgradeModal';
@@ -25,15 +23,17 @@ import { getPlanLimits } from '../utils/planLimits';
 
 export const AdminReportsPage = () => {
   const { orders, loadOrders, loadMenuItems, showToast, isLoading, settings } = useAdminData();
-  const [timeFilter, setTimeFilter] = useState('TODAY'); // Default to TODAY for parity with Dashboard
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
-
+  const [timeFilter, setTimeFilter] = useState('TODAY');
   const limits = useMemo(() => getPlanLimits(settings), [settings]);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(!limits.analyticsEnabled);
 
   useEffect(() => {
     loadOrders();
     loadMenuItems();
-  }, []);
+    if (!limits.analyticsEnabled) {
+      setIsUpgradeModalOpen(true);
+    }
+  }, [limits.analyticsEnabled]);
 
   const getLocalDateStr = (dateInput) => {
     if (!dateInput) return '';
@@ -90,12 +90,10 @@ export const AdminReportsPage = () => {
       (o) => !['CANCELLED', 'REJECTED'].includes((o.orderStatus || o.status || '').toUpperCase())
     );
 
-    // Settled/Completed orders revenue (matching Dashboard collection formula)
     const completedOrders = validOrders.filter(
       (o) => o.paymentStatus === 'COMPLETED' || o.orderStatus === 'COMPLETED' || o.orderStatus === 'SERVED'
     );
 
-    // If no orders are marked completed yet, fallback to valid orders sum
     const totalRevenue = completedOrders.length > 0
       ? completedOrders.reduce((sum, o) => sum + Number(o.total || o.totalAmount || o.amount || 0), 0)
       : validOrders.reduce((sum, o) => sum + Number(o.total || o.totalAmount || o.amount || 0), 0);
@@ -229,7 +227,6 @@ export const AdminReportsPage = () => {
   }, [displayOrders]);
 
   // ── 7. CSV Export ─────────────────────────────────────────────────────────
-  // ── 7. CSV Export ─────────────────────────────────────────────────────────
   const handleExportCSV = () => {
     if (!limits.analyticsEnabled) {
       setIsUpgradeModalOpen(true);
@@ -262,11 +259,68 @@ export const AdminReportsPage = () => {
     showToast('Analytics CSV exported successfully!', 'success');
   };
 
+  // ── IF PLAN DOES NOT HAVE ANALYTICS ENABLED: SHOW LOCKED SCREEN & POPUP ──
+  if (!limits.analyticsEnabled) {
+    return (
+      <div className="space-y-6">
+        <AdminPageHeader
+          title="Sales & Business Analytics"
+          subtitle={`Real-time reporting & customer dining trends. Feature status: Locked (${limits.planName} Plan).`}
+        />
+
+        <div className="bg-white border border-slate-200 rounded-3xl p-8 sm:p-12 text-center shadow-sm space-y-6 max-w-2xl mx-auto my-6 animate-fade-in">
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-600 border border-amber-500/20 flex items-center justify-center mx-auto shadow-inner">
+            <Lock className="w-8 h-8" />
+          </div>
+
+          <div className="space-y-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-black uppercase tracking-wider">
+              <Crown className="w-3.5 h-3.5 text-amber-600" />
+              <span>Enterprise Exclusive Feature</span>
+            </span>
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+              Sales & Business Analytics Locked
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto leading-relaxed font-medium">
+              Sales reporting, revenue graphs, dish analytics, and CSV data exports are available exclusively in the Enterprise Scale Plan (or plans with analytics enabled).
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-rose-500/10 border border-amber-300 text-slate-900 text-xs font-extrabold">
+            Please purchase this plan to perform this action.
+          </div>
+
+          <div className="pt-2 flex justify-center">
+            <button
+              type="button"
+              onClick={() => setIsUpgradeModalOpen(true)}
+              className="px-6 py-3.5 rounded-xl text-xs font-extrabold bg-slate-900 hover:bg-slate-800 text-white shadow-md hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer"
+            >
+              <Crown className="w-4 h-4 text-amber-400" />
+              <span>Upgrade to Enterprise to Unlock Analytics</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Plan Upgrade Modal */}
+        <PlanUpgradeModal
+          isOpen={isUpgradeModalOpen}
+          onClose={() => setIsUpgradeModalOpen(false)}
+          title="Analytics Dashboard Locked"
+          featureName="Sales & Business Analytics"
+          currentPlan={limits.planName}
+          limitText="Sales and Business Analytics reporting is exclusive to Enterprise Scale Plan."
+          message="Please purchase this plan to perform this action."
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <AdminPageHeader
         title="Sales & Business Analytics"
-        subtitle={`Real-time reporting & customer dining trends. Feature status: ${limits.analyticsEnabled ? 'Enabled (Enterprise Plan)' : 'Locked (Requires Enterprise Plan)'}.`}
+        subtitle={`Real-time reporting & customer dining trends. Feature status: Enabled (${limits.planName} Plan).`}
         actions={
           <div className="flex items-center gap-2">
             <button
@@ -278,51 +332,14 @@ export const AdminReportsPage = () => {
             </button>
             <button
               onClick={handleExportCSV}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer ${
-                limits.analyticsEnabled
-                  ? 'bg-amber-500 hover:bg-amber-600 active:scale-95 text-white'
-                  : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
-              }`}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer bg-amber-500 hover:bg-amber-600 active:scale-95 text-white"
             >
-              {!limits.analyticsEnabled && <Lock className="w-3.5 h-3.5 text-slate-600" />}
               <Download className="w-4 h-4" />
               <span>Export CSV Report</span>
             </button>
           </div>
         }
       />
-
-      {/* Locked Plan Banner if not Enterprise */}
-      {!limits.analyticsEnabled && (
-        <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-rose-500/10 border border-amber-300 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-md">
-              <Lock className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h4 className="text-sm font-black text-slate-900">
-                  Sales Analytics Dashboard Locked ({limits.planName})
-                </h4>
-                <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-extrabold uppercase">
-                  Enterprise Exclusive
-                </span>
-              </div>
-              <p className="text-xs text-slate-600 mt-0.5">
-                Detailed sales reporting, revenue graphs, dining trends, and CSV exports are reserved exclusively for Enterprise Scale plan subscribers.
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsUpgradeModalOpen(true)}
-            className="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white shrink-0 shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
-          >
-            <Crown className="w-4 h-4 text-amber-400" />
-            <span>Upgrade to Enterprise</span>
-          </button>
-        </div>
-      )}
 
       {/* Time Horizon Filter Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-2xs">
@@ -571,7 +588,7 @@ export const AdminReportsPage = () => {
         </>
       )}
 
-      {/* Plan Upgrade Modal Alert */}
+      {/* Plan Upgrade Modal */}
       <PlanUpgradeModal
         isOpen={isUpgradeModalOpen}
         onClose={() => setIsUpgradeModalOpen(false)}
