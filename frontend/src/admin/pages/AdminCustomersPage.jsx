@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Users,
   Search,
@@ -11,6 +11,7 @@ import {
   X,
   ArrowRight,
 } from 'lucide-react';
+import { useAdminData } from '../context/AdminDataContext';
 import { adminCustomerService } from '../services/adminCustomerService';
 import { AdminPageHeader } from '../components/AdminPageHeader';
 import { DataTable } from '../components/DataTable';
@@ -19,23 +20,14 @@ import { formatCurrency } from '../../utils/currency';
 import { StatusBadge } from '../components/StatusBadge';
 
 export const AdminCustomersPage = () => {
-  const [customers, setCustomers] = useState([]);
+  const { orders = [] } = useAdminData();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchCustomers = async () => {
-      setIsLoading(true);
-      try {
-        const data = await adminCustomerService.getCustomers();
-        setCustomers(data);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchCustomers();
-  }, []);
+  // Compute unique customers dynamically from live orders
+  const customers = useMemo(() => {
+    return adminCustomerService.processOrders(orders);
+  }, [orders]);
 
   const filteredCustomers = useMemo(() => {
     if (!searchQuery.trim()) return customers;
@@ -70,7 +62,7 @@ export const AdminCustomersPage = () => {
       render: (row) => (
         <span className="font-mono text-xs font-semibold text-slate-700 flex items-center gap-1.5">
           <Phone className="w-3.5 h-3.5 text-slate-400" />
-          <span>+91 {row.mobile}</span>
+          <span>{row.mobile && row.mobile !== 'N/A' ? `+91 ${row.mobile}` : 'Walk-in Guest'}</span>
         </span>
       ),
     },
@@ -104,11 +96,15 @@ export const AdminCustomersPage = () => {
     {
       header: 'Last Visit Date',
       accessor: 'lastOrderDate',
-      render: (row) => (
-        <span className="text-xs text-slate-500">
-          {new Date(row.lastOrderDate).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
-        </span>
-      ),
+      render: (row) => {
+        const d = row.lastOrderDate ? new Date(row.lastOrderDate) : null;
+        const validDate = d && !isNaN(d.getTime()) ? d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently';
+        return (
+          <span className="text-xs text-slate-500">
+            {validDate}
+          </span>
+        );
+      },
     },
     {
       header: 'Actions',

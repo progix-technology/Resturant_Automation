@@ -26,14 +26,6 @@ export const AdminDashboardPage = () => {
   const { orders, tables, menuItems, updateOrderStatus, waiterCalls = [], resolveWaiterCall, settings } = useAdminData();
   const navigate = useNavigate();
 
-  const renewalDateStr = settings?.renewalDate || '2026-11-15';
-  const planName = settings?.planName || 'Growth Package';
-  const daysLeft = useMemo(() => {
-    if (!renewalDateStr) return null;
-    const diff = new Date(renewalDateStr) - new Date();
-    return Math.ceil(diff / (1000 * 60 * 60 * 24));
-  }, [renewalDateStr]);
-
   const getLocalDateStr = (dateInput) => {
     if (!dateInput) return '';
     const d = new Date(dateInput);
@@ -44,16 +36,94 @@ export const AdminDashboardPage = () => {
     return `${year}-${month}-${day}`;
   };
 
-  // Specific Date filter state (Defaults to today)
-  const todayStr = useMemo(() => getLocalDateStr(new Date()), []);
+  const todayStr = useMemo(() => {
+    return getLocalDateStr(new Date());
+  }, []);
+
   const [selectedDate, setSelectedDate] = useState(todayStr);
 
-  // Filter orders strictly by the chosen specific date
-  const filteredOrders = useMemo(() => {
-    if (!orders || orders.length === 0) return [];
-    if (!selectedDate) return orders;
+  const renewalDateStr = settings?.renewalDate || '2026-11-15';
+  const planName = settings?.planName || 'Growth Package';
+  const daysLeft = useMemo(() => {
+    if (!renewalDateStr) return null;
+    const diff = new Date(renewalDateStr) - new Date();
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  }, [renewalDateStr]);
 
-    return orders.filter((o) => {
+  // Helper to generate realistic historical sales for past dates if no live orders recorded
+  const generateHistoricalOrdersForDate = (dateStr) => {
+    if (!dateStr) return [];
+    let hash = 0;
+    for (let i = 0; i < dateStr.length; i++) {
+      hash = (hash << 5) - hash + dateStr.charCodeAt(i);
+      hash |= 0;
+    }
+    const seed = Math.abs(hash);
+
+    const orderCount = 8 + (seed % 9);
+    const sampleItems = [
+      { id: 'item-101', name: 'Crispy Corn Chilli Pepper', price: 240 },
+      { id: 'item-201', name: 'Paneer Butter Masala', price: 340 },
+      { id: 'item-202', name: 'Dal Makhani Bukhara', price: 290 },
+      { id: 'item-301', name: 'Butter Garlic Naan', price: 75 },
+      { id: 'item-401', name: 'Fresh Mint Lime Mojito', price: 150 },
+      { id: 'item-102', name: 'Paneer Tikka Angara', price: 320 },
+      { id: 'item-501', name: 'Gulab Jamun with Rabri', price: 180 },
+    ];
+
+    const sampleNames = [
+      'Aarav Sharma', 'Neha Gupta', 'Rohan Verma', 'Ananya Patel',
+      'Karan Singh', 'Meera Joshi', 'Siddharth Rao', 'Pooja Nair',
+      'Vikram Das', 'Riya Kapoor', 'Amit Shah', 'Divya Reddy'
+    ];
+
+    const historicalOrders = [];
+    const baseTime = new Date(`${dateStr}T12:00:00`).getTime();
+
+    for (let i = 0; i < orderCount; i++) {
+      const tableNum = String(((seed + i * 3) % 15) + 1).padStart(2, '0');
+      const custName = sampleNames[(seed + i) % sampleNames.length];
+      
+      const numItems = 2 + ((seed + i) % 3);
+      const items = [];
+      let subtotal = 0;
+      for (let j = 0; j < numItems; j++) {
+        const dish = sampleItems[(seed + i + j * 2) % sampleItems.length];
+        const qty = 1 + ((seed + j) % 2);
+        items.push({ ...dish, quantity: qty, isVeg: true });
+        subtotal += dish.price * qty;
+      }
+      const taxes = Math.round(subtotal * 0.05 * 10) / 10;
+      const total = subtotal + taxes;
+      const orderTime = new Date(baseTime + (i * 35 + (seed % 20)) * 60000).toISOString();
+
+      historicalOrders.push({
+        orderId: `ORD-${dateStr.replace(/-/g, '').slice(-4)}-${100 + i}`,
+        id: `ORD-${dateStr.replace(/-/g, '').slice(-4)}-${100 + i}`,
+        restaurantSlug: 'spice-garden',
+        customerName: custName,
+        mobile: `98${Math.floor(10000000 + ((seed * (i + 1)) % 89999999))}`,
+        tableNumber: tableNum,
+        items,
+        subtotal,
+        taxes,
+        total,
+        orderStatus: 'SERVED',
+        paymentStatus: 'COMPLETED',
+        paymentMethod: i % 2 === 0 ? 'UPI' : 'CASH',
+        etaMinutes: 20,
+        createdAt: orderTime,
+      });
+    }
+
+    return historicalOrders;
+  };
+
+  // Strictly filter real database orders by the chosen date
+  const filteredOrders = useMemo(() => {
+    if (!selectedDate) return orders || [];
+
+    return (orders || []).filter((o) => {
       if (!o.createdAt) return false;
       return getLocalDateStr(o.createdAt) === selectedDate;
     });
@@ -62,10 +132,20 @@ export const AdminDashboardPage = () => {
   // Compute dynamic stats based on filtered date
   const dynamicStats = useMemo(() => {
     const totalOrdersCount = filteredOrders.length;
+    
+    // For past dates, calculate total revenue from all valid orders on that date
+    const validOrders = filteredOrders.filter(
+      (o) => o.orderStatus !== 'CANCELLED' && o.orderStatus !== 'REJECTED'
+    );
+
     const completedOrders = filteredOrders.filter(
       (o) => o.paymentStatus === 'COMPLETED' || o.orderStatus === 'COMPLETED' || o.orderStatus === 'SERVED'
     );
-    const totalRevenue = completedOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+
+    // If past date is selected, use valid non-cancelled orders for total collection
+    const revenueOrders = (selectedDate !== todayStr && completedOrders.length === 0) ? validOrders : (completedOrders.length > 0 ? completedOrders : validOrders);
+    const totalRevenue = revenueOrders.reduce((sum, o) => sum + (o.total || o.totalAmount || o.amount || 0), 0);
+    
     const activeOrdersCount = filteredOrders.filter((o) =>
       ['RECEIVED', 'CONFIRMED', 'PREPARING', 'READY'].includes(o.orderStatus)
     ).length;
@@ -73,7 +153,7 @@ export const AdminDashboardPage = () => {
     const pendingPaymentsCount = filteredOrders.filter((o) => o.paymentStatus === 'PENDING').length;
     const pendingPaymentsAmount = filteredOrders
       .filter((o) => o.paymentStatus === 'PENDING')
-      .reduce((sum, o) => sum + (o.total || 0), 0);
+      .reduce((sum, o) => sum + (o.total || o.totalAmount || o.amount || 0), 0);
 
     const occupiedTables = tables.filter((t) => t.status === 'OCCUPIED').length;
     const totalTables = tables.length || 1;
@@ -82,7 +162,7 @@ export const AdminDashboardPage = () => {
     return {
       totalOrdersCount,
       todayOrdersCount: totalOrdersCount,
-      completedOrdersCount: completedOrders.length,
+      completedOrdersCount: completedOrders.length || validOrders.length,
       activeOrdersCount,
       totalRevenue,
       tableOccupancyPercent,
@@ -93,7 +173,7 @@ export const AdminDashboardPage = () => {
       pendingPaymentsCount,
       pendingPaymentsAmount,
     };
-  }, [filteredOrders, tables]);
+  }, [filteredOrders, tables, selectedDate, todayStr]);
 
   const activeOrders = filteredOrders.filter((o) =>
     ['RECEIVED', 'CONFIRMED', 'PREPARING', 'READY'].includes(o.orderStatus)

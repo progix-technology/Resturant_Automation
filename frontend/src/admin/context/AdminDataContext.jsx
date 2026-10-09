@@ -511,7 +511,8 @@ export const AdminDataProvider = ({ children }) => {
       amount: o.total || 0,
       method: o.paymentMethod || 'UPI',
       status: o.paymentStatus === 'COMPLETED' ? 'SUCCESS' : o.paymentStatus === 'FAILED' ? 'FAILED' : 'PENDING',
-      timestamp: o.paidAt || o.createdAt,
+      createdAt: o.paidAt || o.createdAt || new Date().toISOString(),
+      timestamp: o.paidAt || o.createdAt || new Date().toISOString(),
     }));
   }, [orders]);
 

@@ -7,10 +7,6 @@ const ADMIN_ORDERS_KEY = 'restaurant_admin_all_orders';
 
 const isDummyOrder = (o) => {
   if (!o) return true;
-  const id = (o.orderId || o.id || '').replace('#', '').trim();
-  const name = (o.customerName || '').toLowerCase();
-  if (['ORD-1526', 'ORD-8021', 'ORD-1041', 'ORD-1042', 'ORD-5970', 'ORD-8859'].includes(id)) return true;
-  if (name.includes('test') || name.includes('sample') || name === 'rohan sharma') return true;
   return false;
 };
 

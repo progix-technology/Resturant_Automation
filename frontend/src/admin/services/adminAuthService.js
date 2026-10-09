@@ -15,7 +15,7 @@ export const adminAuthService = {
     const cleanEmail = (email || '').trim().toLowerCase();
 
     try {
-      // Connect to live backend
+      // Connect to live backend API
       const res = await apiRequest('/auth/admin/login', {
         method: 'POST',
         body: JSON.stringify({ email: cleanEmail, password }),
@@ -27,8 +27,8 @@ export const adminAuthService = {
           name: res.user.name,
           email: res.user.email,
           role: res.user.role === 'SUPER_ADMIN' ? 'ADMIN' : (res.user.role || 'ADMIN'),
-          title: res.user.title,
-          avatar: '',
+          title: res.user.title || 'Restaurant Admin',
+          avatar: res.user.avatar || '',
           restaurantId: res.user.restaurantId || 'rest-001',
           restaurantSlug: res.user.restaurantSlug || 'spice-garden',
           permissions: ROLE_PERMISSIONS[res.user.role] || ROLE_PERMISSIONS['ADMIN'] || ROLE_PERMISSIONS['SUPER_ADMIN'],
@@ -39,7 +39,7 @@ export const adminAuthService = {
         return safeSession;
       }
     } catch (err) {
-      // Check SuperAdmin tenants store for custom onboarded restaurant credentials
+      // Fallback 1: Check SuperAdmin tenants store for custom onboarded restaurant credentials
       const tenants = storage.get(STORAGE_KEYS.SUPERADMIN_TENANTS, []);
       const tenantMatch = tenants.find(
         (t) => (t.ownerEmail || '').toLowerCase() === cleanEmail || (t.slug || '').toLowerCase() + '@restaurant.com' === cleanEmail
@@ -61,19 +61,10 @@ export const adminAuthService = {
           };
           storage.set(STORAGE_KEYS.ADMIN_SESSION, safeSession);
           return safeSession;
-        } else {
-          throw new Error('Incorrect password. Please verify your credentials.');
         }
       }
 
-      if (err.message && err.message.includes('Incorrect password')) {
-        throw new Error('Incorrect password. Please verify your credentials.');
-      }
-      if (err.message && err.message.includes('Invalid restaurant staff email')) {
-        throw new Error('Unrecognized restaurant staff email address.');
-      }
-
-      // Offline fallback for resturant1@gmail.com / 123123
+      // Fallback 2: Default Demo Account resturant1@gmail.com / 123123
       if (cleanEmail === 'resturant1@gmail.com' && password === '123123') {
         const safeSession = {
           id: 'adm-rest-01',
@@ -91,25 +82,29 @@ export const adminAuthService = {
         return safeSession;
       }
 
-      // Demo fallback for admin@restaurant.com
+      // Fallback 3: Demo account admin@restaurant.com / Admin@123
       if (cleanEmail === 'admin@restaurant.com' && password === 'Admin@123') {
         const safeSession = {
           id: 'adm-001',
           name: 'Vikram Malhotra',
           email: 'admin@restaurant.com',
-          role: ADMIN_ROLES.SUPER_ADMIN,
+          role: ADMIN_ROLES.SUPER_ADMIN || 'ADMIN',
           title: 'General Manager',
           avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80',
           restaurantId: 'rest-001',
           restaurantSlug: 'spice-garden',
-          permissions: ROLE_PERMISSIONS[ADMIN_ROLES.SUPER_ADMIN],
+          permissions: ROLE_PERMISSIONS[ADMIN_ROLES.SUPER_ADMIN] || ROLE_PERMISSIONS['ADMIN'],
           loginTime: new Date().toISOString(),
         };
         storage.set(STORAGE_KEYS.ADMIN_SESSION, safeSession);
         return safeSession;
       }
 
-      throw err;
+      if (err.message && err.message.includes('Incorrect password')) {
+        throw new Error('Incorrect password. Please verify your password (e.g. resturant1@gmail.com / 123123).');
+      }
+
+      throw new Error(err.message || 'Login failed. Please check your email and password (e.g. resturant1@gmail.com / 123123).');
     }
   },
 

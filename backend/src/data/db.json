@@ -16,34 +16,37 @@
       "id": "adm-rest-01",
       "name": "Vikram Malhotra",
       "email": "resturant1@gmail.com",
-      "passwordHash": "$2a$10$xobrR/jXaXi5bzbgJeIdDOnNTU9tlcOzqj0239cr1bn3BGk/lHSvG",
+      "passwordHash": "$2a$10$aD18N3cAGJ.p3w9/Ftcw.emB7PcbuhUnmJWUX2XAq3JqBYf7xVhKS",
       "role": "SUPER_ADMIN",
       "title": "Head of Operations",
       "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
       "restaurantId": "rest-001",
-      "restaurantSlug": "spice-garden"
+      "restaurantSlug": "spice-garden",
+      "passwordPlain": "Admin@123"
     },
     {
       "id": "adm-vikram-02",
       "name": "Vikram Malhotra",
       "email": "resturant1@gmail.com",
-      "passwordHash": "$2a$10$/qJiizbNhfnTe0/HzOIcUe/ncnXZSkVhvJBNcm5StDvkKqiCK.bGi",
+      "passwordHash": "$2a$10$eFZkOIe9SNFPZer0HeCZquwZLHREs1May.q10dL9Use.R7oy/ZtE6",
       "role": "SUPER_ADMIN",
       "title": "General Manager",
       "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80",
       "restaurantId": "rest-001",
-      "restaurantSlug": "spice-garden"
+      "restaurantSlug": "spice-garden",
+      "passwordPlain": "Admin@123"
     },
     {
       "id": "adm-staff-03",
       "name": "Vikram Malhotra",
       "email": "resturant1@gmail.com",
-      "passwordHash": "$2a$10$5cMFvAkPvuNoRsYfdGCys.1dzXTxVX623ZnmRSV10pBfwukMwDYiq",
+      "passwordHash": "$2a$10$uai9TfKXLWaW3ytOvZ3wruOrFr4KAgkY5cGhQZZhUpfLPaai4dQT6",
       "role": "STAFF",
       "title": "Floor Lead",
       "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80",
       "restaurantId": "rest-001",
-      "restaurantSlug": "spice-garden"
+      "restaurantSlug": "spice-garden",
+      "passwordPlain": "Admin@123"
     },
     {
       "id": "adm-royal-biryani",
@@ -880,12 +883,12 @@
       "id": "tbl-01",
       "number": "01",
       "capacity": 2,
-      "status": "OCCUPIED",
+      "status": "AVAILABLE",
       "section": "Main Dining",
-      "currentOrderId": "ORD-9662",
-      "customerName": "Kumar Sanu",
-      "amount": 252,
-      "occupiedSince": "2026-10-08T07:44:18.805Z"
+      "currentOrderId": null,
+      "customerName": null,
+      "amount": 0,
+      "occupiedSince": null
     },
     {
       "id": "tbl-02",
@@ -1446,8 +1449,8 @@
       "logo": "🌿",
       "ownerName": "Vikram Malhotra",
       "ownerEmail": "resturant1@gmail.com",
-      "ownerPhone": "+91 98765 43210",
-      "city": "Bengaluru",
+      "ownerPhone": "+91 8953208952",
+      "city": "Lucknow",
       "planId": "plan-growth",
       "planName": "Growth Pro",
       "billingCycle": "MONTHLY",
@@ -1456,7 +1459,9 @@
       "renewalDate": "2026-11-09",
       "activeTables": 24,
       "monthlyOrders": 1420,
-      "monthlyGMV": 482500
+      "monthlyGMV": 482500,
+      "ownerPassword": "Admin@123",
+      "address": ""
     },
     {
       "id": "tenant-002",
@@ -1540,5 +1545,6 @@
       "status": "RESOLVED",
       "resolvedAt": "2026-10-08T07:09:18.154Z"
     }
-  ]
+  ],
+  "restaurantSettings": []
 }

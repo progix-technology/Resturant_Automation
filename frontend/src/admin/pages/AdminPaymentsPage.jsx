@@ -25,6 +25,7 @@ export const AdminPaymentsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [methodFilter, setMethodFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [dateFilter, setDateFilter] = useState('ALL');
   
   // Payment Request Modal state
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
@@ -34,21 +35,47 @@ export const AdminPaymentsPage = () => {
   const [requestTable, setRequestTable] = useState('');
   const [isGenerated, setIsGenerated] = useState(false);
 
+  const getLocalDateStr = (dateInput) => {
+    if (!dateInput) return '';
+    const d = new Date(dateInput);
+    if (isNaN(d.getTime())) return '';
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const todayStr = getLocalDateStr(new Date());
+
   // Compute payment stats
   const stats = useMemo(() => {
     const totalToday = payments
+      .filter(p => p.status === 'SUCCESS' && getLocalDateStr(p.createdAt || p.timestamp) === todayStr)
+      .reduce((sum, p) => sum + (p.amount || 0), 0);
+    const totalAllTime = payments
       .filter(p => p.status === 'SUCCESS')
       .reduce((sum, p) => sum + (p.amount || 0), 0);
     const pendingCount = payments.filter(p => p.status === 'PENDING').length;
     const successCount = payments.filter(p => p.status === 'SUCCESS').length;
     const failedCount = payments.filter(p => p.status === 'FAILED').length;
 
-    return { totalToday, pendingCount, successCount, failedCount };
-  }, [payments]);
+    return { totalToday, totalAllTime, pendingCount, successCount, failedCount };
+  }, [payments, todayStr]);
 
   // Filtered payments
   const filteredPayments = useMemo(() => {
     return payments.filter(p => {
+      const pDate = getLocalDateStr(p.createdAt || p.timestamp);
+      
+      let matchDate = true;
+      if (dateFilter === 'TODAY') {
+        matchDate = pDate === todayStr;
+      } else if (dateFilter === 'YESTERDAY') {
+        const y = new Date();
+        y.setDate(y.getDate() - 1);
+        matchDate = pDate === getLocalDateStr(y);
+      }
+
       const matchSearch = 
         p.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -56,9 +83,9 @@ export const AdminPaymentsPage = () => {
         (p.customerPhone && p.customerPhone.includes(searchTerm));
       const matchMethod = methodFilter === 'ALL' || p.method === methodFilter;
       const matchStatus = statusFilter === 'ALL' || p.status === statusFilter;
-      return matchSearch && matchMethod && matchStatus;
+      return matchSearch && matchMethod && matchStatus && matchDate;
     });
-  }, [payments, searchTerm, methodFilter, statusFilter]);
+  }, [payments, searchTerm, methodFilter, statusFilter, dateFilter, todayStr]);
 
   // Open Request Modal with optional prefilled order
   const handleOpenRequestModal = (order = null) => {
@@ -169,11 +196,17 @@ export const AdminPaymentsPage = () => {
     {
       key: 'createdAt',
       label: 'Date & Time',
-      render: (row) => (
-        <span className="text-xs text-slate-500">
-          {new Date(row.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}, {new Date(row.createdAt).toLocaleDateString()}
-        </span>
-      )
+      render: (row) => {
+        const rawDate = row.createdAt || row.timestamp;
+        if (!rawDate) return <span className="text-xs text-slate-400">N/A</span>;
+        const dObj = new Date(rawDate);
+        if (isNaN(dObj.getTime())) return <span className="text-xs text-slate-400">N/A</span>;
+        return (
+          <span className="text-xs text-slate-500">
+            {dObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}, {dObj.toLocaleDateString()}
+          </span>
+        );
+      }
     },
     {
       key: 'actions',
@@ -222,6 +255,12 @@ export const AdminPaymentsPage = () => {
           color="emerald"
         />
         <StatCard
+          title="All-Time Collection"
+          value={`₹${stats.totalAllTime.toLocaleString()}`}
+          icon={IndianRupee}
+          color="blue"
+        />
+        <StatCard
           title="Pending Payments"
           value={stats.pendingCount}
           icon={Clock}
@@ -231,13 +270,7 @@ export const AdminPaymentsPage = () => {
           title="Successful Transactions"
           value={stats.successCount}
           icon={CheckCircle2}
-          color="blue"
-        />
-        <StatCard
-          title="Failed / Cancelled"
-          value={stats.failedCount}
-          icon={XCircle}
-          color="rose"
+          color="emerald"
         />
       </div>
 
@@ -252,6 +285,17 @@ export const AdminPaymentsPage = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* Date Range Filter */}
+          <select
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-500"
+          >
+            <option value="ALL">All Dates</option>
+            <option value="TODAY">Today Only</option>
+            <option value="YESTERDAY">Yesterday</option>
+          </select>
+
           {/* Method Filter */}
           <select
             value={methodFilter}
