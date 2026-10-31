@@ -11,6 +11,7 @@ import settingsRoutes from './routes/settingsRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import whatsappRoutes from './routes/whatsappRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
+import { paymentController } from './controllers/paymentController.js';
 import { whatsappService } from './services/whatsappService.js';
 import { connectMongoDB } from './config/db.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
@@ -118,6 +119,10 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/payment', paymentRoutes);
+
+// Razorpay Direct Webhook Safety Net (Handles root POST or /webhook in case user points Razorpay to domain root)
+app.post('/', paymentController.handleWebhook);
+app.post('/webhook', paymentController.handleWebhook);
 
 
 // 404 handler

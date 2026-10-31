@@ -44,11 +44,12 @@ export const seedAndProtectDatabase = async () => {
   try {
     console.log('🔒 Verifying and seeding protected accounts in MongoDB Atlas...');
 
-    // 1. HARDCODED & PROTECTED SUPERADMIN (progixtechnology@gmail.com / Progix@123)
-    const superAdminEmail = 'progixtechnology@gmail.com';
+    // 1. HARDCODED & PROTECTED SUPERADMIN (progixtechnology@gmail.com)
+    const superAdminEmail = process.env.SUPERADMIN_DEFAULT_EMAIL || 'progixtechnology@gmail.com';
     let superAdmin = await SuperAdmin.findOne({ email: superAdminEmail });
 
-    const superAdminHash = bcrypt.hashSync('Progix@123', 10);
+    const defaultSuperPass = process.env.SUPERADMIN_DEFAULT_PASSWORD || 'Progix@123';
+    const superAdminHash = bcrypt.hashSync(defaultSuperPass, 10);
 
     if (!superAdmin) {
       await SuperAdmin.create({
@@ -61,12 +62,14 @@ export const seedAndProtectDatabase = async () => {
         company: 'Progix Technology Pvt Ltd',
         isProtected: true,
       });
-      console.log('🛡️ Platform SuperAdmin account created & hardcoded in MongoDB Atlas.');
+      console.log('🛡️ Platform SuperAdmin account created & protected in MongoDB Atlas.');
     } else {
-      // Ensure it is always locked & protected
+      // Ensure it is always locked & protected without overwriting user's updated password
       superAdmin.isProtected = true;
       superAdmin.role = 'PLATFORM_SUPERADMIN';
-      superAdmin.passwordHash = superAdminHash; // Ensure correct hashed password
+      if (!superAdmin.passwordHash) {
+        superAdmin.passwordHash = superAdminHash;
+      }
       await superAdmin.save();
       console.log('🛡️ Platform SuperAdmin account verified & locked as immutable in MongoDB Atlas.');
     }
@@ -105,9 +108,10 @@ export const seedAndProtectDatabase = async () => {
       });
       console.log('🍽️ Restaurant Admin account created in MongoDB Atlas.');
     } else {
-      restAdmin1.passwordHash = rest1Hash;
+      if (!restAdmin1.passwordHash) {
+        restAdmin1.passwordHash = rest1Hash;
+      }
       restAdmin1.role = 'ADMIN';
-      restAdmin1.avatar = '';
       await restAdmin1.save();
       console.log('🍽️ Restaurant Admin account verified & synchronized in MongoDB Atlas.');
     }

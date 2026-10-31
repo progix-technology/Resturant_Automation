@@ -82,7 +82,9 @@ const SecurityAuthModal = ({ isOpen, onClose, onAuthorized, actionTitle, adminEm
       const res = await notificationService.verifyAdminPassword(adminEmail, password);
       if (res.success) {
         setPasswordVerified(true);
-        handleSendOtp();
+        if (onAuthorized) {
+          onAuthorized();
+        }
       } else {
         setErrorMessage(res.message || 'Incorrect Admin Password!');
       }
@@ -335,14 +337,8 @@ const WhatsAppQrCard = ({ showToast, currentPhone, onUpdatePhone, currentSlug = 
       showToast('Please enter a valid 10-digit WhatsApp phone number', 'error');
       return;
     }
-    setSecurityModal({
-      isOpen: true,
-      actionTitle: 'Authorize WhatsApp Pairing Code Request',
-      onAuthorized: () => {
-        setSecurityModal((prev) => ({ ...prev, isOpen: false }));
-        handleRequestPairingCode(e);
-      },
-    });
+    // Admin is already authenticated. Directly request 8-digit pairing code for device linking
+    handleRequestPairingCode(e);
   };
 
   const triggerLogoutWithSecurity = () => {
@@ -1695,6 +1691,7 @@ export const AdminSettingsPage = () => {
                 <WhatsAppQrCard
                   showToast={showToast}
                   currentSlug={currentSlug}
+                  adminEmail={currentAdmin?.email || formData.email || 'admin@restaurant.com'}
                   currentPhone={formData.whatsappPhone || formData.phone}
                   onUpdatePhone={(val) => handleChange('whatsappPhone', val)}
                 />

@@ -7,7 +7,7 @@ const getApiBaseUrl = () => {
   }
   // Smart fallback for live production frontend (e.g. Vercel)
   if (typeof window !== 'undefined' && !['localhost', '127.0.0.1'].includes(window.location.hostname)) {
-    return `${window.location.protocol}//${window.location.hostname}:5000/api`;
+    return 'https://resturant-automation-ihxs.onrender.com/api';
   }
   return 'http://localhost:5000/api';
 };

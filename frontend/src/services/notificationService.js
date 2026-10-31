@@ -1,6 +1,6 @@
 import { whatsappHelper } from '../utils/whatsappHelper';
 import { storage } from '../utils/storage';
-import { API_BASE_URL } from './apiConfig';
+import { API_BASE_URL, apiRequest } from './apiConfig';
 
 const NOTIF_LOG_KEY = 'restaurant_whatsapp_notifications_log';
 const API_URL = API_BASE_URL;
@@ -37,13 +37,10 @@ const dispatchWhatsAppMessage = async (mobile, text, openChat = false, slug = 's
   if (!mobile) return;
 
   try {
-    const res = await fetch(`${API_URL}/whatsapp/send`, {
+    const data = await apiRequest('/whatsapp/send', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ slug, mobile, messageText: text }),
     });
-
-    const data = await res.json();
 
     if (data.success && data.mode === 'AUTOMATIC_BACKGROUND') {
       console.log(`%c[WhatsApp Auto-Send Success for Tenant ${slug} to +91-${mobile}]`, 'color: #25D366; font-weight: bold;');
@@ -108,9 +105,8 @@ export const notificationService = {
     const tableNum = String(tableNumber || '01').replace(/^Table\s*/i, '').trim();
 
     try {
-      const res = await fetch(`${API_URL}/notifications/waiter-call`, {
+      const data = await apiRequest('/notifications/waiter-call', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           tableNumber: tableNum,
           customerName: customerName || 'Guest Diner',
@@ -118,7 +114,6 @@ export const notificationService = {
           notes: notes || 'Assistance requested at table',
         }),
       });
-      const data = await res.json();
       return data;
     } catch (err) {
       console.warn('Backend waiter call failed, using local storage:', err.message);
@@ -139,8 +134,7 @@ export const notificationService = {
   async getWaiterCalls(slug = 'spice-garden') {
     const cleanSlug = (slug || 'spice-garden').toLowerCase().trim().replace(/_/g, '-');
     try {
-      const res = await fetch(`${API_URL}/notifications/waiter-calls?slug=${cleanSlug}`);
-      const data = await res.json();
+      const data = await apiRequest(`/notifications/waiter-calls?slug=${cleanSlug}`);
       if (data && data.success && Array.isArray(data.data)) {
         return data.data;
       }
@@ -155,9 +149,8 @@ export const notificationService = {
   async resolveWaiterCall(id, tableNumber, slug = 'spice-garden') {
     const cleanSlug = (slug || 'spice-garden').toLowerCase().trim().replace(/_/g, '-');
     try {
-      await fetch(`${API_URL}/notifications/waiter-calls/${id}/resolve`, {
+      await apiRequest(`/notifications/waiter-calls/${id}/resolve`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tableNumber, slug: cleanSlug }),
       });
     } catch (err) {}
@@ -175,8 +168,7 @@ export const notificationService = {
 
   async getWhatsAppStatus(slug = 'spice-garden') {
     try {
-      const res = await fetch(`${API_URL}/whatsapp/status?slug=${slug}`);
-      return await res.json();
+      return await apiRequest(`/whatsapp/status?slug=${slug}`);
     } catch {
       return { connected: false, status: 'DISCONNECTED', qrCodeDataUrl: null };
     }
@@ -184,12 +176,10 @@ export const notificationService = {
 
   async logoutWhatsApp(slug = 'spice-garden') {
     try {
-      const res = await fetch(`${API_URL}/whatsapp/logout`, {
+      return await apiRequest('/whatsapp/logout', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ slug }),
       });
-      return await res.json();
     } catch {
       return { success: false };
     }
@@ -197,12 +187,10 @@ export const notificationService = {
 
   async requestPairingCode(mobile, slug = 'spice-garden') {
     try {
-      const res = await fetch(`${API_URL}/whatsapp/pair-code`, {
+      return await apiRequest('/whatsapp/pair-code', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ slug, mobile }),
       });
-      return await res.json();
     } catch (err) {
       return { success: false, message: err.message || 'Failed to request pairing code' };
     }
@@ -210,12 +198,10 @@ export const notificationService = {
 
   async verifyAdminPassword(email, password) {
     try {
-      const res = await fetch(`${API_URL}/auth/verify-password`, {
+      return await apiRequest('/auth/verify-password', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      return await res.json();
     } catch (err) {
       return { success: false, message: err.message || 'Password verification failed' };
     }
@@ -223,12 +209,10 @@ export const notificationService = {
 
   async sendSecurityOtp(mobile, slug = 'spice-garden') {
     try {
-      const res = await fetch(`${API_URL}/whatsapp/send-security-otp`, {
+      return await apiRequest('/whatsapp/send-security-otp', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ slug, mobile }),
       });
-      return await res.json();
     } catch (err) {
       return { success: false, message: err.message || 'Failed to send Security OTP' };
     }
@@ -236,12 +220,10 @@ export const notificationService = {
 
   async verifySecurityOtp(otp, slug = 'spice-garden') {
     try {
-      const res = await fetch(`${API_URL}/whatsapp/verify-security-otp`, {
+      return await apiRequest('/whatsapp/verify-security-otp', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ slug, otp }),
       });
-      return await res.json();
     } catch (err) {
       return { success: false, message: err.message || 'Failed to verify Security OTP' };
     }
