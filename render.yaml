@@ -13,7 +13,7 @@ services:
       - key: PORT
         value: 10000
       - key: JWT_SECRET
-        generateValue: true
+        value: super_secure_jwt_secret_key_orderflow_progix_2026_!@#$%
       - key: JWT_EXPIRES_IN
         value: 7d
       - key: MONGODB_URI

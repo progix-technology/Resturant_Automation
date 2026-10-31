@@ -12,7 +12,9 @@ import { migrateAllDataToAtlas } from './migrateToAtlas.js';
 mongoose.set('autoIndex', false);
 
 export const connectMongoDB = async () => {
-  const uri = process.env.MONGODB_URI;
+  const uri =
+    process.env.MONGODB_URI ||
+    'mongodb+srv://progixtechnology_db_user:cIHQwTzcp89jgMhP@cluster0.ddjum4h.mongodb.net/orderflow_platform?retryWrites=true&w=majority&appName=Cluster0';
 
   if (!uri) {
     console.warn('⚠️ MONGODB_URI not provided. Running in standalone local JSON mode.');
