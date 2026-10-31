@@ -4,6 +4,7 @@ import { MenuCategory } from '../models/MenuCategory.js';
 import { RestaurantSettings } from '../models/RestaurantSettings.js';
 import { Tenant } from '../models/Tenant.js';
 import { deleteMenuImage } from '../services/cloudinaryService.js';
+import { db } from '../data/db.js';
 
 export const menuController = {
   /**
@@ -14,6 +15,26 @@ export const menuController = {
       const { slug } = req.query;
       const rawSlug = (slug || 'spice-garden').toLowerCase().trim();
       const cleanSlug = rawSlug.replace(/^the-/, '').replace(/_/g, '-');
+
+      // Fast fallback if MongoDB is not connected
+      if (!mongoose.connection || mongoose.connection.readyState !== 1) {
+        const localItems = (db.get('menuItems') || []).filter((i) => {
+          const s = (i.restaurantSlug || 'spice-garden').toLowerCase().replace(/^the-/, '');
+          return s === cleanSlug;
+        });
+        const localCategories = db.get('categories') || [
+          { id: 'cat-starters', name: 'Starters & Appetizers', sortOrder: 1 },
+          { id: 'cat-mains', name: 'Main Course Specialties', sortOrder: 2 },
+          { id: 'cat-breads', name: 'Breads & Rice', sortOrder: 3 },
+          { id: 'cat-beverages', name: 'Beverages & Mocktails', sortOrder: 4 },
+          { id: 'cat-desserts', name: 'Desserts & Sweets', sortOrder: 5 },
+        ];
+        return res.status(200).json({
+          success: true,
+          categories: localCategories,
+          items: localItems,
+        });
+      }
 
       // 1. Verify restaurant existence in MongoDB Atlas
       const isRegistered =
@@ -77,8 +98,14 @@ export const menuController = {
         items: formattedItems,
       });
     } catch (err) {
-      console.error('getMenu error:', err);
-      return res.status(500).json({ success: false, message: 'Failed to fetch menu' });
+      console.error('getMenu error, using fallback:', err.message);
+      const localItems = db.get('menuItems') || [];
+      const localCategories = db.get('categories') || [];
+      return res.status(200).json({
+        success: true,
+        categories: localCategories,
+        items: localItems,
+      });
     }
   },
 

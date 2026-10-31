@@ -86,7 +86,7 @@ async function getRestaurantSettings(slug = DEFAULT_SLUG) {
   }
 
   // Sync tenant's SaaS plan info if available in MongoDB Atlas
-  if (settings) {
+  if (settings && mongoose.connection && mongoose.connection.readyState === 1) {
     try {
       const tenantMatch = await Tenant.findOne({
         $or: [{ slug: cleanSlug }, { slug: rawSlug }],

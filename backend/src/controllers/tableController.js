@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { Table } from '../models/Table.js';
 import { Order } from '../models/Order.js';
+import { db } from '../data/db.js';
 
 const cleanNum = (val) => {
   if (val === null || val === undefined) return '';
@@ -19,6 +20,12 @@ export const tableController = {
         ? (req.query.slug || req.user?.restaurantSlug || 'spice-garden').toLowerCase().trim()
         : (req.user?.restaurantSlug || req.query.slug || 'spice-garden').toLowerCase().trim();
       const cleanSlug = rawSlug.replace(/^the-/, '').replace(/_/g, '-');
+
+      // Fast instant fallback if MongoDB is not connected
+      if (!mongoose.connection || mongoose.connection.readyState !== 1) {
+        const localTables = db.get('tables') || [];
+        return res.status(200).json({ success: true, data: localTables });
+      }
 
       const query = {
         $or: [
@@ -65,8 +72,9 @@ export const tableController = {
 
       return res.status(200).json({ success: true, data: dynamicTables });
     } catch (err) {
-      console.error('getTables error:', err);
-      return res.status(500).json({ success: false, message: 'Failed to fetch tables' });
+      console.error('getTables error, using fallback:', err.message);
+      const localTables = db.get('tables') || [];
+      return res.status(200).json({ success: true, data: localTables });
     }
   },
 

@@ -309,7 +309,6 @@ export const orderController = {
           id: returnDoc.orderId,
         },
       });
-      });
     } catch (err) {
       console.error('createOrder error:', err);
       return res.status(500).json({ success: false, message: 'Failed to create order in database' });

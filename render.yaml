@@ -17,7 +17,7 @@ services:
       - key: JWT_EXPIRES_IN
         value: 7d
       - key: MONGODB_URI
-        value: mongodb+srv://progixtechnology_db_user:cIHQwTzcp89jgMhP@cluster0.ddjum4h.mongodb.net/orderflow_platform?retryWrites=true&w=majority&appName=Cluster0
+        value: "mongodb+srv://progixtechnology_db_user:cIHQwTzcp89jgMhP@cluster0.ddjum4h.mongodb.net/orderflow_platform?retryWrites=true&w=majority&appName=Cluster0"
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
       - key: CLOUDINARY_API_KEY
