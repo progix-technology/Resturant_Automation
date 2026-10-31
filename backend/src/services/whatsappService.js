@@ -65,6 +65,77 @@ const getSavedPhone = (slug = 'spice-garden') => {
   }
 };
 
+/**
+ * Restores session files from MongoDB Atlas into local authDir if local files are missing
+ * (Protects against server restarts, ephemeral container disk wipes, or re-deployments)
+ */
+const restoreSessionFromDatabase = async (slug, authDir) => {
+  try {
+    const credsFile = path.join(authDir, 'creds.json');
+    if (fs.existsSync(credsFile)) {
+      return true; // Already present locally
+    }
+
+    const { WhatsAppSession } = await import('../models/WhatsAppSession.js');
+    const doc = await WhatsAppSession.findOne({ slug });
+    if (!doc || !doc.files || doc.files.size === 0) {
+      return false;
+    }
+
+    console.log(`[WhatsApp Cloud Sync] Restoring session files from MongoDB Atlas for Tenant [${slug}]...`);
+    if (!fs.existsSync(authDir)) {
+      fs.mkdirSync(authDir, { recursive: true });
+    }
+
+    for (const [fileName, fileContent] of doc.files.entries()) {
+      const filePath = path.join(authDir, fileName);
+      fs.writeFileSync(filePath, fileContent, 'utf8');
+    }
+
+    console.log(`[WhatsApp Cloud Sync SUCCESS] Restored ${doc.files.size} session files from MongoDB Atlas!`);
+    return true;
+  } catch (err) {
+    console.warn(`[WhatsApp Cloud Sync Warning] Failed restoring session from DB:`, err.message);
+    return false;
+  }
+};
+
+/**
+ * Backs up all session files from local authDir to MongoDB Atlas
+ */
+const backupSessionToDatabase = async (slug, authDir, connectedPhone) => {
+  try {
+    if (!fs.existsSync(authDir)) return;
+    const files = fs.readdirSync(authDir);
+    if (!files.includes('creds.json')) return;
+
+    const fileMap = new Map();
+    for (const f of files) {
+      const filePath = path.join(authDir, f);
+      if (fs.statSync(filePath).isFile()) {
+        const content = fs.readFileSync(filePath, 'utf8');
+        fileMap.set(f, content);
+      }
+    }
+
+    const { WhatsAppSession } = await import('../models/WhatsAppSession.js');
+    await WhatsAppSession.findOneAndUpdate(
+      { slug },
+      {
+        slug,
+        files: fileMap,
+        connectedPhone: connectedPhone || null,
+        lastConnectedAt: new Date(),
+      },
+      { upsert: true, new: true }
+    );
+
+    console.log(`[WhatsApp Cloud Sync] Backed up ${fileMap.size} session files to MongoDB Atlas for Tenant [${slug}].`);
+  } catch (err) {
+    console.warn(`[WhatsApp Cloud Sync Warning] Failed backing up session to DB:`, err.message);
+  }
+};
+
 export const whatsappService = {
   /**
    * Initializes Baileys WhatsApp client for a specific restaurant tenant slug
@@ -101,6 +172,10 @@ export const whatsappService = {
 
     try {
       const authDir = getTenantAuthDir(safeSlug);
+
+      // Restore session from MongoDB Atlas if local files are missing (Container restart protection)
+      await restoreSessionFromDatabase(safeSlug, authDir);
+
       const { state, saveCreds } = await useMultiFileAuthState(authDir);
       const { version } = await fetchLatestBaileysVersion().catch(() => ({ version: [2, 3000, 1015901307] }));
 
@@ -111,12 +186,15 @@ export const whatsappService = {
         browser: Browsers.macOS('Desktop'),
         connectTimeoutMs: 60000,
         defaultQueryTimeoutMs: 60000,
-        keepAliveIntervalMs: 25000,
+        keepAliveIntervalMs: 15000, // 15-second heartbeat ping to prevent idle disconnects
         markOnlineOnConnect: true,
         syncFullHistory: false,
       });
 
-      sess.socket.ev.on('creds.update', saveCreds);
+      sess.socket.ev.on('creds.update', async () => {
+        await saveCreds();
+        backupSessionToDatabase(safeSlug, authDir, sess.connectedUserPhone).catch(() => {});
+      });
 
       sess.socket.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect, qr } = update;
@@ -143,13 +221,14 @@ export const whatsappService = {
           sess.connectedUserPhone = userJid.split(':')[0] || userJid.split('@')[0] || getSavedPhone(safeSlug) || 'Restaurant Phone';
 
           console.log(`\n✅ [WhatsApp Tenant SUCCESS: ${safeSlug}] Connected as +${sess.connectedUserPhone}!`);
+          backupSessionToDatabase(safeSlug, authDir, sess.connectedUserPhone).catch(() => {});
         }
 
         if (connection === 'close') {
           const statusCode = lastDisconnect?.error?.output?.statusCode;
           const isLoggedOut = statusCode === DisconnectReason.loggedOut || statusCode === 401;
 
-          console.log(`[WhatsApp Tenant ${safeSlug}] Closed: ${lastDisconnect?.error?.message || statusCode}. Logged out: ${isLoggedOut}`);
+          console.log(`[WhatsApp Tenant ${safeSlug}] Connection closed: ${lastDisconnect?.error?.message || statusCode}. Logged out: ${isLoggedOut}`);
 
           if (isLoggedOut) {
             sess.isConnected = false;
@@ -157,8 +236,12 @@ export const whatsappService = {
             sess.connectionStatus = 'DISCONNECTED';
             sess.connectedUserPhone = null;
             this.clearSessionFiles(safeSlug);
+            // Delete cloud backup from MongoDB Atlas
+            import('../models/WhatsAppSession.js').then(({ WhatsAppSession }) => {
+              WhatsAppSession.deleteOne({ slug: safeSlug }).catch(() => {});
+            });
           } else {
-            // Temporary network drop / 515 restart / socket reset — KEEP session active on disk
+            // Transient network drop / 515 restartRequired — KEEP session active on disk & DB
             if (isRegisteredSession(safeSlug)) {
               sess.isConnected = true;
               sess.connectionStatus = 'CONNECTED';
@@ -168,8 +251,9 @@ export const whatsappService = {
             }
             sess.isInitializing = false;
             sess.reconnectAttempts = (sess.reconnectAttempts || 0) + 1;
-            const delay = Math.min(3000 * sess.reconnectAttempts, 15000);
+            const delay = Math.min(2000 * sess.reconnectAttempts, 12000);
 
+            console.log(`[WhatsApp Tenant ${safeSlug}] Auto-reconnecting in ${delay}ms (Attempt #${sess.reconnectAttempts})...`);
             setTimeout(() => {
               this.init(safeSlug, true);
             }, delay);
@@ -252,6 +336,12 @@ export const whatsappService = {
     }
 
     this.clearSessionFiles(safeSlug);
+    try {
+      const { WhatsAppSession } = await import('../models/WhatsAppSession.js');
+      await WhatsAppSession.deleteOne({ slug: safeSlug });
+      console.log(`[WhatsApp Tenant ${safeSlug}] Cloud session removed from MongoDB Atlas.`);
+    } catch (e) {}
+
     sess.isConnected = false;
     sess.isInitializing = false;
     sess.connectionStatus = 'DISCONNECTED';
@@ -288,6 +378,12 @@ export const whatsappService = {
 
     // Clear stale incomplete credentials & re-init clean socket for pairing code
     this.clearSessionFiles(safeSlug);
+    try {
+      const { WhatsAppSession } = await import('../models/WhatsAppSession.js');
+      await WhatsAppSession.deleteOne({ slug: safeSlug });
+      console.log(`[WhatsApp Tenant ${safeSlug}] Cloud session removed from MongoDB Atlas.`);
+    } catch (e) {}
+
     sess.isConnected = false;
     sess.isInitializing = false;
     sess.socket = null;

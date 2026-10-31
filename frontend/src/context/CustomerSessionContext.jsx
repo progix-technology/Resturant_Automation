@@ -69,6 +69,10 @@ export const CustomerSessionProvider = ({ children }) => {
   }, [session]);
 
   const createSession = ({ customerName, mobile, tableNumber, restaurantSlug, restaurantId = 'rest-001' }) => {
+    // When a new person checks in or enters the table, purge any old previous customer's order and cart
+    storage.remove(STORAGE_KEYS.ACTIVE_ORDER);
+    storage.remove(STORAGE_KEYS.CART);
+
     const newSession = {
       sessionId: `sess_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
       restaurantId,

@@ -12,7 +12,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { useSuperAdminData } from '../context/SuperAdminDataContext';
-import { API_BASE_URL } from '../../services/apiConfig';
+import { API_BASE_URL, getAuthToken } from '../../services/apiConfig';
 
 export const SuperAdminSettingsPage = () => {
   const { settings, updatePlatformSettings, showToast } = useSuperAdminData();
@@ -51,8 +51,10 @@ export const SuperAdminSettingsPage = () => {
     bodyData.append('type', 'superadmin-qr');
 
     try {
+      const token = getAuthToken('/superadmin');
       const res = await fetch(`${API_BASE_URL}/upload/restaurant-image`, {
         method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: bodyData,
       });
       const data = await res.json();

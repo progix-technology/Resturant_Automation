@@ -158,6 +158,25 @@ const restaurantSettingsSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    razorpayKeyId: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    razorpayKeySecret: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    razorpayWebhookSecret: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    isRazorpayEnabled: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

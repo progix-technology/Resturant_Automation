@@ -5,7 +5,12 @@ const tableSchema = new mongoose.Schema(
     tableId: {
       type: String,
       required: true,
-      unique: true,
+    },
+    restaurantSlug: {
+      type: String,
+      required: true,
+      default: 'spice-garden',
+      index: true,
     },
     number: {
       type: String,
@@ -45,5 +50,8 @@ const tableSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+// Compound index to guarantee uniqueness of table numbers within each restaurant
+tableSchema.index({ restaurantSlug: 1, number: 1 }, { unique: true });
 
 export const Table = mongoose.model('Table', tableSchema);

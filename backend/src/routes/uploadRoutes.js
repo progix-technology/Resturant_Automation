@@ -1,6 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import { uploadMenuImage, uploadRestaurantImage, deleteMenuImage } from '../services/cloudinaryService.js';
+import { authenticateToken } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -21,9 +22,9 @@ const upload = multer({
 
 /**
  * POST /api/upload/dish-image
- * Receives an image and uploads to Cloudinary with automatic WebP/AVIF compression
+ * Receives an image and uploads to Cloudinary with automatic WebP/AVIF compression (Protected)
  */
-router.post('/dish-image', upload.single('image'), async (req, res) => {
+router.post('/dish-image', authenticateToken, upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -55,9 +56,9 @@ router.post('/dish-image', upload.single('image'), async (req, res) => {
 
 /**
  * POST /api/upload/restaurant-image
- * Uploads restaurant branding image (logo, banner) to Cloudinary
+ * Uploads restaurant branding image (logo, banner) to Cloudinary (Protected)
  */
-router.post('/restaurant-image', upload.single('image'), async (req, res) => {
+router.post('/restaurant-image', authenticateToken, upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -91,9 +92,9 @@ router.post('/restaurant-image', upload.single('image'), async (req, res) => {
 
 /**
  * DELETE /api/upload/dish-image
- * Removes an image from Cloudinary
+ * Removes an image from Cloudinary (Protected)
  */
-router.delete('/dish-image', async (req, res) => {
+router.delete('/dish-image', authenticateToken, async (req, res) => {
   try {
     const { publicId, url } = req.body;
     const target = publicId || url;

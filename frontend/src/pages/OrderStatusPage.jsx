@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Clock, Utensils, CheckCircle2, RefreshCw } from 'lucide-react';
+import {
+  Clock,
+  Utensils,
+  CheckCircle2,
+  RefreshCw,
+  CreditCard,
+  Store,
+  Wallet,
+  ShieldCheck,
+  ChevronRight,
+} from 'lucide-react';
 import { useOrder } from '../hooks/useOrder';
 import { useSession } from '../hooks/useSession';
 import { OrderTimeline } from '../components/order/OrderTimeline';
@@ -9,16 +19,16 @@ import { PreparationTimeCard } from '../components/order/PreparationTimeCard';
 import { Button } from '../components/common/Button';
 import { ORDER_STATUS } from '../constants/orderStatuses';
 import { PAYMENT_STATUS } from '../constants/paymentStatuses';
-
+import { orderService } from '../services/orderService';
 import { GoogleRatingCard } from '../components/common/GoogleRatingCard';
 
 export const OrderStatusPage = () => {
   const { restaurantSlug } = useParams();
   const navigate = useNavigate();
-  const { activeOrder, loadOrder, clearActiveOrder, simulatePaymentSuccess, isLoading } = useOrder();
+  const { activeOrder, loadOrder, clearActiveOrder } = useOrder();
   const { session, clearSession } = useSession();
-  const [showQrModal, setShowQrModal] = useState(false);
-  const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
+  const [isUpdatingPreference, setIsUpdatingPreference] = useState(false);
+  const [preferenceFeedback, setPreferenceFeedback] = useState('');
 
   // Poll backend for real-time order status updates set by Admin/Kitchen
   useEffect(() => {
@@ -41,17 +51,30 @@ export const OrderStatusPage = () => {
   }
 
   const isPaid = activeOrder.paymentStatus === PAYMENT_STATUS.COMPLETED;
-  const isServedOrDone = activeOrder.orderStatus === ORDER_STATUS.SERVED || activeOrder.orderStatus === 'COMPLETED';
+  const isCashAtCounter =
+    activeOrder.paymentMethod === 'CASH_AT_COUNTER' ||
+    activeOrder.paymentMethod === 'CASH' ||
+    activeOrder.paymentMethod === 'PAY_AT_COUNTER';
+
+  const isServedOrDone =
+    activeOrder.orderStatus === ORDER_STATUS.SERVED ||
+    activeOrder.orderStatus === 'COMPLETED';
   const isDiningComplete = isPaid && isServedOrDone;
 
-  const handleConfirmDone = async () => {
-    setIsVerifyingPayment(true);
+  const handlePayOnline = () => {
+    navigate(`/menu/${restaurantSlug}/payment`);
+  };
+
+  const handleSelectPayAtCounter = async () => {
+    setIsUpdatingPreference(true);
     try {
-      await simulatePaymentSuccess();
+      await orderService.updatePaymentPreference(activeOrder.orderId, 'CASH_AT_COUNTER');
+      setPreferenceFeedback('Cash at Counter selected! Please settle at the counter after dining.');
+      loadOrder(activeOrder.orderId).catch(() => {});
     } catch (err) {
-      console.error('Payment confirmation error:', err);
+      console.warn('Payment preference error:', err);
     } finally {
-      setIsVerifyingPayment(false);
+      setIsUpdatingPreference(false);
     }
   };
 
@@ -86,7 +109,7 @@ export const OrderStatusPage = () => {
       {isDiningComplete && (
         <div className="bg-gradient-to-br from-emerald-900 via-emerald-850 to-charcoal-950 text-white rounded-3xl p-5 shadow-xl border border-emerald-700/50 space-y-4 relative overflow-hidden animate-slide-up">
           <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
-          
+
           <div className="flex items-start gap-3.5">
             <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center shrink-0 shadow-inner">
               <CheckCircle2 className="w-7 h-7 text-emerald-400" />
@@ -102,7 +125,11 @@ export const OrderStatusPage = () => {
                 Thank You for Dining With Us! 🙏
               </h2>
               <p className="text-xs text-emerald-200/90 leading-snug">
-                Hope you enjoyed your meal, <span className="font-semibold text-white">{activeOrder.customerName || session?.customerName || 'Guest'}</span>!
+                Hope you enjoyed your meal,{' '}
+                <span className="font-semibold text-white">
+                  {activeOrder.customerName || session?.customerName || 'Guest'}
+                </span>
+                !
               </p>
             </div>
           </div>
@@ -115,7 +142,9 @@ export const OrderStatusPage = () => {
             </div>
             <div className="flex justify-between items-center text-emerald-100">
               <span>Payment Mode:</span>
-              <span className="font-semibold text-emerald-300">{activeOrder.paymentMethod || 'UPI / Online'} (Paid)</span>
+              <span className="font-semibold text-emerald-300">
+                {activeOrder.paymentMethod || 'UPI / Online'} (Paid)
+              </span>
             </div>
             <div className="flex justify-between items-center pt-2 border-t border-white/10 text-sm font-bold text-white">
               <span>Total Bill Paid:</span>
@@ -152,72 +181,104 @@ export const OrderStatusPage = () => {
         />
       )}
 
-      {/* Unpaid Warning & Instant Done / Not Done Verification Banner */}
+      {/* VERIFIED PAID BADGE (When payment is complete) */}
+      {isPaid && !isDiningComplete && (
+        <div className="p-3.5 bg-gradient-to-r from-emerald-50 to-teal-50/60 rounded-2xl border border-emerald-200 shadow-2xs flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-5 h-5 text-emerald-700" />
+            </div>
+            <div>
+              <p className="text-xs font-extrabold text-emerald-950">
+                Bill Payment Verified (₹{activeOrder.total})
+              </p>
+              <p className="text-[11px] text-emerald-700 font-medium">
+                Paid via {activeOrder.paymentMethod || 'Razorpay Online'}
+              </p>
+            </div>
+          </div>
+          <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-200/80 text-emerald-900">
+            PAID
+          </span>
+        </div>
+      )}
+
+      {/* PAYMENT ACTION CONSOLE (When payment is pending: Pay Online or Pay at Counter) */}
       {!isPaid && (
-        <div className="p-4 bg-gradient-to-br from-amber-50 to-orange-50/60 rounded-2xl border border-amber-200/90 shadow-2xs space-y-3 text-xs">
+        <div className="p-4 bg-gradient-to-br from-amber-50/80 via-white to-orange-50/50 rounded-2xl border border-amber-200 shadow-xs space-y-3">
           <div className="flex items-center justify-between">
-            <div className="text-amber-950 font-bold">
-              <p className="text-sm font-extrabold flex items-center gap-1.5">
-                <span>Bill Payment Pending</span>
-                <span className="text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full text-xs font-black">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black text-slate-800 uppercase tracking-wider">
+                  Bill Total
+                </span>
+                <span className="text-emerald-800 bg-emerald-100/90 px-2 py-0.5 rounded-full text-xs font-black">
                   ₹{activeOrder.total}
                 </span>
-              </p>
-              <p className="text-amber-800 text-[11px] mt-0.5">
-                Scan UPI QR sent on WhatsApp or pay at counter.
+              </div>
+              <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                {isCashAtCounter
+                  ? 'Cash payment at counter selected. Settle with cashier or pay online anytime.'
+                  : 'Pay online via Razorpay / UPI or pay at the billing counter.'}
               </p>
             </div>
 
-            <Button
-              onClick={() => navigate(`/menu/${restaurantSlug}/payment`)}
-              size="sm"
-              variant="outline"
-              className="border-amber-600 text-amber-900 bg-white hover:bg-amber-100 font-bold shrink-0"
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 shrink-0">
+              {isCashAtCounter ? 'Pay at Counter' : 'Payment Pending'}
+            </span>
+          </div>
+
+          {/* Action Buttons: Pay Now vs Pay at Counter */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-amber-100">
+            <button
+              type="button"
+              onClick={handlePayOnline}
+              className="w-full h-10 px-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:scale-98 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
             >
-              View UPI QR
-            </Button>
+              <CreditCard className="w-4 h-4" />
+              <span>Pay Online Now</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={isUpdatingPreference || isCashAtCounter}
+              onClick={handleSelectPayAtCounter}
+              className={`w-full h-10 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                isCashAtCounter
+                  ? 'border-emerald-400 bg-emerald-50 text-emerald-800 font-extrabold cursor-default'
+                  : 'border-slate-300 bg-white hover:bg-slate-50 text-slate-700 shadow-2xs'
+              }`}
+            >
+              <Wallet className="w-4 h-4 text-slate-600" />
+              <span>
+                {isUpdatingPreference
+                  ? 'Updating...'
+                  : isCashAtCounter
+                  ? '✓ Cash at Counter Selected'
+                  : 'Pay at Counter / Cash'}
+              </span>
+            </button>
           </div>
 
-          {/* Customer Done / Not Done Confirmation Box */}
-          <div className="pt-2 border-t border-amber-200/80">
-            <p className="text-[11px] font-bold text-amber-900 mb-2">
-              Have you completed payment via QR or Cash?
+          {preferenceFeedback && (
+            <p className="text-[11px] text-emerald-700 font-medium bg-emerald-50/80 px-2.5 py-1 rounded-lg border border-emerald-200/60 animate-fade-in">
+              {preferenceFeedback}
             </p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                disabled={isVerifyingPayment}
-                onClick={handleConfirmDone}
-                className="py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>{isVerifyingPayment ? 'Verifying...' : 'Done (Paid)'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {}}
-                className="py-2 px-3 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs transition-colors"
-              >
-                Not Done (Pay Later)
-              </button>
-            </div>
-          </div>
+          )}
         </div>
       )}
 
       {/* Preparation Time / ETA Hero Card (show only if not completed) */}
       {!isDiningComplete && (
         <PreparationTimeCard
-          estimatedMinutes={activeOrder.estimatedMinutes || 20}
+          estimatedMinutes={activeOrder.estimatedMinutes || activeOrder.etaMinutes || 20}
           orderStatus={activeOrder.orderStatus}
         />
       )}
 
-      {/* Visual Live Tracker Timeline */}
+      {/* Visual Live Tracker Timeline (Sequential 5 Stages) */}
       <OrderTimeline
         orderStatus={activeOrder.orderStatus}
-        paymentStatus={activeOrder.paymentStatus}
       />
 
       {/* Itemized Order Details Card */}

@@ -1,78 +1,104 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import { RestaurantSettings } from '../models/RestaurantSettings.js';
+import { Tenant } from '../models/Tenant.js';
 import { deleteMenuImage } from '../services/cloudinaryService.js';
-import { db } from '../data/db.js';
+import { authenticateToken } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 const DEFAULT_SLUG = 'spice-garden';
 
-// Helper to get or create default settings safely
-async function getOrCreateSettings(slug = DEFAULT_SLUG) {
+// Helper to find existing restaurant settings strictly without fabricating non-existent restaurants
+async function getRestaurantSettings(slug = DEFAULT_SLUG) {
   let settings = null;
   const rawSlug = (slug || DEFAULT_SLUG).toLowerCase().trim();
   const cleanSlug = rawSlug.replace(/_/g, '-');
-  const fallbackTitle = cleanSlug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
+  // 1. Check MongoDB Atlas RestaurantSettings if connected
   if (mongoose.connection && mongoose.connection.readyState === 1) {
     try {
-      // Find matching setting with either cleanSlug or rawSlug
       settings = await RestaurantSettings.findOne({
         $or: [{ slug: cleanSlug }, { slug: rawSlug }],
-      });
-
-      if (settings) {
-        // If found under rawSlug (e.g. spice_garden), update to cleanSlug
-        if (settings.slug !== cleanSlug) {
-          settings.slug = cleanSlug;
-          await settings.save().catch(() => {});
-        }
-      }
+      }).lean();
     } catch (mErr) {
       console.warn('[SETTINGS] MongoDB query error:', mErr.message);
     }
-  }
 
-  const restaurants = db.get('restaurants') || [];
-  const localMatch = restaurants.find((r) => r.slug === cleanSlug || r.slug === rawSlug);
-
-  if (!settings) {
-    if (localMatch) {
-      settings = { ...localMatch, slug: cleanSlug };
-    } else {
-      settings = {
-        slug: cleanSlug,
-        name: fallbackTitle,
-        restaurantName: fallbackTitle,
-        tagline: '',
-        cuisine: 'Multi-Cuisine',
-        rating: 4.8,
-        reviewCount: 50,
-        address: '',
-        logo: '',
-        banner: '',
-        openTime: '11:00 AM',
-        closeTime: '11:00 PM',
-        isKitchenOpen: true,
-        isAcceptingOrders: true,
-        phone: '',
-        email: '',
-        gstin: '',
-        upiId: '',
-      };
+    // Check Tenant model in MongoDB Atlas if not found in RestaurantSettings
+    if (!settings) {
+      try {
+        const mongoTenant = await Tenant.findOne({
+          $or: [{ slug: cleanSlug }, { slug: rawSlug }],
+        }).lean();
+        if (mongoTenant) {
+          settings = {
+            slug: cleanSlug,
+            name: mongoTenant.name,
+            restaurantName: mongoTenant.name,
+            tagline: mongoTenant.tagline || '',
+            cuisine: mongoTenant.cuisine || 'Multi-Cuisine',
+            rating: 4.8,
+            reviewCount: 50,
+            address: mongoTenant.address || mongoTenant.city || '',
+            logo: mongoTenant.logo || '',
+            banner: mongoTenant.banner || '',
+            openTime: '11:00 AM',
+            closeTime: '11:00 PM',
+            isKitchenOpen: true,
+            isAcceptingOrders: mongoTenant.status === 'ACTIVE',
+            phone: mongoTenant.ownerPhone || '',
+            email: mongoTenant.ownerEmail || '',
+            planId: mongoTenant.planId || 'plan-starter',
+            planName: mongoTenant.planName || 'Starter QR',
+          };
+        }
+      } catch (tErr) {
+        console.warn('[SETTINGS] MongoDB Tenant query error:', tErr.message);
+      }
     }
   }
 
-  // Sync tenant's SaaS plan info if available in db.json platformTenants
-  const platformTenants = db.get('platformTenants') || [];
-  const tenantMatch = platformTenants.find((t) => (t.slug || '').toLowerCase() === cleanSlug || (t.slug || '').toLowerCase() === rawSlug);
-  if (tenantMatch) {
+  // 2. Default seed restaurant fallback only for 'spice-garden'
+  if (!settings && (cleanSlug === 'spice-garden' || cleanSlug === 'the-spice-garden')) {
     settings = {
-      ...(typeof settings.toObject === 'function' ? settings.toObject() : settings),
-      planId: tenantMatch.planId || 'plan-starter',
-      planName: tenantMatch.planName || 'Starter QR',
+      slug: 'spice-garden',
+      name: 'The Spice Garden',
+      restaurantName: 'The Spice Garden',
+      tagline: 'Authentic Indian Flavours & Contemporary Tandoor',
+      cuisine: 'North Indian • Chinese • Tandoor',
+      rating: 4.8,
+      reviewCount: 320,
+      address: 'Shop 14, High Street Avenue, Indiranagar, Bengaluru, 560038',
+      logo: '🌿',
+      banner: '',
+      openTime: '11:00 AM',
+      closeTime: '11:00 PM',
+      isKitchenOpen: true,
+      isAcceptingOrders: true,
+      phone: '+91 98765 43210',
+      email: 'contact@spicegarden.com',
+      gstin: '29ABCDE1234F1Z5',
+      upiId: 'spicegarden@okhdfcbank',
+      planId: 'plan-growth',
+      planName: 'Growth Pro',
     };
+  }
+
+  // Sync tenant's SaaS plan info if available in MongoDB Atlas
+  if (settings) {
+    try {
+      const tenantMatch = await Tenant.findOne({
+        $or: [{ slug: cleanSlug }, { slug: rawSlug }],
+      }).lean();
+      if (tenantMatch) {
+        settings = {
+          ...settings,
+          planId: tenantMatch.planId || settings.planId || 'plan-starter',
+          planName: tenantMatch.planName || settings.planName || 'Starter QR',
+        };
+      }
+    } catch (e) {}
   }
 
   return settings;
@@ -80,12 +106,20 @@ async function getOrCreateSettings(slug = DEFAULT_SLUG) {
 
 /**
  * GET /api/settings/:slug?
- * Fetches restaurant settings
+ * Fetches restaurant settings (Returns 404 if restaurant does not exist)
  */
 router.get('/:slug?', async (req, res) => {
   try {
     const slug = req.params.slug || req.query.slug || DEFAULT_SLUG;
-    const settings = await getOrCreateSettings(slug);
+    const settings = await getRestaurantSettings(slug);
+
+    if (!settings) {
+      return res.status(404).json({
+        success: false,
+        message: `Restaurant "${slug}" not found. Please verify the QR code scanned.`,
+      });
+    }
+
     res.status(200).json({
       success: true,
       settings,
@@ -101,13 +135,24 @@ router.get('/:slug?', async (req, res) => {
 
 /**
  * PUT /api/settings/:slug?
- * Updates restaurant settings and cleans up replaced Cloudinary images
+ * Updates restaurant settings and cleans up replaced Cloudinary images (Protected - Admin only)
  */
-router.put('/:slug?', async (req, res) => {
+router.put('/:slug?', authenticateToken, async (req, res) => {
   try {
-    const slug = req.params.slug || req.body.slug || DEFAULT_SLUG;
-    const rawSlug = (slug || DEFAULT_SLUG).toLowerCase().trim();
-    const cleanSlug = rawSlug.replace(/_/g, '-');
+    const isSuper = req.user?.role === 'SUPER_ADMIN' || req.user?.role === 'PLATFORM_SUPERADMIN';
+    const paramSlug = (req.params.slug || req.body.slug || '').toLowerCase().trim().replace(/_/g, '-');
+    const userSlug = (req.user?.restaurantSlug || '').toLowerCase().trim().replace(/_/g, '-');
+
+    // Multi-Tenant Isolation Check: Admin cannot modify settings of another restaurant
+    if (!isSuper && userSlug && paramSlug && userSlug !== paramSlug) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access Denied: You cannot modify another restaurant\'s settings.',
+      });
+    }
+
+    const cleanSlug = isSuper ? (paramSlug || userSlug || DEFAULT_SLUG) : (userSlug || DEFAULT_SLUG);
+    const rawSlug = cleanSlug;
     const updateData = { ...req.body, slug: cleanSlug };
 
     // Normalize name / restaurantName
@@ -152,30 +197,6 @@ router.put('/:slug?', async (req, res) => {
       } catch (dbErr) {
         console.warn('[SETTINGS PUT] MongoDB save warning:', dbErr.message);
       }
-    }
-
-    // Always update local db.json as local backup sync
-    try {
-      const localRestaurants = db.get('restaurants') || [];
-      let matchFound = false;
-      const updatedLocal = localRestaurants.map((r) => {
-        if (r.slug === cleanSlug || r.slug === rawSlug) {
-          matchFound = true;
-          return { ...r, ...updateData, slug: cleanSlug };
-        }
-        return r;
-      });
-
-      if (!matchFound) {
-        updatedLocal.push({
-          id: `rest-${Date.now()}`,
-          slug: cleanSlug,
-          ...updateData,
-        });
-      }
-      db.set('restaurants', updatedLocal);
-    } catch (dbErr) {
-      console.warn('Local db sync warning for settings:', dbErr.message);
     }
 
     res.status(200).json({

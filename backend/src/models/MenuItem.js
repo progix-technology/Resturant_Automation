@@ -5,11 +5,12 @@ const menuItemSchema = new mongoose.Schema(
     itemId: {
       type: String,
       required: true,
-      unique: true,
     },
     restaurantSlug: {
       type: String,
+      required: true,
       default: 'spice-garden',
+      index: true,
     },
     name: {
       type: String,
@@ -81,5 +82,7 @@ const menuItemSchema = new mongoose.Schema(
   }
 );
 
+
+menuItemSchema.index({ restaurantSlug: 1, itemId: 1 }, { unique: true });
 
 export const MenuItem = mongoose.model('MenuItem', menuItemSchema);

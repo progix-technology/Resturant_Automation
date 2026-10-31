@@ -1,15 +1,16 @@
 import express from 'express';
 import { whatsappController } from '../controllers/whatsappController.js';
-import { authLimiter } from '../middleware/rateLimiter.js';
+import { authLimiter, otpLimiter } from '../middleware/rateLimiter.js';
+import { authenticateToken } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 router.get('/status', whatsappController.getStatus);
-router.post('/send', whatsappController.sendMessage);
-router.post('/pair-code', whatsappController.requestPairingCode);
-router.post('/logout', whatsappController.logout);
-router.post('/send-security-otp', authLimiter, whatsappController.sendSecurityOtp);
-router.post('/verify-security-otp', authLimiter, whatsappController.verifySecurityOtp);
+router.post('/send', authenticateToken, whatsappController.sendMessage);
+router.post('/pair-code', authenticateToken, whatsappController.requestPairingCode);
+router.post('/logout', authenticateToken, whatsappController.logout);
+router.post('/send-security-otp', otpLimiter, whatsappController.sendSecurityOtp);
+router.post('/verify-security-otp', otpLimiter, whatsappController.verifySecurityOtp);
 
 export default router;
 

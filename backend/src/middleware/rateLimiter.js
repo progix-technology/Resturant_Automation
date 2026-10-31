@@ -2,17 +2,49 @@ import rateLimit from 'express-rate-limit';
 
 /**
  * Strict Rate Limiter for Authentication Endpoints (Brute Force Protection)
- * Max 10 login attempts per 15-minute window per IP
+ * Max 15 login attempts per 15-minute window per IP
  */
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 15, // limit each IP to 15 requests per windowMs
-  standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
-  legacyHeaders: false, // Disable `X-RateLimit-*` headers
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
   message: {
     success: false,
     message: 'Too many authentication attempts from this IP. Please try again after 15 minutes.',
     securityNotice: 'Rate limiting active to prevent unauthorised brute force events',
+  },
+});
+
+/**
+ * Strict Rate Limiter for OTP Requests (Anti-Spam & SMS/WhatsApp Abuse Protection)
+ * Max 5 OTP requests per 10-minute window per IP
+ */
+export const otpLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: 5, // Limit each IP to 5 OTP requests per 10 minutes
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many OTP requests from this device. Please wait 10 minutes before requesting another OTP.',
+    securityNotice: 'Anti-abuse rate limiting active on OTP endpoints',
+  },
+});
+
+/**
+ * Strict Rate Limiter for Order Creation (Anti-DDoS & Order Flood Protection)
+ * Max 10 orders per 1-minute window per IP
+ */
+export const orderCreationLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10, // Limit each IP to 10 orders per minute
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many orders submitted in a short period. Please wait a minute before placing another order.',
+    securityNotice: 'Order flood protection active',
   },
 });
 

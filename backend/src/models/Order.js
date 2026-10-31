@@ -57,8 +57,23 @@ const orderSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ['UPI', 'CASH', 'CARD'],
       default: 'UPI',
+    },
+    razorpayOrderId: {
+      type: String,
+      default: null,
+    },
+    razorpayPaymentId: {
+      type: String,
+      default: null,
+    },
+    razorpaySignature: {
+      type: String,
+      default: null,
+    },
+    paidAt: {
+      type: Date,
+      default: null,
     },
     etaMinutes: {
       type: Number,
@@ -68,10 +83,17 @@ const orderSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    thankYouSent: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
   }
 );
+
+orderSchema.index({ restaurantSlug: 1, createdAt: -1 });
+orderSchema.index({ restaurantSlug: 1, tableNumber: 1 });
 
 export const Order = mongoose.model('Order', orderSchema);

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useOutletContext, useParams } from 'react-router-dom';
-import { Sparkles, UtensilsCrossed } from 'lucide-react';
+import { useOutletContext, useParams, useNavigate } from 'react-router-dom';
+import { Sparkles, UtensilsCrossed, ChefHat, ArrowRight } from 'lucide-react';
 import { useSession } from '../hooks/useSession';
+import { useOrder } from '../hooks/useOrder';
 import { menuService } from '../services/menuService';
 import { RestaurantBanner } from '../components/restaurant/RestaurantBanner';
 import { CustomerBadge } from '../components/restaurant/CustomerBadge';
@@ -15,7 +16,9 @@ import { EmptyState } from '../components/common/EmptyState';
 export const MenuPage = () => {
   const { restaurant } = useOutletContext();
   const { restaurantSlug } = useParams();
+  const navigate = useNavigate();
   const { session } = useSession();
+  const { activeOrder } = useOrder();
 
   const [categories, setCategories] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
@@ -26,6 +29,13 @@ export const MenuPage = () => {
 
   // Active item in bottom sheet customization modal
   const [customizingItem, setCustomizingItem] = useState(null);
+
+  // Check if active order belongs to current diner & table
+  const hasActiveOrder = Boolean(
+    activeOrder &&
+    activeOrder.orderId &&
+    (!session?.tableNumber || String(activeOrder.tableNumber).trim() === String(session.tableNumber).trim())
+  );
 
   useEffect(() => {
     const fetchMenuData = async () => {
@@ -129,6 +139,37 @@ export const MenuPage = () => {
           customerName={session.customerName}
           tableNumber={session.tableNumber}
         />
+      )}
+
+      {/* Live Active Order Banner (shown if diner has placed an order for this table) */}
+      {hasActiveOrder && (
+        <div
+          onClick={() => navigate(`/menu/${restaurantSlug || restaurant?.slug || 'spice-garden'}/order-status`)}
+          className="bg-gradient-to-r from-emerald-950 via-emerald-900 to-teal-950 text-white rounded-2xl p-3.5 shadow-md border border-emerald-700/60 flex items-center justify-between gap-3 cursor-pointer hover:border-emerald-500 transition-all active:scale-[0.99] animate-fade-in"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center shrink-0">
+              <ChefHat className="w-5 h-5 text-emerald-300" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 border border-emerald-400/20">
+                  {activeOrder.orderStatus || 'ACTIVE ORDER'}
+                </span>
+                <span className="text-xs font-mono font-bold text-emerald-100">
+                  #{activeOrder.orderId}
+                </span>
+              </div>
+              <p className="text-xs text-emerald-100/90 font-medium truncate mt-0.5">
+                Table {activeOrder.tableNumber} order is active • Tap to track live status & bill →
+              </p>
+            </div>
+          </div>
+          <div className="hidden xs:flex items-center gap-1 text-xs font-bold text-emerald-300 shrink-0">
+            <span>Track</span>
+            <ArrowRight className="w-4 h-4" />
+          </div>
+        </div>
       )}
 
       {/* Search Input */}

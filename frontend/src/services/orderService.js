@@ -165,4 +165,31 @@ export const orderService = {
     }
     throw new Error('Order not found');
   },
+
+  /**
+   * Updates an order's payment preference (e.g. CASH_AT_COUNTER)
+   */
+  async updatePaymentPreference(orderId, paymentMethod = 'CASH_AT_COUNTER') {
+    try {
+      const res = await apiRequest(`/orders/${orderId}/payment-preference`, {
+        method: 'PATCH',
+        body: JSON.stringify({ paymentMethod }),
+      });
+      if (res && res.data) {
+        storage.set(STORAGE_KEYS.ACTIVE_ORDER, res.data);
+        return res.data;
+      }
+    } catch (err) {
+      console.warn('Backend payment preference update failed, updating locally:', err.message);
+    }
+
+    const activeOrder = storage.get(STORAGE_KEYS.ACTIVE_ORDER);
+    if (activeOrder && (activeOrder.orderId === orderId || activeOrder.id === orderId)) {
+      activeOrder.paymentMethod = paymentMethod;
+      activeOrder.updatedAt = new Date().toISOString();
+      storage.set(STORAGE_KEYS.ACTIVE_ORDER, activeOrder);
+      return activeOrder;
+    }
+    return null;
+  },
 };

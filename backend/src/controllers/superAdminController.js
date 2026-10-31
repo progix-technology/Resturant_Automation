@@ -1,30 +1,29 @@
 import mongoose from 'mongoose';
-import { db } from '../data/db.js';
 import { Tenant } from '../models/Tenant.js';
 import { SuperAdmin } from '../models/SuperAdmin.js';
 import { RestaurantAdmin } from '../models/RestaurantAdmin.js';
+import { RestaurantSettings } from '../models/RestaurantSettings.js';
 import { MenuItem } from '../models/MenuItem.js';
+import { Table } from '../models/Table.js';
+import { PricingPlan } from '../models/PricingPlan.js';
+import { Invoice } from '../models/Invoice.js';
+import { PlatformSettings } from '../models/PlatformSettings.js';
 import { hashPassword } from '../utils/passwordUtils.js';
 
 export const superAdminController = {
-  // Tenants
+  // ==========================================
+  // TENANTS MANAGEMENT (MongoDB Atlas Authoritative)
+  // ==========================================
   async getTenants(req, res) {
     try {
-      if (mongoose.connection && mongoose.connection.readyState === 1) {
-        try {
-          const mongoTenants = await Tenant.find().sort({ createdAt: -1 }).lean();
-
-          if (mongoTenants && mongoTenants.length > 0) {
-            return res.status(200).json({ success: true, count: mongoTenants.length, data: mongoTenants });
-          }
-        } catch (mErr) {
-          // Fallback
-        }
-      }
-
-      const tenants = db.get('platformTenants') || [];
-      return res.status(200).json({ success: true, count: tenants.length, data: tenants });
+      const tenants = await Tenant.find().sort({ createdAt: -1 }).lean();
+      return res.status(200).json({
+        success: true,
+        count: tenants.length,
+        data: tenants.map((t) => ({ ...t, id: t.tenantId || t._id.toString() })),
+      });
     } catch (err) {
+      console.error('getTenants error:', err);
       return res.status(500).json({ success: false, message: 'Failed to fetch tenants' });
     }
   },
@@ -32,134 +31,146 @@ export const superAdminController = {
   async addTenant(req, res) {
     try {
       const tenantData = req.body;
-      const tenantId = `tenant-${Date.now().toString().slice(-4)}`;
-      const slug = (tenantData.slug || `rest-${Date.now().toString().slice(-4)}`).toLowerCase().trim();
+      const tenantId = `tenant-${Date.now().toString().slice(-6)}`;
+      const slug = (tenantData.slug || `rest-${Date.now().toString().slice(-4)}`).toLowerCase().trim().replace(/_/g, '-');
 
-      const ownerEmail = (tenantData.ownerEmail && tenantData.ownerEmail.includes('@')) 
-        ? tenantData.ownerEmail.trim().toLowerCase() 
+      const ownerEmail = tenantData.ownerEmail && tenantData.ownerEmail.includes('@')
+        ? tenantData.ownerEmail.trim().toLowerCase()
         : `${slug}@restaurant.com`;
       const ownerPassword = tenantData.ownerPassword || 'Admin@123';
 
-      const newTenant = {
-        ...tenantData,
+      const newTenant = await Tenant.create({
         tenantId,
         id: tenantId,
+        name: tenantData.name,
         slug,
+        logo: tenantData.logo || '🍽️',
+        ownerName: tenantData.ownerName || tenantData.name,
         ownerEmail,
         ownerPassword,
+        ownerPhone: tenantData.ownerPhone || '',
+        city: tenantData.city || 'Lucknow',
+        planId: tenantData.planId || 'plan-growth',
+        planName: tenantData.planName || 'Growth Pro',
+        billingCycle: tenantData.billingCycle || 'MONTHLY',
+        planAmount: Number(tenantData.planAmount) || 1499,
         status: tenantData.status || 'ACTIVE',
         activeTables: Number(tenantData.activeTables) || 15,
         monthlyOrders: 0,
         monthlyGMV: 0,
         renewalDate: tenantData.renewalDate || new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
-      };
+      });
 
-      // 1. Save tenant to local db
-      const tenants = db.get('platformTenants') || [];
-      db.set('platformTenants', [newTenant, ...tenants]);
-
-      // 2. Auto-create Restaurant Admin account
-      const existingAdmins = db.get('restaurantAdmins') || [];
-      const newAdmin = {
-        id: `adm-${Date.now().toString().slice(-4)}`,
+      // Auto-create Restaurant Admin account in MongoDB Atlas
+      const adminId = `adm-${Date.now().toString().slice(-6)}`;
+      const newAdmin = await RestaurantAdmin.create({
+        id: adminId,
         name: tenantData.ownerName || tenantData.name,
         email: ownerEmail,
         passwordHash: hashPassword(ownerPassword),
-        passwordPlain: ownerPassword,
         role: 'ADMIN',
         title: 'Restaurant Owner & Admin',
         restaurantId: tenantId,
         restaurantSlug: slug,
-      };
-      db.set('restaurantAdmins', [newAdmin, ...existingAdmins]);
+      });
 
-      // 3. Auto-seed starter menu items for this restaurant slug
-      const existingMenuItems = db.get('menuItems') || [];
-      const defaultStarterMenuItems = [
+      // Auto-create Restaurant Settings in MongoDB Atlas
+      await RestaurantSettings.findOneAndUpdate(
+        { slug },
         {
-          id: `item-${slug}-101`,
+          slug,
+          name: tenantData.name,
+          restaurantName: tenantData.name,
+          tagline: 'Fresh Flavours & Quality Dining',
+          cuisine: 'Multi-Cuisine',
+          rating: 4.8,
+          reviewCount: 50,
+          address: tenantData.address || tenantData.city || 'Bengaluru',
+          phone: tenantData.ownerPhone || '',
+          email: ownerEmail,
+          isAcceptingOrders: true,
+          planId: newTenant.planId,
+          planName: newTenant.planName,
+        },
+        { upsert: true, new: true }
+      );
+
+      // Auto-create 10 starter tables for this restaurant in MongoDB Atlas
+      const starterTables = Array.from({ length: 10 }, (_, idx) => {
+        const numStr = String(idx + 1).padStart(2, '0');
+        return {
+          tableId: `tbl-${slug}-${numStr}`,
+          restaurantSlug: slug,
+          number: numStr,
+          capacity: 4,
+          section: 'Main Dining',
+          status: 'AVAILABLE',
+        };
+      });
+      await Table.insertMany(starterTables).catch(() => { });
+
+      // Auto-seed starter menu items for this restaurant in MongoDB Atlas
+      const starterMenuItems = [
+        {
+          itemId: `item-${slug}-101`,
           restaurantSlug: slug,
           name: 'Crispy Corn Chilli Pepper',
           category: 'Starters & Appetizers',
           price: 240,
           description: 'Golden sweet corn kernels tossed with crunchy bell peppers, spring onion, and crushed black pepper.',
-          image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=500&q=80',
+          image: '',
           isVeg: true,
           isSpicy: true,
           isPopular: true,
           isAvailable: true,
-          preparationTime: 15,
+          preparationTime: '15 mins',
         },
         {
-          id: `item-${slug}-102`,
-          restaurantSlug: slug,
-          name: 'Paneer Tikka Angara',
-          category: 'Starters & Appetizers',
-          price: 320,
-          description: 'Smoky char-grilled cottage cheese cubes marinated in fiery red spices and hung curd.',
-          image: 'https://images.unsplash.com/photo-1599488615731-7e5c2823ff28?auto=format&fit=crop&w=500&q=80',
-          isVeg: true,
-          isSpicy: true,
-          isPopular: true,
-          isAvailable: true,
-          preparationTime: 20,
-        },
-        {
-          id: `item-${slug}-201`,
+          itemId: `item-${slug}-201`,
           restaurantSlug: slug,
           name: 'Paneer Butter Masala',
           category: 'Main Course Specialties',
           price: 340,
           description: 'Succulent malai paneer simmered in a velvety, rich tomato cashew butter gravy.',
-          image: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=500&q=80',
+          image: '',
           isVeg: true,
           isSpicy: false,
           isPopular: true,
           isAvailable: true,
-          preparationTime: 20,
+          preparationTime: '20 mins',
         },
         {
-          id: `item-${slug}-301`,
+          itemId: `item-${slug}-301`,
           restaurantSlug: slug,
           name: 'Butter Garlic Naan',
           category: 'Breads & Rice',
           price: 75,
           description: 'Tandoor-baked leavened flatbread topped with roasted garlic flakes and melted salted butter.',
-          image: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=500&q=80',
+          image: '',
           isVeg: true,
           isSpicy: false,
           isPopular: true,
           isAvailable: true,
-          preparationTime: 10,
-        },
-        {
-          id: `item-${slug}-401`,
-          restaurantSlug: slug,
-          name: 'Fresh Mint Lime Mojito',
-          category: 'Beverages & Mocktails',
-          price: 150,
-          description: 'Refreshing sparkling cooler muddled with fresh garden mint sprigs, lime wedges, and cane syrup.',
-          image: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=500&q=80',
-          isVeg: true,
-          isSpicy: false,
-          isPopular: true,
-          isAvailable: true,
-          preparationTime: 8,
+          preparationTime: '10 mins',
         },
       ];
-      db.set('menuItems', [...defaultStarterMenuItems, ...existingMenuItems]);
+      await MenuItem.insertMany(starterMenuItems).catch(() => { });
 
-      res.status(201).json({ success: true, data: newTenant, admin: newAdmin });
-
-      if (mongoose.connection && mongoose.connection.readyState === 1) {
-        Tenant.create(newTenant).catch(() => {});
-        RestaurantAdmin.create(newAdmin).catch(() => {});
-        MenuItem.insertMany(defaultStarterMenuItems).catch(() => {});
-      }
+      return res.status(201).json({
+        success: true,
+        message: `Restaurant "${newTenant.name}" onboarded successfully`,
+        data: {
+          ...newTenant.toObject(),
+          id: newTenant.tenantId,
+        },
+        admin: {
+          email: newAdmin.email,
+          temporaryPassword: ownerPassword,
+        },
+      });
     } catch (err) {
-      if (!res.headersSent) {
-        return res.status(500).json({ success: false, message: 'Failed to add tenant' });
-      }
+      console.error('addTenant error:', err);
+      return res.status(500).json({ success: false, message: 'Failed to add tenant to database' });
     }
   },
 
@@ -167,100 +178,81 @@ export const superAdminController = {
     try {
       const { id } = req.params;
       const updates = req.body;
-      const tenants = db.get('platformTenants') || [];
-      let updated = null;
 
-      const next = tenants.map((t) => {
-        if (t.id === id || t.tenantId === id) {
-          updated = { ...t, ...updates };
-          return updated;
-        }
-        return t;
-      });
+      const updated = await Tenant.findOneAndUpdate(
+        { $or: [{ tenantId: id }, { slug: id }, { _id: mongoose.isValidObjectId(id) ? id : null }] },
+        updates,
+        { new: true }
+      ).lean();
 
       if (!updated) {
         return res.status(404).json({ success: false, message: 'Tenant not found' });
       }
 
-      db.set('platformTenants', next);
+      // Sync Admin credentials if password or email updated
+      if (updates.ownerPassword || updates.ownerEmail) {
+        await RestaurantAdmin.findOneAndUpdate(
+          { restaurantSlug: updated.slug },
+          {
+            ...(updates.ownerEmail ? { email: updates.ownerEmail.toLowerCase().trim() } : {}),
+            ...(updates.ownerPassword ? { passwordHash: hashPassword(updates.ownerPassword) } : {}),
+          }
+        );
+      }
 
-      // Sync matching restaurantAdmin credentials if email or password updated
-      const restaurantAdmins = db.get('restaurantAdmins') || [];
-      const updatedAdmins = restaurantAdmins.map((adm) => {
-        if (adm.restaurantId === id || adm.restaurantId === updated.id || adm.restaurantSlug === updated.slug) {
-          return {
-            ...adm,
-            name: updated.ownerName || adm.name,
-            email: updated.ownerEmail || adm.email,
-            passwordHash: updated.ownerPassword ? hashPassword(updated.ownerPassword) : adm.passwordHash,
-            passwordPlain: updated.ownerPassword || adm.passwordPlain,
-            restaurantSlug: updated.slug || adm.restaurantSlug,
-          };
-        }
-        return adm;
+      return res.status(200).json({
+        success: true,
+        message: 'Tenant updated successfully',
+        data: {
+          ...updated,
+          id: updated.tenantId,
+        },
       });
-      db.set('restaurantAdmins', updatedAdmins);
-
-      // Sync matching restaurantSettings if plan details updated
-      if (updates.planId || updates.planName) {
-        const settingsList = db.get('restaurantSettings') || [];
-        const targetSlug = updated.slug || updated.id;
-        const updatedSettingsList = settingsList.map((s) => {
-          if (s.restaurantSlug === targetSlug || s.slug === targetSlug || (s.restaurantSlug && targetSlug.includes(s.restaurantSlug))) {
-            return {
-              ...s,
-              planId: updates.planId || s.planId,
-              planName: updates.planName || s.planName,
-            };
-          }
-          return s;
-        });
-        db.set('restaurantSettings', updatedSettingsList);
-      }
-
-      res.status(200).json({ success: true, data: updated });
-
-      if (mongoose.connection && mongoose.connection.readyState === 1) {
-        Tenant.findOneAndUpdate({ $or: [{ tenantId: id }, { id }] }, updates).catch(() => {});
-        if (updated.ownerPassword || updated.ownerEmail) {
-          const admUpdates = {};
-          if (updated.ownerEmail) admUpdates.email = updated.ownerEmail;
-          if (updated.ownerPassword) {
-            admUpdates.passwordHash = hashPassword(updated.ownerPassword);
-            admUpdates.passwordPlain = updated.ownerPassword;
-          }
-          RestaurantAdmin.findOneAndUpdate({ restaurantId: id }, admUpdates).catch(() => {});
-        }
-      }
     } catch (err) {
-      if (!res.headersSent) {
-        return res.status(500).json({ success: false, message: 'Failed to update tenant' });
-      }
+      return res.status(500).json({ success: false, message: 'Failed to update tenant' });
     }
   },
 
   async deleteTenant(req, res) {
     try {
       const { id } = req.params;
-      const tenants = db.get('platformTenants') || [];
-      const filtered = tenants.filter((t) => t.id !== id && t.tenantId !== id);
-      db.set('platformTenants', filtered);
 
-      if (mongoose.connection && mongoose.connection.readyState === 1) {
-        Tenant.deleteOne({ $or: [{ id }, { tenantId: id }] }).catch(() => {});
+      const tenant = await Tenant.findOne({
+        $or: [{ tenantId: id }, { slug: id }, { _id: mongoose.isValidObjectId(id) ? id : null }],
+      });
+
+      if (!tenant) {
+        return res.status(404).json({ success: false, message: 'Tenant not found' });
       }
 
-      return res.status(200).json({ success: true, message: 'Tenant deleted successfully' });
+      const slug = tenant.slug;
+
+      // Delete tenant and associated isolated resources from MongoDB Atlas
+      await Tenant.deleteOne({ _id: tenant._id });
+      await RestaurantAdmin.deleteMany({ restaurantSlug: slug });
+      await RestaurantSettings.deleteMany({ slug });
+      await MenuItem.deleteMany({ restaurantSlug: slug });
+      await Table.deleteMany({ restaurantSlug: slug });
+
+      return res.status(200).json({
+        success: true,
+        message: `Tenant "${tenant.name}" and associated resources deleted successfully`,
+      });
     } catch (err) {
       return res.status(500).json({ success: false, message: 'Failed to delete tenant' });
     }
   },
 
-  // Packaging Plans
+  // ==========================================
+  // PRICING PLANS (MongoDB Atlas Authoritative)
+  // ==========================================
   async getPlans(req, res) {
     try {
-      const plans = db.get('pricingPlans') || [];
-      return res.status(200).json({ success: true, data: plans });
+      const plans = await PricingPlan.find().lean();
+      return res.status(200).json({
+        success: true,
+        data: plans.map((p) => ({ ...p, id: p.planId || p.id })),
+      });
     } catch (err) {
       return res.status(500).json({ success: false, message: 'Failed to fetch plans' });
     }
@@ -269,23 +261,22 @@ export const superAdminController = {
   async addPlan(req, res) {
     try {
       const planData = req.body;
-      const plans = db.get('pricingPlans') || [];
-      const newPlan = {
-        ...planData,
-        id: planData.id || `plan-${Date.now().toString().slice(-4)}`,
-        activeSubscribers: 0,
-        monthlyPrice: Number(planData.monthlyPrice) || 999,
-        annualPrice: Number(planData.annualPrice) || 9990,
-        maxTables: Number(planData.maxTables) || 10,
-        maxDishes: Number(planData.maxDishes) || 30,
-        maxAdminLogins: Number(planData.maxAdminLogins) || 1,
-        maxStaffAccounts: Number(planData.maxStaffAccounts || planData.staffAccounts) || 0,
-        analyticsEnabled: Boolean(planData.analyticsEnabled),
-        features: Array.isArray(planData.features) ? planData.features : (planData.features || '').split('\n').filter(Boolean),
-      };
+      const planId = planData.id || `plan-${Date.now().toString(36)}`;
 
-      db.set('pricingPlans', [...plans, newPlan]);
-      return res.status(201).json({ success: true, data: newPlan });
+      const created = await PricingPlan.create({
+        ...planData,
+        planId,
+        id: planId,
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: 'Pricing plan created',
+        data: {
+          ...created.toObject(),
+          id: created.planId,
+        },
+      });
     } catch (err) {
       return res.status(500).json({ success: false, message: 'Failed to add plan' });
     }
@@ -295,29 +286,39 @@ export const superAdminController = {
     try {
       const { id } = req.params;
       const updates = req.body;
-      const plans = db.get('pricingPlans') || [];
-      let updated = null;
 
-      const next = plans.map((p) => {
-        if (p.id === id) {
-          updated = { ...p, ...updates };
-          return updated;
-        }
-        return p;
+      const updated = await PricingPlan.findOneAndUpdate(
+        { $or: [{ planId: id }, { id }, { _id: mongoose.isValidObjectId(id) ? id : null }] },
+        updates,
+        { new: true }
+      ).lean();
+
+      if (!updated) {
+        return res.status(404).json({ success: false, message: 'Plan not found' });
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          ...updated,
+          id: updated.planId || updated.id,
+        },
       });
-
-      db.set('pricingPlans', next);
-      return res.status(200).json({ success: true, data: updated });
     } catch (err) {
       return res.status(500).json({ success: false, message: 'Failed to update plan' });
     }
   },
 
-  // Invoices & Revenue
+  // ==========================================
+  // INVOICES & BILLING (MongoDB Atlas Authoritative)
+  // ==========================================
   async getInvoices(req, res) {
     try {
-      const invoices = db.get('invoices') || [];
-      return res.status(200).json({ success: true, data: invoices });
+      const invoices = await Invoice.find().sort({ createdAt: -1 }).lean();
+      return res.status(200).json({
+        success: true,
+        data: invoices.map((inv) => ({ ...inv, id: inv.invoiceId || inv.id })),
+      });
     } catch (err) {
       return res.status(500).json({ success: false, message: 'Failed to fetch invoices' });
     }
@@ -326,93 +327,76 @@ export const superAdminController = {
   async addInvoice(req, res) {
     try {
       const invData = req.body;
-      const invoices = db.get('invoices') || [];
-      const newInvoice = {
-        id: invData.id || `INV-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+      const invoiceId = invData.id || `INV-${Date.now().toString().slice(-6)}`;
+
+      const created = await Invoice.create({
         ...invData,
-        issuedDate: invData.issuedDate || new Date().toISOString().split('T')[0],
-        dueDate: invData.dueDate || new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
-      };
-      db.set('invoices', [newInvoice, ...invoices]);
-      return res.status(201).json({ success: true, data: newInvoice });
+        invoiceId,
+        id: invoiceId,
+        status: invData.status || 'PENDING',
+        billingDate: invData.billingDate || new Date().toISOString().split('T')[0],
+        dueDate: invData.dueDate || new Date(Date.now() + 15 * 86400000).toISOString().split('T')[0],
+      });
+
+      return res.status(201).json({
+        success: true,
+        data: {
+          ...created.toObject(),
+          id: created.invoiceId,
+        },
+      });
     } catch (err) {
-      return res.status(500).json({ success: false, message: 'Failed to add invoice' });
+      return res.status(500).json({ success: false, message: 'Failed to create invoice' });
     }
   },
 
   async markInvoicePaid(req, res) {
     try {
       const { id } = req.params;
-      const invoices = db.get('invoices') || [];
-      let updated = null;
 
-      const next = invoices.map((inv) => {
-        if (inv.id === id) {
-          updated = { ...inv, status: 'PAID', paidAt: new Date().toISOString().split('T')[0] };
-          return updated;
-        }
-        return inv;
-      });
+      const updated = await Invoice.findOneAndUpdate(
+        { $or: [{ invoiceId: id }, { id }, { _id: mongoose.isValidObjectId(id) ? id : null }] },
+        {
+          status: 'PAID',
+          paidAt: new Date(),
+        },
+        { new: true }
+      ).lean();
 
-      if (updated && updated.tenantId) {
-        const tenants = db.get('platformTenants') || [];
-        const isAnnual = String(updated.cycle || '').toLowerCase().includes('annual');
-        const daysToAdd = isAnnual ? 365 : 30;
-        const newRenewalDate = new Date(Date.now() + daysToAdd * 86400000).toISOString().split('T')[0];
-
-        const nextTenants = tenants.map((t) => {
-          if (t.id === updated.tenantId || t.tenantId === updated.tenantId) {
-            return {
-              ...t,
-              planId: updated.requestedPlanId || t.planId,
-              planName: updated.requestedPlanName || updated.planName || t.planName,
-              status: 'ACTIVE',
-              renewalDate: newRenewalDate,
-            };
-          }
-          return t;
-        });
-        db.set('platformTenants', nextTenants);
+      if (!updated) {
+        return res.status(404).json({ success: false, message: 'Invoice not found' });
       }
 
-      db.set('invoices', next);
-      return res.status(200).json({ success: true, data: updated });
+      // Also mark matching tenant active
+      if (updated.tenantId || updated.slug) {
+        await Tenant.findOneAndUpdate(
+          { $or: [{ tenantId: updated.tenantId }, { slug: updated.slug }] },
+          { status: 'ACTIVE' }
+        );
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Invoice marked as PAID',
+        data: {
+          ...updated,
+          id: updated.invoiceId || updated.id,
+        },
+      });
     } catch (err) {
       return res.status(500).json({ success: false, message: 'Failed to update invoice' });
     }
   },
 
-  // SuperAdmin Profile Management with Immutable Protection
-  async getSuperAdmins(req, res) {
-    try {
-      let superAdmins = [];
-      try {
-        superAdmins = await SuperAdmin.find({}, '-passwordHash');
-      } catch (e) {
-        superAdmins = (db.get('superAdmins') || []).map(({ passwordHash, ...rest }) => rest);
-      }
-      return res.status(200).json({ success: true, data: superAdmins });
-    } catch (err) {
-      return res.status(500).json({ success: false, message: 'Failed to fetch platform admins' });
-    }
-  },
-
-  // Platform Settings (UPI ID, QR Code image URL, Bank Account details, GSTIN)
+  // ==========================================
+  // PLATFORM SETTINGS (MongoDB Atlas Authoritative)
+  // ==========================================
   async getSettings(req, res) {
     try {
-      const settings = db.get('platformSettings') || {
-        platformName: 'OrderFlow SaaS Engine',
-        companyLegalName: 'Progix Technology Pvt Ltd',
-        taxId: '29AAFCO1234F1Z8',
-        supportEmail: 'progixtechnology@gmail.com',
-        supportPhone: '+91 98765 43210',
-        upiId: 'progixtechnology@upi',
-        upiQrUrl: 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=upi://pay?pa=progixtechnology@upi%26pn=Progix%20SaaS',
-        bankName: 'HDFC Bank',
-        accountHolder: 'Progix Technology Pvt Ltd',
-        accountNumber: '50200012345678',
-        ifscCode: 'HDFC0001234',
-      };
+      let settings = await PlatformSettings.findOne().lean();
+      if (!settings) {
+        settings = await PlatformSettings.create({});
+      }
       return res.status(200).json({ success: true, data: settings });
     } catch (err) {
       return res.status(500).json({ success: false, message: 'Failed to fetch settings' });
@@ -422,30 +406,47 @@ export const superAdminController = {
   async updateSettings(req, res) {
     try {
       const updates = req.body;
-      const current = db.get('platformSettings') || {};
-      const next = { ...current, ...updates };
-      db.set('platformSettings', next);
-      return res.status(200).json({ success: true, data: next });
+      const updated = await PlatformSettings.findOneAndUpdate({}, updates, { new: true, upsert: true }).lean();
+      return res.status(200).json({
+        success: true,
+        message: 'Platform settings updated successfully',
+        data: updated,
+      });
     } catch (err) {
       return res.status(500).json({ success: false, message: 'Failed to update settings' });
     }
   },
 
-  // Strictly protected: No user can delete or alter the hardcoded superadmin
+  // ==========================================
+  // SUPERADMINS MANAGEMENT
+  // ==========================================
+  async getSuperAdmins(req, res) {
+    try {
+      const superAdmins = await SuperAdmin.find({}, { passwordHash: 0 }).lean();
+      return res.status(200).json({
+        success: true,
+        data: superAdmins.map((sa) => ({ ...sa, id: sa._id.toString() })),
+      });
+    } catch (err) {
+      return res.status(500).json({ success: false, message: 'Failed to fetch platform admins' });
+    }
+  },
+
   async deleteSuperAdmin(req, res) {
     try {
       const { email } = req.body;
-      if (!email || email.toLowerCase() === 'progixtechnology@gmail.com') {
-        return res.status(403).json({
-          success: false,
-          message: 'CRITICAL SECURITY: progixtechnology@gmail.com is hardcoded and locked. Deletion is forbidden.',
-        });
+      if (!email) {
+        return res.status(400).json({ success: false, message: 'Email is required' });
       }
 
-      await SuperAdmin.deleteOne({ email: email.toLowerCase() });
-      return res.status(200).json({ success: true, message: 'SuperAdmin removed' });
+      if (email.toLowerCase().trim() === 'progixtechnology@gmail.com') {
+        return res.status(403).json({ success: false, message: 'The primary owner account is protected and cannot be deleted.' });
+      }
+
+      await SuperAdmin.deleteOne({ email: email.toLowerCase().trim() });
+      return res.status(200).json({ success: true, message: 'Platform admin removed successfully' });
     } catch (err) {
-      return res.status(500).json({ success: false, message: err.message });
+      return res.status(500).json({ success: false, message: 'Failed to delete superadmin' });
     }
   },
 };

@@ -53,8 +53,8 @@ export const menuService = {
         const matchingStored = stored.filter(
           (item) => (item.restaurantSlug || '').toLowerCase() === cleanSlug
         );
-        items = matchingStored.length > 0 ? matchingStored : stored;
-      } else {
+        items = matchingStored;
+      } else if (cleanSlug === 'spice-garden' || cleanSlug === 'the-spice-garden') {
         items = mockMenuItems.map((item) => ({ ...item, restaurantSlug: cleanSlug }));
       }
     }

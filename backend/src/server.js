@@ -10,6 +10,7 @@ import uploadRoutes from './routes/uploadRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import whatsappRoutes from './routes/whatsappRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
 import { whatsappService } from './services/whatsappService.js';
 import { connectMongoDB } from './config/db.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
@@ -23,16 +24,66 @@ const PORT = process.env.PORT || 5000;
 // Enable 'trust proxy' for Render / Vercel / Cloudflare reverse proxies (fixes rate limiter ERR_ERL_UNEXPECTED_X_FORWARDED_FOR)
 app.set('trust proxy', 1);
 
-// Enable CORS for all frontend origins
+// Strict Production CORS Configuration
+const getAllowedOrigins = () => {
+  const envOrigins = (process.env.CORS_ORIGIN || process.env.FRONTEND_URL || '')
+    .split(',')
+    .map((o) => o.trim().replace(/\/$/, ''))
+    .filter(Boolean);
+
+  const localDevOrigins = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://127.0.0.1:5173',
+    'http://localhost:5000',
+  ];
+
+  if (process.env.NODE_ENV === 'production') {
+    return envOrigins.length > 0 ? envOrigins : localDevOrigins;
+  }
+
+  return Array.from(new Set([...localDevOrigins, ...envOrigins]));
+};
+
+const allowedOrigins = getAllowedOrigins();
+
 app.use(
   cors({
-    origin: '*',
+    origin: (origin, callback) => {
+      // Allow server-to-server requests without Origin (e.g. Razorpay webhooks, server health probes, cURL)
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      const cleanOrigin = origin.trim().replace(/\/$/, '');
+
+      // Check against allowed origins list
+      if (allowedOrigins.includes(cleanOrigin) || (process.env.NODE_ENV !== 'production' && process.env.CORS_ALLOW_ALL === 'true')) {
+        return callback(null, true);
+      }
+
+      console.warn(`[CORS REJECTED] Access denied for unauthorized origin: ${origin}`);
+      return callback(
+        new Error(`CORS policy violation: Origin '${origin}' is not authorized to access this API.`),
+        false
+      );
+    },
+    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-razorpay-signature', 'Accept'],
+    exposedHeaders: ['Content-Range', 'X-Content-Range'],
+    maxAge: 86400, // 24-hour preflight cache
   })
 );
 
-app.use(express.json());
+// Parse JSON request body & preserve raw body buffer for Razorpay/Stripe webhook cryptographic verification
+app.use(
+  express.json({
+    verify: (req, res, buf) => {
+      req.rawBody = buf;
+    },
+  })
+);
 
 // API Request Logger
 app.use((req, res, next) => {
@@ -66,6 +117,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
+app.use('/api/payment', paymentRoutes);
 
 
 // 404 handler

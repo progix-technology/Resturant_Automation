@@ -570,21 +570,8 @@ class Database {
   }
 
   init() {
-    try {
-      if (fs.existsSync(DB_FILE)) {
-        const raw = fs.readFileSync(DB_FILE, 'utf-8');
-        this.data = JSON.parse(raw);
-        // Ensure requested credentials exist with bcrypt hashes
-        this.ensureRequiredCredentials();
-      } else {
-        this.data = getInitialSeed();
-        this.save();
-      }
-    } catch (err) {
-      console.error('Error initializing database, using seed:', err);
-      this.data = getInitialSeed();
-      this.save();
-    }
+    this.data = getInitialSeed();
+    this.ensureRequiredCredentials();
   }
 
   ensureRequiredCredentials() {
@@ -742,57 +729,8 @@ class Database {
   }
 
   save() {
-    try {
-      fs.writeFileSync(DB_FILE, JSON.stringify(this.data, null, 2), 'utf-8');
-
-      // Sync separate directory folders per tenant on disk
-      const tenantsDir = path.join(__dirname, 'tenants');
-      if (!fs.existsSync(tenantsDir)) {
-        fs.mkdirSync(tenantsDir, { recursive: true });
-      }
-
-      const tenants = this.data.platformTenants || [];
-      const allSlugs = new Set([
-        'spice-garden',
-        'a1',
-        ...tenants.map((t) => (t.slug || '').toLowerCase().trim()).filter(Boolean),
-        ...(this.data.menuItems || []).map((i) => (i.restaurantSlug || '').toLowerCase().trim()).filter(Boolean),
-      ]);
-
-      allSlugs.forEach((slug) => {
-        if (!slug) return;
-        const tenantFolder = path.join(tenantsDir, slug);
-        if (!fs.existsSync(tenantFolder)) {
-          fs.mkdirSync(tenantFolder, { recursive: true });
-        }
-
-        // 1. Write tenant's menuitems.json
-        const tenantMenu = (this.data.menuItems || []).filter(
-          (i) => (i.restaurantSlug || 'spice-garden').toLowerCase().trim() === slug
-        );
-        fs.writeFileSync(path.join(tenantFolder, 'menuitems.json'), JSON.stringify(tenantMenu, null, 2), 'utf-8');
-
-        // 2. Write tenant's orders.json
-        const tenantOrders = (this.data.orders || []).filter(
-          (o) => (o.restaurantSlug || 'spice-garden').toLowerCase().trim() === slug
-        );
-        fs.writeFileSync(path.join(tenantFolder, 'orders.json'), JSON.stringify(tenantOrders, null, 2), 'utf-8');
-
-        // 3. Write tenant's tables.json
-        const tenantTables = (this.data.tables || []).filter(
-          (t) => (t.restaurantSlug || 'spice-garden').toLowerCase().trim() === slug
-        );
-        fs.writeFileSync(path.join(tenantFolder, 'tables.json'), JSON.stringify(tenantTables, null, 2), 'utf-8');
-
-        // 4. Write tenant's settings.json
-        const tenantSettings = (this.data.restaurantSettings || []).filter(
-          (s) => (s.slug || 'spice-garden').toLowerCase().trim() === slug
-        );
-        fs.writeFileSync(path.join(tenantFolder, 'settings.json'), JSON.stringify(tenantSettings, null, 2), 'utf-8');
-      });
-    } catch (err) {
-      console.error('Failed to persist database file:', err);
-    }
+    // Non-blocking in-memory state. Disk writes removed to prevent Node.js event-loop freeze
+    // and eliminate split-brain issues. MongoDB Atlas is the single source of truth.
   }
 
   get(collection) {
@@ -801,7 +739,6 @@ class Database {
 
   set(collection, items) {
     this.data[collection] = items;
-    this.save();
     return items;
   }
 }

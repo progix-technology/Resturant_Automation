@@ -22,123 +22,52 @@ const matchesSlug = (orderSlug, currentSlug) => {
   return s === c;
 };
 
+// Auto-purge legacy cached orders from local storage on load
+if (typeof window !== 'undefined' && !localStorage.getItem('rest1_orders_purged_v1')) {
+  localStorage.removeItem('restaurant_admin_all_orders');
+  localStorage.removeItem('restaurant_admin_all_orders_spice-garden');
+  localStorage.removeItem('restaurant_admin_all_orders_the-spice-garden');
+  localStorage.removeItem('spice_garden_active_order');
+  localStorage.removeItem('spice_garden_orders_history');
+  localStorage.setItem('rest1_orders_purged_v1', 'true');
+}
+
 export const adminOrderService = {
   /**
    * Retrieves all orders strictly from live backend API / MongoDB Atlas for active restaurant
-   * Fallback to real customer orders stored in local storage
    */
   async getOrders() {
     const currentSlug = getCurrentSlug();
-    let backendOrders = [];
     try {
       const res = await apiRequest(`/orders?slug=${currentSlug}`);
       if (res && res.data && Array.isArray(res.data)) {
-        backendOrders = res.data;
+        const backendOrders = res.data.filter((o) => matchesSlug(o.restaurantSlug, currentSlug));
+        // Authoritative state from MongoDB Atlas
+        storage.set(`${ADMIN_ORDERS_KEY}_${currentSlug}`, backendOrders);
+        return backendOrders;
       }
     } catch (err) {
-      console.warn('Backend orders fetch failed, reading stored real orders:', err.message);
+      console.warn('Backend orders fetch failed, reading stored cache:', err.message);
+      const cached = storage.get(`${ADMIN_ORDERS_KEY}_${currentSlug}`, []);
+      return Array.isArray(cached) ? cached : [];
     }
-
-    // Clean dummy activeOrder or history from local storage if present
-    const activeOrder = storage.get(STORAGE_KEYS.ACTIVE_ORDER);
-    if (activeOrder && isDummyOrder(activeOrder)) {
-      storage.remove(STORAGE_KEYS.ACTIVE_ORDER);
-    }
-
-    const customerHistory = storage.get(STORAGE_KEYS.ORDER_HISTORY, []);
-    if (Array.isArray(customerHistory)) {
-      const cleanedHistory = customerHistory.filter((o) => !isDummyOrder(o));
-      if (cleanedHistory.length !== customerHistory.length) {
-        storage.set(STORAGE_KEYS.ORDER_HISTORY, cleanedHistory);
-      }
-    }
-
-    // Merge backend orders, cached orders, and real customer orders for this restaurant
-    const orderMap = new Map();
-
-    // 1. Put backend orders first (excluding dummy & matching current restaurant)
-    backendOrders.forEach((o) => {
-      if (isDummyOrder(o)) return;
-      if (!matchesSlug(o.restaurantSlug, currentSlug)) return;
-      const id = o.orderId || o.id;
-      if (id) orderMap.set(id, o);
-    });
-
-    // 2. Put cached admin orders if matching restaurant
-    const cachedOrders = storage.get(`${ADMIN_ORDERS_KEY}_${currentSlug}`, []);
-    if (Array.isArray(cachedOrders)) {
-      cachedOrders.forEach((o) => {
-        if (isDummyOrder(o)) return;
-        if (!matchesSlug(o.restaurantSlug, currentSlug)) return;
-        const id = o.orderId || o.id;
-        if (id && !orderMap.has(id)) {
-          orderMap.set(id, o);
-        }
-      });
-    }
-
-    // 3. Merge active customer order from this browser (if real & matching)
-    const freshActive = storage.get(STORAGE_KEYS.ACTIVE_ORDER);
-    if (freshActive && !isDummyOrder(freshActive) && matchesSlug(freshActive.restaurantSlug, currentSlug) && (freshActive.orderId || freshActive.id)) {
-      const id = freshActive.orderId || freshActive.id;
-      if (!orderMap.has(id)) {
-        orderMap.set(id, freshActive);
-        apiRequest('/orders', {
-          method: 'POST',
-          body: JSON.stringify({ ...freshActive, restaurantSlug: currentSlug }),
-        }).catch(() => {});
-      } else {
-        const existing = orderMap.get(id);
-        const isBackendCompleted = existing.paymentStatus === 'COMPLETED' || existing.orderStatus === 'SERVED' || existing.orderStatus === 'COMPLETED' || existing.orderStatus === 'CANCELLED';
-        if (!isBackendCompleted) {
-          orderMap.set(id, { ...existing, ...freshActive });
-        }
-      }
-    }
-
-    // 4. Merge clean customer history orders matching restaurant
-    const cleanHistory = storage.get(STORAGE_KEYS.ORDER_HISTORY, []);
-    if (Array.isArray(cleanHistory)) {
-      cleanHistory.forEach((custOrder) => {
-        if (isDummyOrder(custOrder)) return;
-        if (!matchesSlug(custOrder.restaurantSlug, currentSlug)) return;
-        const id = custOrder?.orderId || custOrder?.id;
-        if (id) {
-          if (!orderMap.has(id)) {
-            orderMap.set(id, custOrder);
-            apiRequest('/orders', {
-              method: 'POST',
-              body: JSON.stringify({ ...custOrder, restaurantSlug: currentSlug }),
-            }).catch(() => {});
-          } else {
-            const existing = orderMap.get(id);
-            const isBackendCompleted = existing.paymentStatus === 'COMPLETED' || existing.orderStatus === 'SERVED' || existing.orderStatus === 'COMPLETED' || existing.orderStatus === 'CANCELLED';
-            if (!isBackendCompleted) {
-              orderMap.set(id, { ...existing, ...custOrder });
-            }
-          }
-        }
-      });
-    }
-
-    const merged = Array.from(orderMap.values()).sort(
-      (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
-    );
-
-    storage.set(`${ADMIN_ORDERS_KEY}_${currentSlug}`, merged);
-    return merged;
+    return [];
   },
 
   /**
    * Resets all orders and caches to 0 (Clean Slate)
    */
   async resetAllOrders() {
+    const currentSlug = getCurrentSlug();
     try {
       await apiRequest('/orders/reset', { method: 'POST' });
     } catch (err) {
       console.warn('Backend orders reset warning:', err.message);
     }
     storage.remove(ADMIN_ORDERS_KEY);
+    storage.remove(`${ADMIN_ORDERS_KEY}_${currentSlug}`);
+    storage.remove(`${ADMIN_ORDERS_KEY}_spice-garden`);
+    storage.remove(`${ADMIN_ORDERS_KEY}_the-spice-garden`);
     storage.remove(STORAGE_KEYS.ACTIVE_ORDER);
     storage.remove(STORAGE_KEYS.ORDER_HISTORY);
     storage.remove(STORAGE_KEYS.GUEST_SESSION);

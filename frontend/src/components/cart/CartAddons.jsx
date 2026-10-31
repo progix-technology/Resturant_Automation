@@ -3,6 +3,7 @@ import { Sparkles, Plus, Minus, Check } from 'lucide-react';
 import { useCart } from '../../hooks/useCart';
 import { menuService } from '../../services/menuService';
 import { formatCurrency } from '../../utils/currency';
+import { FoodImage } from '../menu/FoodImage';
 
 export const CartAddons = ({ restaurantSlug }) => {
   const { items, addItem, updateQuantity, removeItem } = useCart();
@@ -112,19 +113,14 @@ export const CartAddons = ({ restaurantSlug }) => {
             >
               {/* Image / Badge Top */}
               <div className="relative w-full h-20 rounded-lg overflow-hidden bg-warm-100 mb-2">
-                <img
-                  src={
-                    addon.image ||
-                    'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80'
-                  }
+                <FoodImage
+                  src={addon.image}
                   alt={addon.name}
-                  className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                  onError={(e) => {
-                    e.target.src =
-                      'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80';
-                  }}
+                  aspectRatio="aspect-auto"
+                  className="w-full h-full"
+                  imgClassName="transition-transform duration-300 hover:scale-105"
                 />
-                <div className="absolute top-1.5 left-1.5 bg-white/90 backdrop-blur-xs px-1.5 py-0.5 rounded text-[9px] font-bold text-charcoal-700 shadow-2xs">
+                <div className="absolute top-1.5 left-1.5 bg-white/90 backdrop-blur-xs px-1.5 py-0.5 rounded text-[9px] font-bold text-charcoal-700 shadow-2xs z-10">
                   {addon.isVeg !== false ? '🟢 Veg' : '🔴 Non-Veg'}
                 </div>
               </div>

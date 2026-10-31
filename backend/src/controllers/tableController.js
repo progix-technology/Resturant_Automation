@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import { db } from '../data/db.js';
 import { Table } from '../models/Table.js';
 import { Order } from '../models/Order.js';
 
@@ -10,196 +9,155 @@ const cleanNum = (val) => {
 };
 
 export const tableController = {
+  /**
+   * Get tables scoped strictly by restaurant
+   */
   async getTables(req, res) {
     try {
-      let tables = [];
+      const isSuper = req.user?.role === 'SUPER_ADMIN' || req.user?.role === 'PLATFORM_SUPERADMIN';
+      const rawSlug = isSuper
+        ? (req.query.slug || req.user?.restaurantSlug || 'spice-garden').toLowerCase().trim()
+        : (req.user?.restaurantSlug || req.query.slug || 'spice-garden').toLowerCase().trim();
+      const cleanSlug = rawSlug.replace(/^the-/, '').replace(/_/g, '-');
 
-      // 1. Try fetching from MongoDB Atlas FIRST if connected
-      if (mongoose.connection && mongoose.connection.readyState === 1) {
-        try {
-          const mongoTables = await Table.find().lean();
-          if (mongoTables && mongoTables.length > 0) {
-            tables = mongoTables.map((t) => ({
-              id: t.tableId || t._id.toString(),
-              tableId: t.tableId || t._id.toString(),
-              number: t.number || t.tableNumber || '01',
-              capacity: t.capacity || 4,
-              section: t.section || 'Main Dining',
-              status: t.status || 'AVAILABLE',
-              currentOrderId: t.currentOrderId || null,
-              customerName: t.customerName || null,
-              amount: t.amount || 0,
-              occupiedSince: t.occupiedSince || null,
-            }));
-          }
-        } catch (mErr) {
-          console.warn('[TABLES] MongoDB lookup error:', mErr.message);
-        }
-      }
+      const query = {
+        $or: [
+          { restaurantSlug: cleanSlug },
+          { restaurantSlug: rawSlug },
+          { restaurantSlug: `the-${cleanSlug}` },
+        ],
+      };
 
-      // 2. Fallback to local store if Mongo is empty or disconnected
-      if (tables.length === 0) {
-        tables = db.get('tables') || [];
-      }
+      const mongoTables = await Table.find(query).sort({ number: 1 }).lean();
 
-      // 3. Fetch active orders from local DB & MongoDB to dynamically derive real-time table status
-      const localOrders = db.get('orders') || [];
-      let mongoOrders = [];
-      if (mongoose.connection && mongoose.connection.readyState === 1) {
-        try {
-          mongoOrders = await Order.find({
-            $or: [
-              { orderStatus: { $nin: ['CANCELLED', 'COMPLETED', 'REJECTED'] } },
-              { paymentStatus: { $ne: 'COMPLETED' } }
-            ]
-          }).lean();
-        } catch (e) {}
-      }
+      // Fetch active orders for this specific restaurant only
+      const activeOrders = await Order.find({
+        ...query,
+        orderStatus: { $nin: ['CANCELLED', 'COMPLETED', 'REJECTED'] },
+        paymentStatus: { $ne: 'COMPLETED' },
+      }).lean();
 
-      const allOrders = [...localOrders, ...mongoOrders];
+      const dynamicTables = mongoTables.map((t) => {
+        const tableClean = cleanNum(t.number || t.tableId);
 
-      // Map dynamic status onto tables
-      const dynamicTables = tables.map((t) => {
-        const tableClean = cleanNum(t.number || t.id || t.tableId);
-
-        // Find active order for this table (not completed or unpaid)
-        const activeOrder = allOrders.find((o) => {
+        const activeOrder = activeOrders.find((o) => {
           const oTableClean = cleanNum(o.tableNumber);
-          const matchesTable = oTableClean && tableClean && oTableClean === tableClean;
-          const isActive = o.paymentStatus !== 'COMPLETED' && o.orderStatus !== 'CANCELLED' && o.orderStatus !== 'COMPLETED' && o.orderStatus !== 'REJECTED';
-          return matchesTable && isActive;
+          return oTableClean && tableClean && oTableClean === tableClean;
         });
 
         if (activeOrder) {
           return {
             ...t,
+            id: t.tableId || t._id.toString(),
             status: 'OCCUPIED',
-            currentOrderId: activeOrder.orderId || activeOrder.id,
+            currentOrderId: activeOrder.orderId,
             customerName: activeOrder.customerName || t.customerName || 'Guest Diner',
             amount: activeOrder.total || t.amount || 0,
             occupiedSince: t.occupiedSince || activeOrder.createdAt || new Date().toISOString(),
           };
         }
 
-        // If no active order exists, keep manual status (RESERVED, CLEANING, or manually set OCCUPIED)
-        return t;
+        return {
+          ...t,
+          id: t.tableId || t._id.toString(),
+        };
       });
 
       return res.status(200).json({ success: true, data: dynamicTables });
     } catch (err) {
+      console.error('getTables error:', err);
       return res.status(500).json({ success: false, message: 'Failed to fetch tables' });
     }
   },
 
+  /**
+   * Update table status
+   */
   async updateTableStatus(req, res) {
     try {
       const { id } = req.params;
       const { status, customerName } = req.body;
+      const isSuper = req.user?.role === 'SUPER_ADMIN' || req.user?.role === 'PLATFORM_SUPERADMIN';
+      const rawSlug = isSuper
+        ? (req.query.slug || req.user?.restaurantSlug || 'spice-garden').toLowerCase().trim()
+        : (req.user?.restaurantSlug || req.query.slug || 'spice-garden').toLowerCase().trim();
+      const cleanSlug = rawSlug.replace(/^the-/, '').replace(/_/g, '-');
       const targetClean = cleanNum(id);
 
-      // Update MongoDB Atlas if connected
-      if (mongoose.connection && mongoose.connection.readyState === 1) {
-        try {
-          const mongoTables = await Table.find();
-          const targetDoc = mongoTables.find((t) => cleanNum(t.tableId) === targetClean || cleanNum(t.number) === targetClean);
-          if (targetDoc) {
-            targetDoc.status = status;
-            if (status === 'AVAILABLE') {
-              targetDoc.currentOrderId = null;
-              targetDoc.customerName = null;
-              targetDoc.amount = 0;
-              targetDoc.occupiedSince = null;
-            } else if (customerName) {
-              targetDoc.customerName = customerName;
-            }
-            await targetDoc.save();
-          }
-        } catch (mErr) {
-          console.warn('MongoDB table update warning:', mErr.message);
-        }
+      const updated = await Table.findOneAndUpdate(
+        {
+          $or: [
+            { restaurantSlug: cleanSlug, number: targetClean },
+            { restaurantSlug: cleanSlug, number: String(targetClean).padStart(2, '0') },
+            { restaurantSlug: cleanSlug, tableId: id },
+            { _id: mongoose.isValidObjectId(id) ? id : null },
+          ],
+        },
+        {
+          status,
+          customerName: customerName || null,
+          ...(status === 'AVAILABLE' ? { currentOrderId: null, amount: 0, occupiedSince: null } : {}),
+          ...(status === 'OCCUPIED' ? { occupiedSince: new Date().toISOString() } : {}),
+        },
+        { new: true }
+      ).lean();
+
+      if (!updated) {
+        return res.status(404).json({ success: false, message: 'Table not found' });
       }
 
-      const tables = db.get('tables') || [];
-      let updatedTable = null;
-
-      const next = tables.map((t) => {
-        if (cleanNum(t.id) === targetClean || cleanNum(t.tableId) === targetClean || cleanNum(t.number) === targetClean) {
-          updatedTable = {
-            ...t,
-            status,
-            currentOrderId: status === 'AVAILABLE' ? null : t.currentOrderId,
-            customerName: status === 'AVAILABLE' ? null : (customerName || t.customerName),
-            amount: status === 'AVAILABLE' ? 0 : t.amount,
-            occupiedSince: status === 'AVAILABLE' ? null : t.occupiedSince,
-          };
-          return updatedTable;
-        }
-        return t;
+      return res.status(200).json({
+        success: true,
+        message: `Table status updated to ${status}`,
+        data: {
+          ...updated,
+          id: updated.tableId || updated._id.toString(),
+        },
       });
-
-      if (!updatedTable) {
-        updatedTable = { id, number: id, status, customerName };
-      }
-
-      db.set('tables', next);
-      return res.status(200).json({ success: true, data: updatedTable });
     } catch (err) {
+      console.error('updateTableStatus error:', err);
       return res.status(500).json({ success: false, message: 'Failed to update table' });
     }
   },
 
+  /**
+   * Add a new table for the restaurant (Multi-Tenant Protected)
+   */
   async addTable(req, res) {
     try {
-      const { number, capacity, section, restaurantSlug } = req.body;
-      const tables = db.get('tables') || [];
+      const isSuper = req.user?.role === 'SUPER_ADMIN' || req.user?.role === 'PLATFORM_SUPERADMIN';
+      const rawSlug = isSuper
+        ? (req.body.restaurantSlug || req.user?.restaurantSlug || 'spice-garden').toLowerCase().trim()
+        : (req.user?.restaurantSlug || 'spice-garden').toLowerCase().trim();
+      const cleanSlug = rawSlug.replace(/^the-/, '').replace(/_/g, '-');
+      const { number, capacity, section } = req.body;
 
-      // Fetch restaurant settings for plan limit check
-      const restaurants = db.get('restaurants') || [];
-      const cleanSlug = (restaurantSlug || 'spice-garden').toLowerCase().trim().replace(/_/g, '-');
-      const restSettings = restaurants.find((r) => (r.slug || '').toLowerCase().replace(/_/g, '-') === cleanSlug) || {};
+      const numStr = String(number).padStart(2, '0');
 
-      const planName = (restSettings.planName || '').toLowerCase();
-      const planId = (restSettings.planId || '').toLowerCase();
-
-      let maxTables = restSettings.maxTables;
-      if (maxTables === undefined) {
-        if (planId.includes('enterprise') || planName.includes('enterprise')) {
-          maxTables = 50;
-        } else if (planId.includes('growth') || planName.includes('growth') || planName.includes('pro')) {
-          maxTables = 30;
-        } else {
-          maxTables = 10; // Starter plan limit
-        }
+      const existing = await Table.findOne({ restaurantSlug: cleanSlug, number: numStr });
+      if (existing) {
+        return res.status(400).json({ success: false, message: `Table ${numStr} already exists for this restaurant` });
       }
 
-      if (tables.length >= maxTables) {
-        return res.status(403).json({
-          success: false,
-          message: `Table limit reached (${tables.length}/${maxTables}). Please upgrade your plan to add more tables.`,
-        });
-      }
-
-      const newTable = {
-        id: `tbl-${Date.now().toString().slice(-4)}`,
-        tableId: `tbl-${Date.now().toString().slice(-4)}`,
-        number: String(number).padStart(2, '0'),
+      const newTable = await Table.create({
+        tableId: `tbl-${cleanSlug}-${numStr}`,
+        restaurantSlug: cleanSlug,
+        number: numStr,
         capacity: Number(capacity) || 4,
         section: section || 'Main Dining',
         status: 'AVAILABLE',
-        currentOrderId: null,
-        customerName: null,
-        amount: 0,
-        occupiedSince: null,
-      };
+      });
 
-      db.set('tables', [...tables, newTable]);
-
-      if (mongoose.connection && mongoose.connection.readyState === 1) {
-        Table.create(newTable).catch((mErr) => console.warn('[TABLES] Mongo create table warning:', mErr.message));
-      }
-
-      return res.status(201).json({ success: true, data: newTable });
+      return res.status(201).json({
+        success: true,
+        message: 'Table added successfully',
+        data: {
+          ...newTable.toObject(),
+          id: newTable.tableId,
+        },
+      });
     } catch (err) {
+      console.error('addTable error:', err);
       return res.status(500).json({ success: false, message: 'Failed to add table' });
     }
   },

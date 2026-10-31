@@ -32,12 +32,15 @@ import {
   LogOut,
   CheckCircle,
   AlertCircle,
-  Lock
+  Lock,
+  Eye,
+  EyeOff,
+  Zap
 } from 'lucide-react';
 
 import { useAdminAuth } from '../context/AdminAuthContext';
 import { notificationService } from '../../services/notificationService';
-import { API_BASE_URL } from '../../services/apiConfig';
+import { API_BASE_URL, getAuthToken } from '../../services/apiConfig';
 
 const SecurityAuthModal = ({ isOpen, onClose, onAuthorized, actionTitle, adminEmail, targetMobile, currentSlug }) => {
   const [password, setPassword] = useState('');
@@ -575,6 +578,7 @@ export const AdminSettingsPage = () => {
 
   const currentSlug = currentAdmin?.restaurantSlug || settings?.restaurantSlug || 'spice-garden';
   const [activeTab, setActiveTab] = useState(() => queryTab || 'PROFILE');
+  const [showRazorpaySecret, setShowRazorpaySecret] = useState(false);
 
   useEffect(() => {
     if (queryTab) {
@@ -614,6 +618,12 @@ export const AdminSettingsPage = () => {
     currency: settings.currency || 'INR',
     taxPercentage: settings.taxPercentage || 5,
     upiId: settings.upiId || 'spicegarden@okhdfcbank',
+
+    // Razorpay Gateway Settings
+    isRazorpayEnabled: settings.isRazorpayEnabled || false,
+    razorpayKeyId: settings.razorpayKeyId || '',
+    razorpayKeySecret: settings.razorpayKeySecret || '',
+    razorpayWebhookSecret: settings.razorpayWebhookSecret || '',
 
     // Bank Account & Settlement Details
     bankName: settings.bankName || 'HDFC Bank',
@@ -659,6 +669,10 @@ export const AdminSettingsPage = () => {
         address: settings.address || prev.address,
         gstin: settings.gstin || prev.gstin,
         upiId: settings.upiId || prev.upiId,
+        isRazorpayEnabled: settings.isRazorpayEnabled !== undefined ? settings.isRazorpayEnabled : prev.isRazorpayEnabled,
+        razorpayKeyId: settings.razorpayKeyId !== undefined ? settings.razorpayKeyId : prev.razorpayKeyId,
+        razorpayKeySecret: settings.razorpayKeySecret !== undefined ? settings.razorpayKeySecret : prev.razorpayKeySecret,
+        razorpayWebhookSecret: settings.razorpayWebhookSecret !== undefined ? settings.razorpayWebhookSecret : prev.razorpayWebhookSecret,
         taxPercentage: settings.taxPercentage !== undefined ? settings.taxPercentage : prev.taxPercentage,
         bankName: settings.bankName || prev.bankName,
         accountHolderName: settings.accountHolderName || prev.accountHolderName,
@@ -708,8 +722,10 @@ export const AdminSettingsPage = () => {
       const uploadData = new FormData();
       uploadData.append('image', file);
 
+      const token = getAuthToken();
       const res = await fetch(`${API_BASE_URL}/upload/restaurant-image?type=logo`, {
         method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: uploadData,
       });
 
@@ -748,8 +764,10 @@ export const AdminSettingsPage = () => {
       const uploadData = new FormData();
       uploadData.append('image', file);
 
+      const token = getAuthToken();
       const res = await fetch(`${API_BASE_URL}/upload/restaurant-image?type=banner`, {
         method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: uploadData,
       });
 
@@ -803,6 +821,10 @@ export const AdminSettingsPage = () => {
         currency: formData.currency,
         taxPercentage: Number(formData.taxPercentage),
         upiId: formData.upiId,
+        isRazorpayEnabled: formData.isRazorpayEnabled,
+        razorpayKeyId: formData.razorpayKeyId,
+        razorpayKeySecret: formData.razorpayKeySecret,
+        razorpayWebhookSecret: formData.razorpayWebhookSecret,
         bankName: formData.bankName,
         accountHolderName: formData.accountHolderName,
         accountNumber: formData.accountNumber,
@@ -1342,10 +1364,132 @@ export const AdminSettingsPage = () => {
             {activeTab === 'PAYMENTS' && (
               <div className="space-y-6">
                 <div className="border-b border-slate-100 pb-3">
-                  <h3 className="text-sm font-bold text-slate-900">UPI Payment & Automatic Dynamic QR Code Setup</h3>
+                  <h3 className="text-sm font-bold text-slate-900">Payment Gateways & Real-Time Settlements</h3>
                   <p className="text-xs text-slate-500">
-                    Enter your official UPI VPA (e.g. merchant@upi). Every order (e.g. ₹599) will automatically generate a dynamic QR code pre-filled with that exact bill amount.
+                    Configure official Razorpay Gateway for instant online payments with HMAC signature verification, or direct UPI VPA for QR code scanning.
                   </p>
+                </div>
+
+                {/* Razorpay Real Payment Gateway Card */}
+                <div className="p-5 rounded-2xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50/50 via-white to-blue-50/40 space-y-4 shadow-sm">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-indigo-100 pb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black shadow-md">
+                        <Zap className="w-5 h-5 text-yellow-300" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                          <span>Razorpay Payment Gateway</span>
+                          {formData.isRazorpayEnabled && formData.razorpayKeyId ? (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800 border border-emerald-300">
+                              Active & Live
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-slate-200 text-slate-700">
+                              Not Enabled
+                            </span>
+                          )}
+                        </h4>
+                        <p className="text-xs text-slate-500">
+                          Accept real online payments via UPI (GPay, PhonePe, Paytm), Cards & NetBanking with HMAC signature verification.
+                        </p>
+                      </div>
+                    </div>
+
+                    <label className="flex items-center gap-2.5 cursor-pointer self-start sm:self-auto bg-white px-3 py-1.5 rounded-xl border border-indigo-200 shadow-xs">
+                      <input
+                        type="checkbox"
+                        checked={formData.isRazorpayEnabled}
+                        onChange={(e) => handleChange('isRazorpayEnabled', e.target.checked)}
+                        className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 cursor-pointer"
+                      />
+                      <span className="text-xs font-bold text-slate-800">
+                        {formData.isRazorpayEnabled ? 'Enabled for Diners' : 'Enable Gateway'}
+                      </span>
+                    </label>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-800 mb-1">
+                        Razorpay Key ID *
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.razorpayKeyId}
+                        onChange={(e) => handleChange('razorpayKeyId', e.target.value)}
+                        placeholder="rzp_test_... or rzp_live_..."
+                        className="w-full text-xs font-mono font-bold border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:ring-2 focus:ring-indigo-500"
+                      />
+                      <p className="text-[10px] text-slate-500 mt-1">
+                        Obtain from Razorpay Dashboard ➔ Settings ➔ API Keys
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-800 mb-1">
+                        Razorpay Key Secret *
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showRazorpaySecret ? 'text' : 'password'}
+                          value={formData.razorpayKeySecret}
+                          onChange={(e) => handleChange('razorpayKeySecret', e.target.value)}
+                          placeholder="Enter your secret key"
+                          className="w-full text-xs font-mono font-bold border border-slate-300 rounded-lg pl-3 pr-10 py-2 text-slate-900 focus:ring-2 focus:ring-indigo-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowRazorpaySecret(!showRazorpaySecret)}
+                          className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                        >
+                          {showRazorpaySecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-slate-500 mt-1">
+                        Cryptographic secret used to verify transaction signatures
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-800 mb-1">
+                        Razorpay Webhook Secret (Production Safety Net)
+                      </label>
+                      <input
+                        type="password"
+                        value={formData.razorpayWebhookSecret || ''}
+                        onChange={(e) => handleChange('razorpayWebhookSecret', e.target.value)}
+                        placeholder="Enter webhook secret configured in Razorpay"
+                        className="w-full text-xs font-mono font-bold border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:ring-2 focus:ring-indigo-500"
+                      />
+                      <p className="text-[10px] text-slate-500 mt-1">
+                        Razorpay Dashboard ➔ Settings ➔ Webhooks (Events: <code className="bg-slate-100 px-1 py-0.5 rounded">payment.captured</code>, <code className="bg-slate-100 px-1 py-0.5 rounded">order.paid</code>)
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-800 mb-1">
+                        Your Backend Webhook Endpoint URL
+                      </label>
+                      <input
+                        type="text"
+                        readOnly
+                        value={`${window.location.origin.replace(':5173', ':5000')}/api/payment/webhook`}
+                        className="w-full text-xs font-mono font-bold bg-slate-100 border border-slate-200 rounded-lg px-3 py-2 text-slate-700 select-all cursor-pointer"
+                        title="Copy this URL into Razorpay Dashboard"
+                      />
+                      <p className="text-[10px] text-slate-500 mt-1">
+                        Paste this URL in Razorpay Dashboard to receive real-time server events
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-indigo-50/70 rounded-xl border border-indigo-100 flex items-start gap-2.5 text-xs text-indigo-950">
+                    <Sparkles className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+                    <p className="text-[11px] leading-relaxed">
+                      <b>Zero Manual 'Done' Button:</b> Once customer completes payment in Razorpay, bank confirms credit, table status updates automatically, and kitchen/staff receives real-time WhatsApp alert.
+                    </p>
+                  </div>
                 </div>
 
                 {/* Safe Multi-Tenant Isolation Notice */}
@@ -1405,53 +1549,21 @@ export const AdminSettingsPage = () => {
                   </div>
                 </div>
 
-                {/* Live Dynamic Exact-Amount QR Code Generator & Tester Card */}
-                <div className="p-5 rounded-2xl border border-slate-200 bg-slate-50/80 space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/60 pb-3">
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide flex items-center gap-2">
-                        <QrCode className="w-4 h-4 text-amber-600" />
-                        Live Automatic Dynamic QR Code Tester
-                      </h4>
-                      <p className="text-xs text-slate-500">
-                        Test how a customer's phone scanner auto-types exact amounts (e.g. ₹599) for your UPI ID.
-                      </p>
-                    </div>
-                    <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-300">
-                      NPCI Standard Auto-Amount Enabled
-                    </span>
+                {/* Razorpay Unified Payment Notice */}
+                <div className="p-4 rounded-xl border border-indigo-200 bg-indigo-50/50 flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs font-bold text-xs">
+                    ₹
                   </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-                    <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center text-center">
-                      <div className="w-44 h-44 rounded-lg overflow-hidden border border-slate-200 bg-white p-2 shadow-inner">
-                        <img
-                          src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
-                            `upi://pay?pa=${formData.upiId || 'merchant@upi'}&pn=${encodeURIComponent(formData.name || 'Restaurant')}&am=599&cu=INR&tn=Bill_ORD-2975`
-                          )}`}
-                          alt="Test Dynamic UPI QR Code"
-                          className="w-full h-full object-contain"
-                        />
-                      </div>
-                      <p className="text-xs font-bold text-slate-900 mt-2 font-mono">
-                        UPI: {formData.upiId || 'merchant@upi'}
-                      </p>
-                      <div className="mt-1 px-3 py-0.5 rounded-full bg-slate-900 text-amber-400 font-mono text-[11px] font-bold">
-                        Test Amount: ₹599 (Auto-Typed on Scan)
-                      </div>
-                    </div>
-
-                    <div className="space-y-2.5 text-xs text-slate-700">
-                      <p className="font-bold text-slate-900 flex items-center gap-1.5">
-                        <Sparkles className="w-4 h-4 text-amber-600" />
-                        Kaise Kaam Karta Hai? (How Auto-Amount Works):
-                      </p>
-                      <ul className="space-y-2 text-slate-600 list-disc pl-4 text-[11px]">
-                        <li><b>Automatic Amount Pre-Fill:</b> Jab 599 ya 588 ka order hoga, system apne aap <code>am=599</code> parameter append kar ke dynamic QR Code create karega.</li>
-                        <li><b>Zero Typing for Customer:</b> Customer Google Pay, PhonePe, ya Paytm se QR scan karega to uske phone par <b>₹599 apne aap typed aayega</b>. Customer ko amount type nahi karna padega.</li>
-                        <li><b>Direct Bank Transfer:</b> Payment seedhe aapke upar add kiye gaye UPI VPA (<b>{formData.upiId}</b>) par transfer hoga.</li>
-                      </ul>
-                    </div>
+                  <div className="text-xs text-indigo-950">
+                    <p className="font-bold text-indigo-900 flex items-center gap-2">
+                      Razorpay Gateway Integrated
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-300">
+                        Active
+                      </span>
+                    </p>
+                    <p className="text-[11px] text-indigo-800 mt-1 leading-relaxed">
+                      All diner digital payments (UPI Apps, Net Banking across 50+ banks, Credit/Debit Cards, and Wallets) are processed securely through Razorpay with real-time automatic webhook verification.
+                    </p>
                   </div>
                 </div>
 

@@ -1,29 +1,31 @@
 import { Router } from 'express';
 import { menuController } from '../controllers/menuController.js';
+import { authenticateToken } from '../middleware/authMiddleware.js';
 
 const router = Router();
 
+// Public: QR Menu browsing & category list
 router.get('/', menuController.getMenu);
-
-// Categories management
 router.get('/categories', menuController.getCategories);
-router.post('/categories', menuController.addCategory);
-router.delete('/categories/:id', menuController.deleteCategory);
 
-// Toggle availability
-router.patch('/items/:id/toggle', menuController.toggleAvailability);
-router.patch('/:id/toggle', menuController.toggleAvailability);
+// Protected: Categories management (Requires Staff/Admin Login)
+router.post('/categories', authenticateToken, menuController.addCategory);
+router.delete('/categories/:id', authenticateToken, menuController.deleteCategory);
 
-// Create / Add item
-router.post('/items', menuController.saveMenuItem);
-router.post('/', menuController.saveMenuItem);
+// Protected: Toggle dish availability
+router.patch('/items/:id/toggle', authenticateToken, menuController.toggleAvailability);
+router.patch('/:id/toggle', authenticateToken, menuController.toggleAvailability);
 
-// Update item
-router.put('/items/:id', menuController.saveMenuItem);
-router.put('/:id', menuController.saveMenuItem);
+// Protected: Create / Add item
+router.post('/items', authenticateToken, menuController.saveMenuItem);
+router.post('/', authenticateToken, menuController.saveMenuItem);
 
-// Delete item & remove Cloudinary image
-router.delete('/items/:id', menuController.deleteMenuItem);
-router.delete('/:id', menuController.deleteMenuItem);
+// Protected: Update item
+router.put('/items/:id', authenticateToken, menuController.saveMenuItem);
+router.put('/:id', authenticateToken, menuController.saveMenuItem);
+
+// Protected: Delete item & remove Cloudinary image
+router.delete('/items/:id', authenticateToken, menuController.deleteMenuItem);
+router.delete('/:id', authenticateToken, menuController.deleteMenuItem);
 
 export default router;

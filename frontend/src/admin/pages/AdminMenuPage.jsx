@@ -36,7 +36,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { formatCurrency } from '../../utils/currency';
 import { PlanUpgradeModal } from '../components/PlanUpgradeModal';
 import { getPlanLimits } from '../utils/planLimits';
-import { API_BASE_URL } from '../../services/apiConfig';
+import { API_BASE_URL, getAuthToken } from '../../services/apiConfig';
 
 // Official Indian Food Veg/Non-Veg Badges
 const VegBadge = ({ className = 'w-4 h-4' }) => (
@@ -57,15 +57,7 @@ const NonVegBadge = ({ className = 'w-4 h-4' }) => (
   </span>
 );
 
-// Curated high-res food photo presets for instant 1-click selection
-const QUICK_FOOD_PRESETS = [
-  { label: 'Paneer Tikka', url: 'https://images.unsplash.com/photo-1599488615731-7e5c2823ff28?auto=format&fit=crop&w=600&q=80' },
-  { label: 'Biryani Feast', url: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=600&q=80' },
-  { label: 'Crispy Snack', url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80' },
-  { label: 'Pasta Bowl', url: 'https://images.unsplash.com/photo-1621996346565-e3d5d6281290?auto=format&fit=crop&w=600&q=80' },
-  { label: 'Cool Mocktail', url: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=600&q=80' },
-  { label: 'Sweet Dessert', url: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=600&q=80' },
-];
+// Official Indian Food Veg/Non-Veg Badges
 
 export const AdminMenuPage = () => {
   const {
@@ -157,8 +149,10 @@ export const AdminMenuPage = () => {
       const uploadData = new FormData();
       uploadData.append('image', file);
 
+      const token = getAuthToken();
       const res = await fetch(`${API_BASE_URL}/upload/dish-image`, {
         method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: uploadData,
       });
 
@@ -312,37 +306,54 @@ export const AdminMenuPage = () => {
     {
       header: 'Dish',
       accessor: 'name',
-      render: (row) => (
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200 shadow-2xs">
-            <img
-              src={row.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80'}
-              alt={row.name}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                e.target.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80';
-              }}
-            />
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {row.isVeg ? <VegBadge className="w-3.5 h-3.5" /> : <NonVegBadge className="w-3.5 h-3.5" />}
-              <span className="font-bold text-slate-900 truncate">{row.name}</span>
-              {row.isRecommended && (
-                <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-extrabold border border-emerald-300">
-                  ⭐ Chef's Special
-                </span>
-              )}
-              {row.isAddon && (
-                <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-extrabold border border-amber-300">
-                  ⚡ Cart Add-on
-                </span>
-              )}
+      render: (row) => {
+        const isCloudinary = Boolean(
+          row.image &&
+            typeof row.image === 'string' &&
+            (row.image.includes('cloudinary.com') || row.image.includes('res.cloudinary.com'))
+        );
+        return (
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200 shadow-2xs flex items-center justify-center">
+              {isCloudinary ? (
+                <img
+                  src={row.image}
+                  alt={row.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
+                  }}
+                />
+              ) : null}
+              <div
+                className={`w-full h-full items-center justify-center text-slate-400 select-none ${
+                  isCloudinary ? 'hidden' : 'flex'
+                }`}
+              >
+                <UtensilsCrossed className="w-5 h-5 stroke-[1.75]" />
+              </div>
             </div>
-            <p className="text-xs text-slate-500 truncate max-w-xs mt-0.5">{row.description}</p>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {row.isVeg ? <VegBadge className="w-3.5 h-3.5" /> : <NonVegBadge className="w-3.5 h-3.5" />}
+                <span className="font-bold text-slate-900 truncate">{row.name}</span>
+                {row.isRecommended && (
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-extrabold border border-emerald-300">
+                    ⭐ Chef's Special
+                  </span>
+                )}
+                {row.isAddon && (
+                  <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-extrabold border border-amber-300">
+                    ⚡ Cart Add-on
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-500 truncate max-w-xs mt-0.5">{row.description}</p>
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       header: 'Category',
@@ -940,15 +951,14 @@ export const AdminMenuPage = () => {
                       </div>
 
                       {/* Photo Dropzone or Preview */}
-                      {formData.image ? (
+                      {formData.image && (formData.image.includes('cloudinary.com') || formData.image.includes('res.cloudinary.com')) ? (
                         <div className="relative w-full h-36 rounded-xl overflow-hidden border border-slate-200 group bg-slate-900 shadow-sm">
                           <img
                             src={formData.image}
                             alt="Dish Preview"
                             className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.target.src =
-                                'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80';
+                            onError={() => {
+                              setFormData({ ...formData, image: '' });
                             }}
                           />
                           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
@@ -1006,34 +1016,9 @@ export const AdminMenuPage = () => {
                         <p className="text-xs text-rose-600 font-semibold mt-1.5">{uploadError}</p>
                       )}
 
-                      {/* 1-Click Curated Presets */}
-                      <div className="pt-2">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                          Or pick curated photo preset:
-                        </span>
-                        <div className="flex flex-wrap gap-1">
-                          {QUICK_FOOD_PRESETS.map((preset) => (
-                            <button
-                              key={preset.label}
-                              type="button"
-                              onClick={() => setFormData({ ...formData, image: preset.url })}
-                              className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-white hover:bg-amber-100 text-slate-700 hover:text-amber-900 border border-slate-200 transition-colors cursor-pointer"
-                            >
-                              {preset.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="pt-2">
-                        <input
-                          type="url"
-                          placeholder="Or paste external image URL..."
-                          value={formData.image}
-                          onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                          className="w-full h-8 px-3 rounded-lg border border-slate-200 text-xs text-slate-700 bg-white focus:outline-none focus:ring-1 focus:ring-amber-500 placeholder:text-slate-400"
-                        />
-                      </div>
+                      <p className="text-[11px] text-slate-400 mt-2">
+                        💡 Only Cloudinary uploaded photos are shown on the menu. Dishes without a photo automatically display the dish icon.
+                      </p>
                     </div>
 
                     {/* Live Customer Menu Preview Card */}
@@ -1049,22 +1034,27 @@ export const AdminMenuPage = () => {
                       </div>
 
                       <div className="bg-white rounded-xl p-3 border border-slate-200 shadow-xs flex items-center gap-3">
-                        <div className="w-16 h-16 rounded-lg bg-slate-100 overflow-hidden shrink-0 border border-slate-100">
-                          {formData.image ? (
+                        <div className="w-16 h-16 rounded-lg bg-slate-100 overflow-hidden shrink-0 border border-slate-100 flex items-center justify-center">
+                          {formData.image && (formData.image.includes('cloudinary.com') || formData.image.includes('res.cloudinary.com')) ? (
                             <img
                               src={formData.image}
                               alt="Preview"
                               className="w-full h-full object-cover"
                               onError={(e) => {
-                                e.target.src =
-                                  'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80';
+                                e.target.style.display = 'none';
+                                if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
                               }}
                             />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-slate-300">
-                              <UtensilsCrossed className="w-6 h-6" />
-                            </div>
-                          )}
+                          ) : null}
+                          <div
+                            className={`w-full h-full items-center justify-center text-slate-400 select-none ${
+                              formData.image && (formData.image.includes('cloudinary.com') || formData.image.includes('res.cloudinary.com'))
+                                ? 'hidden'
+                                : 'flex'
+                            }`}
+                          >
+                            <UtensilsCrossed className="w-6 h-6 stroke-[1.75]" />
+                          </div>
                         </div>
 
                         <div className="min-w-0 flex-1">

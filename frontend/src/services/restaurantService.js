@@ -19,7 +19,34 @@ export const restaurantService = {
       (t) => (t.slug || '').toLowerCase().replace(/_/g, '-') === cleanSlug
     );
 
-    const defaultMock = mockRestaurants.find((r) => r.slug.toLowerCase().replace(/_/g, '-') === cleanSlug) || mockRestaurants[0];
+    // Strictly match known mock restaurants without defaulting to mockRestaurants[0]
+    const defaultMock = mockRestaurants.find(
+      (r) => r.slug.toLowerCase().replace(/_/g, '-') === cleanSlug
+    );
+
+    let backendSettings = null;
+    let backend404 = false;
+    try {
+      const res = await fetch(`${API_BASE_URL}/settings/${cleanSlug}`);
+      const data = await res.json();
+      if (res.ok && data.success && data.settings) {
+        backendSettings = data.settings;
+      } else if (res.status === 404) {
+        backend404 = true;
+      }
+    } catch (e) {
+      // Backend offline or network failure, will check local stores below
+    }
+
+    // If backend explicitly returned 404 and no local tenant or mock exists, restaurant does not exist!
+    if (backend404 && !tenantMatch && !defaultMock) {
+      throw new Error(`Restaurant "${slug}" not found. Please verify the QR code scanned.`);
+    }
+
+    // If neither backend, nor tenants, nor mock found this restaurant
+    if (!backendSettings && !tenantMatch && !defaultMock) {
+      throw new Error(`Restaurant "${slug}" not found. Please verify the QR code scanned.`);
+    }
 
     const defaultRestaurant = tenantMatch
       ? {
@@ -40,31 +67,39 @@ export const restaurantService = {
           taxRatePercentage: 5,
           upiId: tenantMatch.upiId || 'restaurant@upi',
         }
-      : {
+      : defaultMock
+      ? {
           ...defaultMock,
           name: defaultMock.name,
           slug: cleanSlug,
-          logo: '',
-          banner: '',
-          tagline: '',
+          logo: defaultMock.logo || '',
+          banner: defaultMock.banner || '',
+          tagline: defaultMock.tagline || '',
+        }
+      : {
+          id: backendSettings?.id || `rest-${cleanSlug}`,
+          slug: cleanSlug,
+          name: backendSettings?.restaurantName || backendSettings?.name || cleanSlug,
+          tagline: backendSettings?.tagline || '',
+          cuisine: backendSettings?.cuisine || 'Multi-Cuisine',
+          rating: backendSettings?.rating || 4.8,
+          reviewCount: backendSettings?.reviewCount || 50,
+          address: backendSettings?.address || '',
+          logo: backendSettings?.logo || '',
+          banner: backendSettings?.banner || '',
+          openTime: backendSettings?.openTime || '11:00 AM',
+          closeTime: backendSettings?.closeTime || '11:00 PM',
+          isOpen: backendSettings?.isAcceptingOrders !== false,
+          currencySymbol: '₹',
+          taxRatePercentage: 5,
+          upiId: backendSettings?.upiId || '',
         };
-
-    let backendSettings = {};
-    try {
-      const res = await fetch(`${API_BASE_URL}/settings/${cleanSlug}`);
-      const data = await res.json();
-      if (res.ok && data.success && data.settings) {
-        backendSettings = data.settings;
-      }
-    } catch (e) {
-      // Fallback silently
-    }
 
     const perSlugSettings = storage.get(`${STORAGE_KEYS.ADMIN_SETTINGS}_${cleanSlug}`, {}) || storage.get(`${STORAGE_KEYS.ADMIN_SETTINGS}_${rawSlug}`, {}) || {};
 
     const adminSettings = {
       ...perSlugSettings,
-      ...backendSettings,
+      ...(backendSettings || {}),
     };
 
     return {

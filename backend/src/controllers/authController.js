@@ -1,12 +1,15 @@
 import mongoose from 'mongoose';
 import { SuperAdmin } from '../models/SuperAdmin.js';
 import { RestaurantAdmin } from '../models/RestaurantAdmin.js';
-import { db } from '../data/db.js';
-import { comparePassword } from '../utils/passwordUtils.js';
+import { Tenant } from '../models/Tenant.js';
+import { comparePassword, hashPassword } from '../utils/passwordUtils.js';
 import { signToken, getTokenValidity } from '../middleware/authMiddleware.js';
 
 export const authController = {
-
+  /**
+   * SuperAdmin Login (MongoDB Atlas Authoritative)
+   * Accepts progixtechnology@gmail.com / Progix@123
+   */
   async loginSuperAdmin(req, res) {
     try {
       const { email, password } = req.body;
@@ -19,22 +22,9 @@ export const authController = {
       }
 
       const cleanEmail = email.trim().toLowerCase();
-      let superAdmin = null;
 
-      // 1. Try Live MongoDB Atlas FIRST if connected
-      if (mongoose.connection && mongoose.connection.readyState === 1) {
-        try {
-          superAdmin = await SuperAdmin.findOne({ email: cleanEmail }).lean();
-        } catch (dbErr) {
-          console.warn('[AUTH] Live MongoDB SuperAdmin lookup warning:', dbErr.message);
-        }
-      }
-
-      // 2. Fallback to local store ONLY if not found in MongoDB
-      if (!superAdmin) {
-        const localAdmins = db.get('superAdmins') || [];
-        superAdmin = localAdmins.find((sa) => sa.email.toLowerCase() === cleanEmail);
-      }
+      // Query Live MongoDB Atlas
+      const superAdmin = await SuperAdmin.findOne({ email: cleanEmail }).lean();
 
       if (!superAdmin) {
         return res.status(401).json({
@@ -90,8 +80,8 @@ export const authController = {
   },
 
   /**
-   * Restaurant Admin Login
-   * Accepts resturant1@gmail.com / 123123
+   * Restaurant Admin Login (MongoDB Atlas Authoritative)
+   * Accepts resturant1@gmail.com / 123123 or onboarded tenant credentials
    */
   async loginRestaurantAdmin(req, res) {
     try {
@@ -105,63 +95,45 @@ export const authController = {
       }
 
       const cleanEmail = email.trim().toLowerCase();
-      let admin = null;
+      let admin = await RestaurantAdmin.findOne({ email: cleanEmail }).lean();
 
-      // 1. Try Live MongoDB Atlas FIRST if connected
-      if (mongoose.connection && mongoose.connection.readyState === 1) {
-        try {
-          admin = await RestaurantAdmin.findOne({ email: cleanEmail }).lean();
-        } catch (dbErr) {
-          console.warn('[AUTH] Live MongoDB RestaurantAdmin lookup warning:', dbErr.message);
-        }
-      }
-
-      // 2. Fallback to local store ONLY if not found in MongoDB
+      // Check Tenant if not in RestaurantAdmin
       if (!admin) {
-        const localAdmins = db.get('restaurantAdmins') || [];
-        admin = localAdmins.find((a) => a.email.toLowerCase() === cleanEmail);
+        const tenantMatch = await Tenant.findOne({
+          $or: [
+            { ownerEmail: cleanEmail },
+            { slug: cleanEmail.replace(/@restaurant\.com$/, '') },
+          ],
+        }).lean();
 
-        // Check platformTenants if not found in restaurantAdmins
-        if (!admin) {
-          const tenants = db.get('platformTenants') || [];
-          const tenantMatch = tenants.find(
-            (t) => (t.ownerEmail && t.ownerEmail.toLowerCase() === cleanEmail) ||
-              (t.slug && `${t.slug.toLowerCase()}@restaurant.com` === cleanEmail)
-          );
-
-          if (tenantMatch) {
-            const ownerPass = tenantMatch.ownerPassword || 'Admin@123';
-            admin = {
-              id: `adm-${tenantMatch.id}`,
-              name: tenantMatch.ownerName || tenantMatch.name,
-              email: tenantMatch.ownerEmail || `${tenantMatch.slug}@restaurant.com`,
-              passwordHash: hashPassword(ownerPass),
-              passwordPlain: ownerPass,
-              role: 'ADMIN',
-              title: 'Restaurant Owner & Admin',
-              restaurantId: tenantMatch.id,
-              restaurantSlug: tenantMatch.slug,
-            };
-          }
+        if (tenantMatch) {
+          const ownerPass = tenantMatch.ownerPassword || 'Admin@123';
+          admin = {
+            id: `adm-${tenantMatch.tenantId || tenantMatch._id}`,
+            name: tenantMatch.ownerName || tenantMatch.name,
+            email: tenantMatch.ownerEmail || `${tenantMatch.slug}@restaurant.com`,
+            passwordHash: hashPassword(ownerPass),
+            role: 'ADMIN',
+            title: 'Restaurant Owner & Admin',
+            restaurantId: tenantMatch.tenantId || tenantMatch._id.toString(),
+            restaurantSlug: tenantMatch.slug,
+          };
         }
       }
 
       if (!admin) {
         return res.status(401).json({
           success: false,
-          message: 'Invalid restaurant staff email or unregistered diner account',
+          message: 'Restaurant Admin account not found. Please check your credentials.',
         });
       }
 
       // Secure bcrypt password verification
-      const isMatch = comparePassword(password, admin.passwordHash) || 
-        (admin.passwordPlain && password === admin.passwordPlain) || 
-        (cleanEmail === 'resturant1@gmail.com' && password === '123123') ||
-        (cleanEmail === 'admin@restaurant.com' && password === 'Admin@123');
+      const isMatch = comparePassword(password, admin.passwordHash);
       if (!isMatch) {
         return res.status(401).json({
           success: false,
-          message: 'Incorrect password. Please verify your credentials.',
+          message: 'Incorrect password. Access denied.',
         });
       }
 
@@ -173,13 +145,14 @@ export const authController = {
         email: admin.email,
         name: admin.name,
         role: admin.role,
-        restaurantId: admin.restaurantId,
         type: 'RESTAURANT_ADMIN',
+        restaurantId: admin.restaurantId,
+        restaurantSlug: admin.restaurantSlug,
       });
 
       return res.status(200).json({
         success: true,
-        message: 'Restaurant admin authentication successful',
+        message: 'Restaurant Admin authentication successful',
         token,
         tokenValidity: validity,
         user: {
@@ -203,50 +176,60 @@ export const authController = {
   },
 
   /**
-   * Verify Active Session Token
+   * Get Current Authenticated Profile from Token
    */
-  async verifySession(req, res) {
-    return res.status(200).json({
-      success: true,
-      user: req.user,
-      tokenValidity: getTokenValidity(),
-    });
+  async getProfile(req, res) {
+    try {
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          message: 'User session not found or token expired',
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          type: user.type,
+          restaurantId: user.restaurantId,
+          restaurantSlug: user.restaurantSlug,
+          isProtected: user.isProtected || false,
+        },
+      });
+    } catch (err) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve profile',
+      });
+    }
   },
 
   /**
-   * Verify Admin Password before sensitive actions (e.g. changing UPI ID or WhatsApp Login)
+   * Verify Active Session & Token Validity
+   */
+  async verifySession(req, res) {
+    return authController.getProfile(req, res);
+  },
+
+  /**
+   * Verify Admin Password
    */
   async verifyAdminPassword(req, res) {
     try {
       const { email, password } = req.body;
       if (!email || !password) {
-        return res.status(400).json({ success: false, message: 'Email and password are required.' });
+        return res.status(400).json({ success: false, message: 'Email and password are required' });
       }
 
       const cleanEmail = email.trim().toLowerCase();
-      let admin = null;
-
-      // 1. Try Live MongoDB Atlas FIRST if connected
-      if (mongoose.connection && mongoose.connection.readyState === 1) {
-        try {
-          admin = await RestaurantAdmin.findOne({ email: cleanEmail }).lean();
-          if (!admin) {
-            admin = await SuperAdmin.findOne({ email: cleanEmail }).lean();
-          }
-        } catch (dbErr) {
-          console.warn('[AUTH] Live MongoDB verifyAdminPassword lookup warning:', dbErr.message);
-        }
-      }
-
-      // 2. Fallback to local store
+      let admin = await RestaurantAdmin.findOne({ email: cleanEmail }).lean();
       if (!admin) {
-        const localAdmins = db.get('restaurantAdmins') || [];
-        admin = localAdmins.find((a) => a.email.toLowerCase() === cleanEmail);
-
-        if (!admin) {
-          const superAdmins = db.get('superAdmins') || [];
-          admin = superAdmins.find((sa) => sa.email.toLowerCase() === cleanEmail);
-        }
+        admin = await SuperAdmin.findOne({ email: cleanEmail }).lean();
       }
 
       if (!admin) {
@@ -265,4 +248,3 @@ export const authController = {
     }
   },
 };
-

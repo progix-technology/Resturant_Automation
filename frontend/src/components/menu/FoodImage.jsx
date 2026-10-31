@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
-import { Utensils } from 'lucide-react';
+import { UtensilsCrossed } from 'lucide-react';
 import { Skeleton } from '../common/Skeleton';
+
+// Helper to determine if an image URL is from Cloudinary
+export const isCloudinaryImage = (url) => {
+  if (!url || typeof url !== 'string') return false;
+  const clean = url.trim().toLowerCase();
+  return clean.includes('cloudinary.com') || clean.includes('res.cloudinary.com');
+};
 
 export const FoodImage = ({
   src,
@@ -12,30 +19,34 @@ export const FoodImage = ({
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
 
-  return (
-    <div className={`relative overflow-hidden bg-warm-200 ${aspectRatio} ${className}`}>
-      {!loaded && !error && (
-        <Skeleton className="absolute inset-0 w-full h-full rounded-none" />
-      )}
+  const isValidCloudinary = isCloudinaryImage(src);
 
-      {error ? (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-warm-200 text-charcoal-400 p-2 text-center">
-          <Utensils className="w-6 h-6 stroke-1 mb-1" />
-          <span className="text-[10px] font-medium leading-none">Food item</span>
+  return (
+    <div className={`relative overflow-hidden bg-slate-100 ${aspectRatio} ${className}`}>
+      {!isValidCloudinary || error ? (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-100 text-slate-400 p-2 text-center select-none">
+          <div className="w-10 h-10 rounded-full bg-slate-200/80 flex items-center justify-center shadow-inner">
+            <UtensilsCrossed className="w-5 h-5 text-slate-400 stroke-[1.75]" />
+          </div>
         </div>
       ) : (
-        <img
-          src={src}
-          alt={alt}
-          loading="lazy"
-          onLoad={() => setLoaded(true)}
-          onError={() => setError(true)}
-          className={`
-            w-full h-full object-cover transition-opacity duration-300
-            ${loaded ? 'opacity-100' : 'opacity-0'}
-            ${imgClassName}
-          `}
-        />
+        <>
+          {!loaded && (
+            <Skeleton className="absolute inset-0 w-full h-full rounded-none" />
+          )}
+          <img
+            src={src}
+            alt={alt}
+            loading="lazy"
+            onLoad={() => setLoaded(true)}
+            onError={() => setError(true)}
+            className={`
+              w-full h-full object-cover transition-opacity duration-300
+              ${loaded ? 'opacity-100' : 'opacity-0'}
+              ${imgClassName}
+            `}
+          />
+        </>
       )}
     </div>
   );

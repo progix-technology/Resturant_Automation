@@ -14,7 +14,17 @@ export const OrderProvider = ({ children }) => {
       storage.remove(STORAGE_KEYS.ACTIVE_ORDER);
       return null;
     }
-    return storage.get(STORAGE_KEYS.ACTIVE_ORDER, null);
+    const order = storage.get(STORAGE_KEYS.ACTIVE_ORDER, null);
+    if (order) {
+      // Validate that order belongs to current seated table
+      const sessionTable = String(hasSession.tableNumber || '').trim();
+      const orderTable = String(order.tableNumber || '').trim();
+      if (sessionTable && orderTable && sessionTable !== orderTable) {
+        storage.remove(STORAGE_KEYS.ACTIVE_ORDER);
+        return null;
+      }
+    }
+    return order;
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);

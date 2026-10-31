@@ -1,72 +1,72 @@
 import mongoose from 'mongoose';
-import { db } from '../data/db.js';
 import { MenuItem } from '../models/MenuItem.js';
+import { MenuCategory } from '../models/MenuCategory.js';
+import { RestaurantSettings } from '../models/RestaurantSettings.js';
+import { Tenant } from '../models/Tenant.js';
 import { deleteMenuImage } from '../services/cloudinaryService.js';
 
 export const menuController = {
+  /**
+   * Get menu items and categories strictly scoped by restaurant slug
+   */
   async getMenu(req, res) {
     try {
       const { slug } = req.query;
-      let items = [];
+      const rawSlug = (slug || 'spice-garden').toLowerCase().trim();
+      const cleanSlug = rawSlug.replace(/^the-/, '').replace(/_/g, '-');
 
-      // 1. Try fetching from MongoDB Atlas ONLY if connection is active
-      if (mongoose.connection && mongoose.connection.readyState === 1) {
-        try {
-          const cleanSlug = slug ? slug.replace(/^the-/, '') : '';
-          const query = slug
-            ? { $or: [{ restaurantSlug: slug }, { restaurantSlug: cleanSlug }, { restaurantSlug: `the-${cleanSlug}` }] }
-            : {};
-          const atlasItems = await MenuItem.find(query).lean();
+      // 1. Verify restaurant existence in MongoDB Atlas
+      const isRegistered =
+        cleanSlug === 'spice-garden' ||
+        (await RestaurantSettings.findOne({
+          $or: [{ slug: cleanSlug }, { slug: rawSlug }, { slug: `the-${cleanSlug}` }],
+        })) ||
+        (await Tenant.findOne({
+          $or: [{ slug: cleanSlug }, { slug: rawSlug }, { slug: `the-${cleanSlug}` }],
+        }));
 
-
-          if (atlasItems && atlasItems.length > 0) {
-            items = atlasItems.map((i) => ({
-              id: i.itemId || i._id.toString(),
-              itemId: i.itemId || i._id.toString(),
-              name: i.name,
-              category: i.category,
-              categoryId: i.categoryId || i.category,
-              price: i.price,
-              description: i.description || '',
-              image: i.image || '',
-              isVeg: i.isVeg ?? true,
-              isSpicy: i.isSpicy ?? false,
-              isRecommended: i.isRecommended ?? i.isPopular ?? false,
-              isAvailable: i.isAvailable ?? true,
-              preparationTime: i.preparationTime || '15 mins',
-              addons: i.addons || [],
-              rating: i.rating || 4.8,
-            }));
-          }
-        } catch (dbErr) {
-          // Fall back to local store
-        }
+      if (!isRegistered) {
+        return res.status(404).json({
+          success: false,
+          message: `Restaurant "${slug}" not found.`,
+          categories: [],
+          items: [],
+        });
       }
 
-      // 2. Fallback to local db if Atlas returned empty or is offline
-      if (items.length === 0) {
-        items = db.get('menuItems') || [];
-        if (slug) {
-          const cleanSlug = slug.replace(/^the-/, '');
-          items = items.filter(
-            (i) =>
-              i.restaurantSlug === slug ||
-              i.restaurantSlug === cleanSlug ||
-              i.restaurantSlug === `the-${cleanSlug}` ||
-              !i.restaurantSlug
-          );
-        }
+      // 2. Query Menu Items for this restaurant
+      const atlasItems = await MenuItem.find({
+        $or: [{ restaurantSlug: cleanSlug }, { restaurantSlug: rawSlug }, { restaurantSlug: `the-${cleanSlug}` }],
+      }).lean();
+
+      // 3. Query Categories for this restaurant
+      let categories = await MenuCategory.find({
+        $or: [{ restaurantSlug: cleanSlug }, { restaurantSlug: 'spice-garden' }],
+      }).sort({ sortOrder: 1 }).lean();
+
+      if (!categories || categories.length === 0) {
+        categories = [
+          { id: 'cat-starters', name: 'Starters & Appetizers', sortOrder: 1 },
+          { id: 'cat-mains', name: 'Main Course Specialties', sortOrder: 2 },
+          { id: 'cat-breads', name: 'Breads & Rice', sortOrder: 3 },
+          { id: 'cat-beverages', name: 'Beverages & Mocktails', sortOrder: 4 },
+          { id: 'cat-desserts', name: 'Desserts & Sweets', sortOrder: 5 },
+        ];
+      } else {
+        categories = categories.map((c) => ({
+          ...c,
+          id: c.categoryId || c._id.toString(),
+        }));
       }
 
-      const categories = db.get('menuCategories') || [];
-
-      // Ensure every item has a matching categoryId from categories
-      items = items.map((i) => {
+      const formattedItems = atlasItems.map((i) => {
         const catMatch = categories.find(
           (c) => c.name.toLowerCase() === (i.category || '').toLowerCase()
         );
         return {
           ...i,
+          id: i.itemId || i._id.toString(),
+          itemId: i.itemId || i._id.toString(),
           categoryId: catMatch?.id || i.categoryId || 'cat-starters',
         };
       });
@@ -74,253 +74,262 @@ export const menuController = {
       return res.status(200).json({
         success: true,
         categories,
-        items,
+        items: formattedItems,
       });
     } catch (err) {
+      console.error('getMenu error:', err);
       return res.status(500).json({ success: false, message: 'Failed to fetch menu' });
     }
   },
 
+  /**
+   * Toggle item availability (Multi-Tenant Protected)
+   */
   async toggleAvailability(req, res) {
     try {
       const { id } = req.params;
-      const items = db.get('menuItems') || [];
-      let updatedItem = null;
+      const cleanId = String(id).trim();
 
-      const nextItems = items.map((i) => {
-        if (i.id === id || i.itemId === id) {
-          updatedItem = { ...i, isAvailable: !i.isAvailable };
-          return updatedItem;
-        }
-        return i;
+      const item = await MenuItem.findOne({
+        $or: [{ itemId: cleanId }, { _id: mongoose.isValidObjectId(cleanId) ? cleanId : null }],
       });
 
-      db.set('menuItems', nextItems);
+      if (!item) {
+        return res.status(404).json({ success: false, message: 'Item not found' });
+      }
 
-      // Respond immediately to client (0ms)
-      res.status(200).json({
+      // Multi-Tenant Isolation Check
+      const isSuper = req.user?.role === 'SUPER_ADMIN' || req.user?.role === 'PLATFORM_SUPERADMIN';
+      const userSlug = (req.user?.restaurantSlug || '').toLowerCase().replace(/^the-/, '').trim();
+      const itemSlug = (item.restaurantSlug || '').toLowerCase().replace(/^the-/, '').trim();
+
+      if (!isSuper && userSlug && itemSlug && userSlug !== itemSlug) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access Denied: You cannot modify another restaurant\'s menu item.',
+        });
+      }
+
+      item.isAvailable = !item.isAvailable;
+      await item.save();
+
+      return res.status(200).json({
         success: true,
-        message: `Item availability updated`,
-        data: updatedItem,
+        message: 'Item availability updated',
+        data: {
+          ...item.toObject(),
+          id: item.itemId,
+        },
       });
-
-      // Asynchronous background sync with MongoDB Atlas (non-blocking)
-      if (mongoose.connection && mongoose.connection.readyState === 1 && updatedItem) {
-        MenuItem.findOne({ $or: [{ itemId: id }, { _id: id }] })
-          .then((doc) => {
-            if (doc) {
-              doc.isAvailable = updatedItem.isAvailable;
-              return doc.save();
-            }
-          })
-          .catch(() => {});
-      }
     } catch (err) {
-      if (!res.headersSent) {
-        return res.status(500).json({ success: false, message: 'Failed to update item' });
-      }
+      return res.status(500).json({ success: false, message: 'Failed to update item availability' });
     }
   },
 
+  /**
+   * Save or update menu item in MongoDB Atlas (Multi-Tenant Protected)
+   */
   async saveMenuItem(req, res) {
     try {
       const { id } = req.params;
       const itemData = req.body;
-      const items = db.get('menuItems') || [];
+      const isSuper = req.user?.role === 'SUPER_ADMIN' || req.user?.role === 'PLATFORM_SUPERADMIN';
+
+      // Strict Tenant Assignment: Restaurant Admins are locked to their JWT token slug
+      const cleanSlug = isSuper
+        ? (itemData.restaurantSlug || req.user?.restaurantSlug || 'spice-garden').toLowerCase().trim()
+        : (req.user?.restaurantSlug || 'spice-garden').toLowerCase().trim();
 
       if (id) {
-        // === UPDATE DISH ===
-        const existingItem = items.find((i) => i.id === id || i.itemId === id);
-
-        // Delete old Cloudinary photo if replaced
-        if (
-          existingItem &&
-          existingItem.image &&
-          itemData.image &&
-          existingItem.image !== itemData.image &&
-          existingItem.image.includes('cloudinary.com')
-        ) {
-          deleteMenuImage(existingItem.image).catch(() => {});
-        }
-
-        let updated = null;
-        const next = items.map((i) => {
-          if (i.id === id || i.itemId === id) {
-            updated = { ...i, ...itemData, id };
-            return updated;
-          }
-          return i;
+        // Update existing item
+        const existing = await MenuItem.findOne({
+          $or: [{ itemId: id }, { _id: mongoose.isValidObjectId(id) ? id : null }],
         });
 
-        if (!updated) {
-          updated = { ...itemData, id };
-          next.push(updated);
+        if (!existing) {
+          return res.status(404).json({ success: false, message: 'Item not found' });
         }
 
-        db.set('menuItems', next);
+        // Multi-Tenant Isolation Check
+        const userSlug = (req.user?.restaurantSlug || '').toLowerCase().replace(/^the-/, '').trim();
+        const existingSlug = (existing.restaurantSlug || '').toLowerCase().replace(/^the-/, '').trim();
 
-        // Respond immediately (0ms)
-        res.status(200).json({ success: true, data: updated });
-
-        // Background sync to MongoDB Atlas
-        if (mongoose.connection && mongoose.connection.readyState === 1) {
-          MenuItem.findOneAndUpdate(
-            { $or: [{ itemId: id }, { _id: id }] },
-            {
-              name: itemData.name,
-              category: itemData.category || itemData.categoryId,
-              price: Number(itemData.price),
-              description: itemData.description || '',
-              image: itemData.image || '',
-              isVeg: itemData.isVeg ?? true,
-              isRecommended: itemData.isRecommended ?? false,
-              isAddon: itemData.isAddon ?? false,
-              isAvailable: itemData.isAvailable ?? true,
-              variants: itemData.variants || [],
-              preparationTime: Number(String(itemData.preparationTime || 15).replace(/\D/g, '') || 15),
-            },
-            { upsert: true }
-          ).catch(() => {});
+        if (!isSuper && userSlug && existingSlug && userSlug !== existingSlug) {
+          return res.status(403).json({
+            success: false,
+            message: 'Access Denied: You cannot edit items belonging to another restaurant.',
+          });
         }
+
+        if (existing.image && itemData.image && existing.image !== itemData.image && existing.image.includes('cloudinary.com')) {
+          deleteMenuImage(existing.image).catch(() => {});
+        }
+
+        const updated = await MenuItem.findOneAndUpdate(
+          { _id: existing._id },
+          {
+            ...itemData,
+            restaurantSlug: existing.restaurantSlug, // Preserve original authentic tenant slug
+          },
+          { new: true }
+        ).lean();
+
+        return res.status(200).json({
+          success: true,
+          message: 'Menu item updated successfully',
+          data: {
+            ...updated,
+            id: updated.itemId,
+          },
+        });
       } else {
-        // === CREATE DISH ===
-        const newItemId = `item-${Date.now().toString().slice(-6)}`;
-        const newItem = {
+        // Create new item strictly under admin's tenant slug
+        const itemId = `item-${Date.now().toString(36)}`;
+        const newItem = await MenuItem.create({
           ...itemData,
-          id: newItemId,
-          itemId: newItemId,
-          price: Number(itemData.price),
+          itemId,
+          restaurantSlug: cleanSlug,
+          name: itemData.name || 'New Dish',
+          category: itemData.category || 'Specialties',
+          price: Number(itemData.price) || 0,
           isAvailable: itemData.isAvailable !== false,
-          isRecommended: Boolean(itemData.isRecommended),
-          isAddon: Boolean(itemData.isAddon),
-          variants: itemData.variants || [],
-          restaurantSlug: itemData.restaurantSlug || 'spice-garden',
-        };
+          isVeg: itemData.isVeg !== false,
+        });
 
-        db.set('menuItems', [newItem, ...items]);
-
-        // Respond immediately (0ms)
-        res.status(201).json({ success: true, data: newItem });
-
-        // Background save to MongoDB Atlas
-        if (mongoose.connection && mongoose.connection.readyState === 1) {
-          MenuItem.create({
-            itemId: newItemId,
-            restaurantSlug: newItem.restaurantSlug,
-            name: newItem.name,
-            category: newItem.category || newItem.categoryId || 'starters',
-            price: newItem.price,
-            description: newItem.description || '',
-            image: newItem.image || '',
-            isVeg: newItem.isVeg ?? true,
-            isRecommended: newItem.isRecommended ?? false,
-            isAddon: newItem.isAddon ?? false,
-            isAvailable: newItem.isAvailable ?? true,
-            variants: newItem.variants || [],
-            preparationTime: Number(String(newItem.preparationTime || 15).replace(/\D/g, '') || 15),
-          }).catch(() => {});
-        }
+        return res.status(201).json({
+          success: true,
+          message: 'Dish added to menu successfully',
+          data: {
+            ...newItem.toObject(),
+            id: newItem.itemId,
+          },
+        });
       }
     } catch (err) {
-      if (!res.headersSent) {
-        return res.status(500).json({ success: false, message: 'Failed to save menu item' });
-      }
+      console.error('saveMenuItem error:', err);
+      return res.status(500).json({ success: false, message: 'Failed to save menu item' });
     }
   },
 
+  /**
+   * Delete menu item (Multi-Tenant Protected)
+   */
   async deleteMenuItem(req, res) {
     try {
       const { id } = req.params;
-      const items = db.get('menuItems') || [];
-      const targetItem = items.find((i) => i.id === id || i.itemId === id);
+      const cleanId = String(id).trim();
 
-      if (targetItem && targetItem.image && targetItem.image.includes('cloudinary.com')) {
-        deleteMenuImage(targetItem.image).catch(() => {});
-      }
-
-      // 1. Delete from local JSON / cache immediately
-      const filtered = items.filter((i) => i.id !== id && i.itemId !== id);
-      db.set('menuItems', filtered);
-
-      // 2. Respond immediately
-      res.status(200).json({
-        success: true,
-        message: `Dish #${id} deleted successfully`,
+      const item = await MenuItem.findOne({
+        $or: [{ itemId: cleanId }, { _id: mongoose.isValidObjectId(cleanId) ? cleanId : null }],
       });
 
-      // 3. Delete from MongoDB Atlas in background
-      if (mongoose.connection && mongoose.connection.readyState === 1) {
-        MenuItem.deleteOne({ $or: [{ itemId: id }, { _id: id }] }).catch(() => {});
+      if (!item) {
+        return res.status(404).json({ success: false, message: 'Item not found' });
       }
+
+      // Multi-Tenant Isolation Check
+      const isSuper = req.user?.role === 'SUPER_ADMIN' || req.user?.role === 'PLATFORM_SUPERADMIN';
+      const userSlug = (req.user?.restaurantSlug || '').toLowerCase().replace(/^the-/, '').trim();
+      const itemSlug = (item.restaurantSlug || '').toLowerCase().replace(/^the-/, '').trim();
+
+      if (!isSuper && userSlug && itemSlug && userSlug !== itemSlug) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access Denied: You cannot delete items belonging to another restaurant.',
+        });
+      }
+
+      if (item.image && item.image.includes('cloudinary.com')) {
+        deleteMenuImage(item.image).catch(() => {});
+      }
+
+      await MenuItem.deleteOne({ _id: item._id });
+
+      return res.status(200).json({
+        success: true,
+        message: 'Menu item deleted successfully',
+      });
     } catch (err) {
-      if (!res.headersSent) {
-        return res.status(500).json({ success: false, message: 'Failed to delete item' });
-      }
+      return res.status(500).json({ success: false, message: 'Failed to delete menu item' });
     }
   },
 
+  /**
+   * Get categories
+   */
   async getCategories(req, res) {
     try {
-      const categories = db.get('menuCategories') || [];
-      res.status(200).json({ success: true, categories });
-    } catch (err) {
-      res.status(500).json({ success: false, message: 'Failed to fetch categories' });
-    }
-  },
+      const rawSlug = (req.query.slug || req.user?.restaurantSlug || 'spice-garden').toLowerCase().trim();
+      const cleanSlug = rawSlug.replace(/^the-/, '').replace(/_/g, '-');
 
-  async addCategory(req, res) {
-    try {
-      const { name, id, icon } = req.body;
-      if (!name || !name.trim()) {
-        return res.status(400).json({ success: false, message: 'Category name is required' });
-      }
-      const categoryId = (id || name)
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '');
+      let categories = await MenuCategory.find({
+        $or: [{ restaurantSlug: cleanSlug }, { restaurantSlug: 'spice-garden' }],
+      }).sort({ sortOrder: 1 }).lean();
 
-      const categories = db.get('menuCategories') || [];
-      const exists = categories.find((c) => c.id === categoryId);
-      if (exists) {
-        return res.status(400).json({ success: false, message: 'Category already exists' });
-      }
-
-      const newCategory = {
-        id: categoryId,
-        name: name.trim(),
-        icon: icon || 'Utensils',
-        sortOrder: categories.length + 1,
-      };
-
-      categories.push(newCategory);
-      db.set('menuCategories', categories);
-
-      res.status(201).json({
+      return res.status(200).json({
         success: true,
-        message: 'Category added successfully',
-        category: newCategory,
-        categories,
+        categories: categories.map((c) => ({
+          ...c,
+          id: c.categoryId || c._id.toString(),
+        })),
       });
     } catch (err) {
-      res.status(500).json({ success: false, message: err.message });
+      return res.status(500).json({ success: false, message: 'Failed to fetch categories' });
     }
   },
 
+  /**
+   * Add new category
+   */
+  async addCategory(req, res) {
+    try {
+      const { name, icon } = req.body;
+      const rawSlug = (req.body.restaurantSlug || req.user?.restaurantSlug || 'spice-garden').toLowerCase().trim();
+      const cleanSlug = rawSlug.replace(/^the-/, '').replace(/_/g, '-');
+
+      if (!name) {
+        return res.status(400).json({ success: false, message: 'Category name is required' });
+      }
+
+      const categoryId = `cat-${name.toLowerCase().replace(/\s+/g, '-')}`;
+
+      const created = await MenuCategory.findOneAndUpdate(
+        { categoryId, restaurantSlug: cleanSlug },
+        {
+          categoryId,
+          name,
+          icon: icon || 'Utensils',
+          restaurantSlug: cleanSlug,
+        },
+        { upsert: true, new: true }
+      ).lean();
+
+      return res.status(201).json({
+        success: true,
+        message: 'Category added successfully',
+        data: {
+          ...created,
+          id: created.categoryId,
+        },
+      });
+    } catch (err) {
+      return res.status(500).json({ success: false, message: 'Failed to add category' });
+    }
+  },
+
+  /**
+   * Delete category
+   */
   async deleteCategory(req, res) {
     try {
       const { id } = req.params;
-      let categories = db.get('menuCategories') || [];
-      categories = categories.filter((c) => c.id !== id);
-      db.set('menuCategories', categories);
-
-      res.status(200).json({
+      await MenuCategory.deleteOne({ categoryId: id });
+      return res.status(200).json({
         success: true,
         message: 'Category deleted successfully',
-        categories,
       });
     } catch (err) {
-      res.status(500).json({ success: false, message: err.message });
+      return res.status(500).json({ success: false, message: 'Failed to delete category' });
     }
   },
 };

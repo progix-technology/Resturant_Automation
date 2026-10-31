@@ -30,6 +30,7 @@ import { SearchInput } from '../components/SearchInput';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { formatCurrency } from '../../utils/currency';
 import { storage } from '../../utils/storage';
+import { apiRequest } from '../../services/apiConfig';
 
 export const AdminOrdersPage = () => {
   const { orders, updateOrderStatus, markPaid, setPreparationTime, loadOrders, isLoading, showToast, settings } = useAdminData();
@@ -156,30 +157,24 @@ export const AdminOrdersPage = () => {
     }
     const mobile = rawMobile.length === 10 ? `91${rawMobile}` : rawMobile;
 
-    const restName = (order?.restaurantName || order?.restaurantTitle || settings?.restaurantName || settings?.name || 'Spice Garden');
-    const upiVpa = order?.upiVpa || order?.upiId || settings?.upiId || settings?.upiVpa || '';
-    const slug = order?.restaurantSlug || settings?.restaurantSlug || 'spice-garden';
-
-    // Automated Silent Backend API Dispatch (Zero Browser Redirects, Zero Popups!)
+    // STEP 2: Dispatch Confirmation, ETA Prep Time & Payment Link
     try {
-      await adminNotificationService.sendAutomatedWhatsApp({
-        mobile,
-        customerName: order?.customerName || 'Guest',
-        orderId: order?.orderId || order?.id,
-        tableNumber: order?.tableNumber || '01',
-        total: order?.total || 0,
-        type: 'TABLE_BILL',
-        restaurantName: restName,
-        upiVpa,
-        restaurantSlug: slug,
+      await apiRequest('/notifications/order-confirmed-eta', {
+        method: 'POST',
+        body: JSON.stringify({
+          orderId: order?.orderId || order?.id,
+          etaMinutes: etaMins,
+          mobile,
+        }),
       });
 
       if (showToast) {
-        showToast(`✅ Pre-Service Bill sent automatically to +${mobile}!`, 'success');
+        showToast(`✅ Order confirmed! ETA (${etaMins}m) & Payment link sent to +${mobile}!`, 'success');
       }
+      loadOrders();
     } catch (err) {
       if (showToast) {
-        showToast(`WhatsApp Bill dispatched for +${mobile}`, 'success');
+        showToast(`Confirmation dispatched for +${mobile}`, 'success');
       }
     }
   };
@@ -629,7 +624,7 @@ export const AdminOrdersPage = () => {
                     className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm transition-colors cursor-pointer"
                   >
                     <MessageSquare className="w-4 h-4" />
-                    <span>Send Bill, QR & Prep Time ({customEta}m) via WhatsApp</span>
+                    <span>Confirm Order & Send ETA ({customEta}m) + Payment Link</span>
                   </button>
                 </div>
 

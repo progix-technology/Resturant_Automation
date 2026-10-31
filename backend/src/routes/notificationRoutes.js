@@ -1,8 +1,11 @@
 import { Router } from 'express';
+import mongoose from 'mongoose';
 import QRCode from 'qrcode';
 import { whatsappService } from '../services/whatsappService.js';
 import { RestaurantSettings } from '../models/RestaurantSettings.js';
-import { db } from '../data/db.js';
+import { WaiterCall } from '../models/WaiterCall.js';
+import { Order } from '../models/Order.js';
+import { orderLifecycleNotificationService } from '../services/orderLifecycleNotificationService.js';
 
 const router = Router();
 
@@ -27,30 +30,22 @@ router.post('/waiter-call', async (req, res) => {
     const { tableNumber, customerName, restaurantSlug, notes } = req.body;
     const cleanSlug = (restaurantSlug || 'spice-garden').toLowerCase().trim().replace(/_/g, '-');
     const tableNum = String(tableNumber || '01').replace(/^Table\s*/i, '').trim();
+    const callId = `wcall-${Date.now()}`;
 
-    const waiterCall = {
-      id: `wcall-${Date.now()}`,
+    const created = await WaiterCall.create({
+      callId,
+      id: callId,
       tableNumber: tableNum,
       customerName: customerName ? String(customerName).trim() : 'Guest Diner',
       restaurantSlug: cleanSlug,
-      notes: notes || 'Assistance requested at table',
-      requestedAt: new Date().toISOString(),
+      reason: notes || 'Assistance requested at table',
       status: 'PENDING',
-    };
-
-    const currentCalls = db.get('waiterCalls') || [];
-    const updatedCalls = [waiterCall, ...currentCalls.filter((c) => c.tableNumber !== tableNum || c.status !== 'PENDING')];
-    db.set('waiterCalls', updatedCalls);
+    });
 
     // Send WhatsApp alert to restaurant admin if connected
     try {
-      let dbSettings = null;
-      try {
-        dbSettings = await RestaurantSettings.findOne({ slug: cleanSlug });
-      } catch (e) {}
-
-      const restName = dbSettings?.restaurantName || dbSettings?.name || 'Restaurant';
-      const alertMsg = `🚨 *WAITER ASSISTANCE NEEDED!* 🛎️\n\nCustomer *${waiterCall.customerName}* at *Table ${waiterCall.tableNumber}* has requested waiter help at table. Please attend immediately!`;
+      const dbSettings = await RestaurantSettings.findOne({ slug: cleanSlug });
+      const alertMsg = `🚨 *WAITER ASSISTANCE NEEDED!* 🛎️\n\nCustomer *${created.customerName}* at *Table ${created.tableNumber}* has requested waiter help at table. Please attend immediately!`;
       const adminPhone = dbSettings?.phone || dbSettings?.whatsappPhone || '9876543210';
 
       whatsappService.sendMessage({
@@ -63,7 +58,7 @@ router.post('/waiter-call', async (req, res) => {
     return res.status(200).json({
       success: true,
       message: `Waiter notified for Table ${tableNum}`,
-      data: waiterCall,
+      data: created,
     });
   } catch (err) {
     console.error('Waiter call error:', err);
@@ -72,20 +67,20 @@ router.post('/waiter-call', async (req, res) => {
 });
 
 // Get Active Pending Waiter Calls
-router.get('/waiter-calls', (req, res) => {
+router.get('/waiter-calls', async (req, res) => {
   try {
     const { slug } = req.query;
     const cleanSlug = (slug || 'spice-garden').toLowerCase().trim().replace(/_/g, '-');
 
-    const allCalls = db.get('waiterCalls') || [];
-    const pending = allCalls.filter(
-      (c) => (c.restaurantSlug || 'spice-garden') === cleanSlug && c.status === 'PENDING'
-    );
+    const pending = await WaiterCall.find({
+      restaurantSlug: cleanSlug,
+      status: 'PENDING',
+    }).sort({ createdAt: -1 }).lean();
 
     return res.status(200).json({
       success: true,
       count: pending.length,
-      data: pending,
+      data: pending.map((c) => ({ ...c, id: c.callId || c.id })),
     });
   } catch (err) {
     return res.status(500).json({ success: false, message: 'Failed to fetch waiter calls' });
@@ -93,22 +88,25 @@ router.get('/waiter-calls', (req, res) => {
 });
 
 // Resolve / Mark Assisted Waiter Call
-router.patch('/waiter-calls/:id/resolve', (req, res) => {
+router.patch('/waiter-calls/:id/resolve', async (req, res) => {
   try {
     const { id } = req.params;
     const { tableNumber } = req.body;
     const cleanId = String(id).trim();
     const cleanTable = tableNumber ? String(tableNumber).replace(/^Table\s*/i, '').trim() : '';
 
-    const allCalls = db.get('waiterCalls') || [];
-    const updated = allCalls.map((c) => {
-      if (c.id === cleanId || (cleanTable && c.tableNumber === cleanTable)) {
-        return { ...c, status: 'RESOLVED', resolvedAt: new Date().toISOString() };
+    await WaiterCall.updateMany(
+      {
+        $or: [
+          { callId: cleanId },
+          { id: cleanId },
+          ...(cleanTable ? [{ tableNumber: cleanTable, status: 'PENDING' }] : []),
+        ],
+      },
+      {
+        $set: { status: 'RESOLVED' },
       }
-      return c;
-    });
-
-    db.set('waiterCalls', updated);
+    );
 
     return res.status(200).json({
       success: true,
@@ -116,6 +114,51 @@ router.patch('/waiter-calls/:id/resolve', (req, res) => {
     });
   } catch (err) {
     return res.status(500).json({ success: false, message: 'Failed to resolve waiter call' });
+  }
+});
+
+// STEP 2: Admin Confirms Order with Preparation Time (Dispatches ETA & Payment Link to Customer)
+router.post('/order-confirmed-eta', async (req, res) => {
+  try {
+    const { orderId, etaMinutes, mobile } = req.body;
+    if (!orderId) {
+      return res.status(400).json({ success: false, message: 'orderId is required' });
+    }
+
+    const cleanId = String(orderId).replace(/^#/, '').trim();
+    const order = await Order.findOne({
+      $or: [{ orderId: cleanId }, { orderId: `#${cleanId}` }, { _id: mongoose.isValidObjectId(cleanId) ? cleanId : null }],
+    });
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    const eta = Number(etaMinutes || order.etaMinutes || 20);
+    order.etaMinutes = eta;
+    if (order.orderStatus === 'RECEIVED' || order.orderStatus === 'PENDING') {
+      order.orderStatus = 'CONFIRMED';
+    }
+    if (mobile && (!order.mobile || order.mobile !== mobile)) {
+      order.mobile = mobile;
+    }
+    await order.save();
+
+    const dispatchResult = await orderLifecycleNotificationService.sendOrderConfirmedEtaAlert(
+      order,
+      eta,
+      req.headers.origin
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: `Order #${order.orderId} confirmed with ${eta}m prep time. Customer notified via WhatsApp!`,
+      data: order,
+      dispatch: dispatchResult,
+    });
+  } catch (err) {
+    console.error('order-confirmed-eta error:', err);
+    return res.status(500).json({ success: false, message: err.message || 'Failed to dispatch ETA alert' });
   }
 });
 
