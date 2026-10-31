@@ -328,7 +328,7 @@ const WhatsAppQrCard = ({ showToast, currentPhone, onUpdatePhone, currentSlug = 
       const isFetchErr = err?.message?.toLowerCase()?.includes('failed to fetch');
       showToast(
         isFetchErr
-          ? 'Backend server is not running! Open a terminal and run "npm start" in backend folder.'
+          ? `Could not reach backend API. Please check your internet or try again.`
           : err.message || 'Failed to generate pairing code',
         'error'
       );
@@ -528,8 +528,8 @@ const WhatsAppQrCard = ({ showToast, currentPhone, onUpdatePhone, currentSlug = 
             ) : statusData.backendOffline ? (
               <div className="w-48 h-48 flex flex-col items-center justify-center text-center p-3 text-rose-500 gap-2 border border-dashed border-rose-200 rounded-lg bg-rose-50/40">
                 <AlertCircle className="w-8 h-8 text-rose-500 animate-pulse" />
-                <span className="text-xs font-bold text-rose-700">Backend Server Offline</span>
-                <p className="text-[10px] text-slate-500 leading-tight">Run <code className="bg-white px-1 py-0.5 rounded border border-rose-100 font-mono text-[9px]">npm start</code> in backend terminal.</p>
+                <span className="text-xs font-bold text-rose-700">Connecting to Backend...</span>
+                <p className="text-[10px] text-slate-500 leading-tight">Server waking up or check internet.</p>
                 <button
                   type="button"
                   onClick={fetchStatus}
