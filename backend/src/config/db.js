@@ -14,43 +14,34 @@ mongoose.set('bufferCommands', false);
 
 export let lastDbError = null;
 
-const VERIFIED_ATLAS_URI = 'mongodb+srv://progixtechnology_db_user:cIHQwTzcp89jgMhP@cluster0.ddjum4h.mongodb.net/orderflow_platform?retryWrites=true&w=majority&appName=Cluster0';
-
 export const connectMongoDB = async () => {
-  const envUri = (process.env.MONGODB_URI || '').trim();
-  const urisToAttempt = [];
+  const uri = (process.env.MONGODB_URI || '').trim();
 
-  if (envUri && envUri.startsWith('mongodb') && !envUri.includes('localhost') && !envUri.includes('127.0.0.1')) {
-    urisToAttempt.push(envUri);
-  }
-  if (!urisToAttempt.includes(VERIFIED_ATLAS_URI)) {
-    urisToAttempt.push(VERIFIED_ATLAS_URI);
+  if (!uri || !uri.startsWith('mongodb') || uri.includes('localhost') || uri.includes('127.0.0.1')) {
+    console.log('ℹ️ MONGODB_URI not provided or local. Operating with resilient in-memory / JSON store.');
+    return;
   }
 
-  for (const uri of urisToAttempt) {
-    try {
-      const masked = uri.replace(/:([^:@]+)@/, ':****@');
-      console.log(`🔄 Connecting to MongoDB Atlas (${masked})...`);
-      const conn = await mongoose.connect(uri, {
-        serverSelectionTimeoutMS: 8000,
-        connectTimeoutMS: 8000,
-      });
-      console.log(`✅ MongoDB Atlas Connected: ${conn.connection.host} (DB: ${conn.connection.name})`);
-      lastDbError = null;
+  try {
+    const masked = uri.replace(/:([^:@]+)@/, ':****@');
+    console.log(`🔄 Connecting to MongoDB Atlas (${masked})...`);
+    const conn = await mongoose.connect(uri, {
+      serverSelectionTimeoutMS: 8000,
+      connectTimeoutMS: 8000,
+    });
+    console.log(`✅ MongoDB Atlas Connected: ${conn.connection.host} (DB: ${conn.connection.name})`);
+    lastDbError = null;
 
-      // Run Initial Seed & Protection verification
-      await seedAndProtectDatabase();
+    // Run Initial Seed & Protection verification
+    await seedAndProtectDatabase();
 
-      // Run full migration of all data from local stores to MongoDB Atlas
-      await migrateAllDataToAtlas();
-      return;
-    } catch (error) {
-      lastDbError = error.message;
-      console.error(`❌ MongoDB Atlas connection error on ${uri.slice(0, 25)}...:`, error.message);
-    }
+    // Run full migration of all data from local stores to MongoDB Atlas
+    await migrateAllDataToAtlas();
+  } catch (error) {
+    lastDbError = error.message;
+    console.error('❌ MongoDB Atlas connection warning:', error.message);
+    console.log('ℹ️ Server will continue operating with resilient in-memory store fallback.');
   }
-
-  console.log('ℹ️ Server will continue operating with resilient in-memory / JSON store fallback.');
 };
 
 /**

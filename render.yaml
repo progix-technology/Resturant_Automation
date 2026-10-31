@@ -13,11 +13,11 @@ services:
       - key: PORT
         value: 10000
       - key: JWT_SECRET
-        value: super_secure_jwt_secret_key_orderflow_progix_2026_!@#$%
+        sync: false
       - key: JWT_EXPIRES_IN
         value: 7d
       - key: MONGODB_URI
-        value: "mongodb+srv://progixtechnology_db_user:cIHQwTzcp89jgMhP@cluster0.ddjum4h.mongodb.net/orderflow_platform?retryWrites=true&w=majority&appName=Cluster0"
+        sync: false
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
       - key: CLOUDINARY_API_KEY
