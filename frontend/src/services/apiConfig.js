@@ -5,11 +5,8 @@ const getApiBaseUrl = () => {
   if (import.meta.env.VITE_API_BASE_URL) {
     return import.meta.env.VITE_API_BASE_URL;
   }
-  // Smart fallback for live production frontend (e.g. Vercel)
-  if (typeof window !== 'undefined' && !['localhost', '127.0.0.1'].includes(window.location.hostname)) {
-    return 'https://resturant-automation-ihxs.onrender.com/api';
-  }
-  return 'http://localhost:5000/api';
+  // Connect directly to live Render backend by default
+  return 'https://resturant-automation-ihxs.onrender.com/api';
 };
 
 export const API_BASE_URL = getApiBaseUrl();

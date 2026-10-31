@@ -405,10 +405,11 @@ const WhatsAppQrCard = ({ showToast, currentPhone, onUpdatePhone, currentSlug = 
             <input
               type="text"
               placeholder="e.g. 98765 43210"
-              value={inputPhone}
+              value={String(inputPhone || '').replace(/^\+?91\s*/, '')}
               onChange={(e) => {
-                setInputPhone(e.target.value);
-                if (onUpdatePhone) onUpdatePhone(e.target.value);
+                const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
+                setInputPhone(cleaned);
+                if (onUpdatePhone) onUpdatePhone(cleaned);
               }}
               className="w-full text-xs font-mono font-bold border border-slate-300 rounded-lg pl-11 pr-3 py-1.5 bg-white focus:ring-1 focus:ring-amber-500 text-slate-900"
             />
