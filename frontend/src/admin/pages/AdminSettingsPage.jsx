@@ -325,7 +325,13 @@ const WhatsAppQrCard = ({ showToast, currentPhone, onUpdatePhone, currentSlug = 
         throw new Error(res.message || 'Could not generate pairing code');
       }
     } catch (err) {
-      showToast(err.message || 'Failed to generate pairing code', 'error');
+      const isFetchErr = err?.message?.toLowerCase()?.includes('failed to fetch');
+      showToast(
+        isFetchErr
+          ? 'Backend server is not running! Open a terminal and run "npm start" in backend folder.'
+          : err.message || 'Failed to generate pairing code',
+        'error'
+      );
     } finally {
       setIsRequestingCode(false);
     }
@@ -518,6 +524,19 @@ const WhatsAppQrCard = ({ showToast, currentPhone, onUpdatePhone, currentSlug = 
                   Or scan this QR Code using Linked Devices
                 </p>
               </>
+            ) : statusData.backendOffline ? (
+              <div className="w-48 h-48 flex flex-col items-center justify-center text-center p-3 text-rose-500 gap-2 border border-dashed border-rose-200 rounded-lg bg-rose-50/40">
+                <AlertCircle className="w-8 h-8 text-rose-500 animate-pulse" />
+                <span className="text-xs font-bold text-rose-700">Backend Server Offline</span>
+                <p className="text-[10px] text-slate-500 leading-tight">Run <code className="bg-white px-1 py-0.5 rounded border border-rose-100 font-mono text-[9px]">npm start</code> in backend terminal.</p>
+                <button
+                  type="button"
+                  onClick={fetchStatus}
+                  className="mt-1 px-2.5 py-1 text-[11px] font-semibold bg-white hover:bg-rose-50 text-rose-700 rounded-lg border border-rose-200 shadow-xs transition-colors"
+                >
+                  Retry Connection
+                </button>
+              </div>
             ) : (
               <div className="w-48 h-48 flex flex-col items-center justify-center text-slate-400 gap-3">
                 <div className="cube-spinner">

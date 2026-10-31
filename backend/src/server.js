@@ -1,6 +1,14 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 import authRoutes from './routes/authRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import menuRoutes from './routes/menuRoutes.js';
@@ -16,8 +24,6 @@ import { whatsappService } from './services/whatsappService.js';
 import { connectMongoDB } from './config/db.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 import { getTokenValidity } from './middleware/authMiddleware.js';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;

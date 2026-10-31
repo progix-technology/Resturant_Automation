@@ -168,9 +168,10 @@ export const notificationService = {
 
   async getWhatsAppStatus(slug = 'spice-garden') {
     try {
-      return await apiRequest(`/whatsapp/status?slug=${slug}`);
+      const data = await apiRequest(`/whatsapp/status?slug=${slug}`);
+      return { ...data, backendOffline: false };
     } catch {
-      return { connected: false, status: 'DISCONNECTED', qrCodeDataUrl: null };
+      return { connected: false, status: 'DISCONNECTED', qrCodeDataUrl: null, backendOffline: true };
     }
   },
 
