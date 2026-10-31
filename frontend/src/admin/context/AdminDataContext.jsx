@@ -168,36 +168,24 @@ export const AdminDataProvider = ({ children }) => {
     window.addEventListener('saasPlanUpdated', handlePlanUpdate);
     window.addEventListener('storage', handlePlanUpdate);
 
+    // Live polling for customer orders & waiter assistance calls (optimized 8s interval)
     const interval = setInterval(() => {
       const session = storage.get(STORAGE_KEYS.ADMIN_SESSION, null);
       const currentSlug = (session?.restaurantSlug || 'spice-garden').toLowerCase().trim();
 
-      loadSettings();
+      // Only poll live orders & waiter calls to keep backend snappy & responsive
       adminOrderService.getOrders().then((latest) => {
         if (latest && Array.isArray(latest)) {
           setOrders(latest);
         }
-      });
-      adminTableService.getTables().then((latestTbls) => {
-        if (latestTbls && Array.isArray(latestTbls)) {
-          setTables(latestTbls);
-        }
-      });
+      }).catch(() => {});
+
       notificationService.getWaiterCalls(currentSlug).then((calls) => {
         if (Array.isArray(calls)) {
           setWaiterCalls(calls);
         }
-      });
-      notificationService.getWhatsAppStatus(currentSlug).then((st) => {
-        if (st) {
-          setWhatsappStatus({
-            isConnected: Boolean(st.connected || st.isConnected || st.status === 'CONNECTED'),
-            connectedUserPhone: st.connectedUserPhone || st.phone || null,
-            connectionStatus: st.status || (st.connected ? 'CONNECTED' : 'DISCONNECTED'),
-          });
-        }
-      });
-    }, 4000);
+      }).catch(() => {});
+    }, 8000);
 
     return () => {
       clearInterval(interval);

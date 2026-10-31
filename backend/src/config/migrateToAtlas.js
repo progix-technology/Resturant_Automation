@@ -21,6 +21,13 @@ export const migrateAllDataToAtlas = async () => {
       return;
     }
 
+    // Performance check: If Atlas is already populated, skip redundant migration on boot
+    const existingItemsCount = await MenuItem.estimatedDocumentCount();
+    if (existingItemsCount > 0) {
+      console.log(`⚡ [MIGRATION SKIPPED] Atlas is already populated (${existingItemsCount} items). Booting instantly.`);
+      return;
+    }
+
     console.log('🚀 [MIGRATION] Starting full data migration from local db.json to MongoDB Atlas...');
 
     // 1. Migrate SuperAdmins

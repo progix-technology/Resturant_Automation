@@ -290,10 +290,15 @@ const WhatsAppQrCard = ({ showToast, currentPhone, onUpdatePhone, currentSlug = 
 
   useEffect(() => {
     fetchStatus();
-    // Poll every 4 seconds to detect when user scans QR code or pairs
-    const interval = setInterval(fetchStatus, 4000);
+    // Only poll while waiting for pairing or QR scan
+    if (statusData.connected) return;
+    const interval = setInterval(() => {
+      if (!statusData.connected) {
+        fetchStatus();
+      }
+    }, 6000);
     return () => clearInterval(interval);
-  }, [currentSlug]);
+  }, [currentSlug, statusData.connected]);
 
   const handleLogout = async () => {
     setDisconnecting(true);
