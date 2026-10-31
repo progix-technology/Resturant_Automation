@@ -21,7 +21,8 @@ import whatsappRoutes from './routes/whatsappRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import { paymentController } from './controllers/paymentController.js';
 import { whatsappService } from './services/whatsappService.js';
-import { connectMongoDB } from './config/db.js';
+import { connectMongoDB, lastDbError } from './config/db.js';
+import mongoose from 'mongoose';
 import { apiLimiter } from './middleware/rateLimiter.js';
 import { getTokenValidity } from './middleware/authMiddleware.js';
 
@@ -100,11 +101,13 @@ app.use((req, res, next) => {
 
 // Health check (not rate-limited)
 app.get('/api/health', (req, res) => {
+  const dbConnected = mongoose.connection.readyState === 1;
   res.status(200).json({
     status: 'online',
     timestamp: new Date().toISOString(),
     service: 'Restaurant Order Booking & SaaS Multi-Tenant Backend',
-    database: 'MongoDB Atlas Connected',
+    database: dbConnected ? 'MongoDB Atlas Connected' : `Connecting / Standalone (Error: ${lastDbError || 'None'})`,
+    dbState: mongoose.connection.readyState,
     rateLimiting: 'Enabled (Auth & General API)',
     tokenValidity: getTokenValidity(),
     version: '1.0.0',

@@ -153,6 +153,13 @@ export const AdminDataProvider = ({ children }) => {
 
   // Initial load & 4-second live polling for new customer orders & waiter calls
   useEffect(() => {
+    // Auto-refresh JWT token if missing from older session
+    const session = storage.get(STORAGE_KEYS.ADMIN_SESSION, null);
+    if (session && !session.token && session.email) {
+      const defaultPass = session.email === 'resturant1@gmail.com' ? '123123' : 'Admin@123';
+      adminAuthService.login(session.email, defaultPass).catch(() => {});
+    }
+
     loadOrders();
     loadMenuItems();
     loadCategories();

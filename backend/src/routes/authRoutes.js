@@ -12,6 +12,7 @@ router.post('/superadmin/login', authLimiter, authController.loginSuperAdmin);
 // Restaurant Admin Authentication with brute-force rate limiter
 // (resturant1@gmail.com / 123123)
 router.post('/admin/login', authLimiter, authController.loginRestaurantAdmin);
+router.post('/login', authLimiter, authController.loginRestaurantAdmin);
 
 // Verify Active Token & Check Validity
 router.get('/verify', authenticateToken, authController.verifySession);

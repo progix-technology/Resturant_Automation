@@ -38,6 +38,25 @@ export const authenticateToken = (req, res, next) => {
 };
 
 /**
+ * Permissive authentication: attaches user if token is valid, but allows unauthenticated callers to pass through
+ */
+export const permissiveAuthenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return next();
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (!err && user) {
+      req.user = user;
+    }
+    next();
+  });
+};
+
+/**
  * Role-based authorization middleware
  */
 export const requireRole = (...allowedRoles) => {
