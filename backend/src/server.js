@@ -31,25 +31,22 @@ const PORT = process.env.PORT || 5000;
 // Enable 'trust proxy' for Render / Vercel / Cloudflare reverse proxies (fixes rate limiter ERR_ERL_UNEXPECTED_X_FORWARDED_FOR)
 app.set('trust proxy', 1);
 
-// Strict Production CORS Configuration
+// Strict Production & Vercel CORS Configuration
 const getAllowedOrigins = () => {
   const envOrigins = (process.env.CORS_ORIGIN || process.env.FRONTEND_URL || '')
     .split(',')
     .map((o) => o.trim().replace(/\/$/, ''))
     .filter(Boolean);
 
-  const localDevOrigins = [
+  const defaultAllowedOrigins = [
+    'https://resturant-automation-progix.vercel.app',
     'http://localhost:5173',
     'http://localhost:3000',
     'http://127.0.0.1:5173',
     'http://localhost:5000',
   ];
 
-  if (process.env.NODE_ENV === 'production') {
-    return envOrigins.length > 0 ? envOrigins : localDevOrigins;
-  }
-
-  return Array.from(new Set([...localDevOrigins, ...envOrigins]));
+  return Array.from(new Set([...defaultAllowedOrigins, ...envOrigins]));
 };
 
 const allowedOrigins = getAllowedOrigins();
@@ -64,16 +61,19 @@ app.use(
 
       const cleanOrigin = origin.trim().replace(/\/$/, '');
 
-      // Check against allowed origins list
-      if (allowedOrigins.includes(cleanOrigin) || (process.env.NODE_ENV !== 'production' && process.env.CORS_ALLOW_ALL === 'true')) {
+      // Allow official Vercel domain, any Vercel preview domain, and local dev
+      if (
+        cleanOrigin.endsWith('.vercel.app') ||
+        cleanOrigin.includes('resturant-automation-progix') ||
+        allowedOrigins.includes(cleanOrigin) ||
+        cleanOrigin.startsWith('http://localhost:') ||
+        cleanOrigin.startsWith('http://127.0.0.1:')
+      ) {
         return callback(null, true);
       }
 
       console.warn(`[CORS REJECTED] Access denied for unauthorized origin: ${origin}`);
-      return callback(
-        new Error(`CORS policy violation: Origin '${origin}' is not authorized to access this API.`),
-        false
-      );
+      return callback(null, false);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
