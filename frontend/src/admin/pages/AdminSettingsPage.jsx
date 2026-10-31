@@ -255,7 +255,9 @@ const WhatsAppQrCard = ({ showToast, currentPhone, onUpdatePhone, currentSlug = 
   const [disconnecting, setDisconnecting] = useState(false);
 
   // Phone number & Pairing code state
-  const [inputPhone, setInputPhone] = useState(currentPhone || '');
+  const [inputPhone, setInputPhone] = useState(() => {
+    return String(currentPhone || '').replace(/^\+?91\s*/, '').replace(/\D/g, '').slice(0, 10);
+  });
   const [pairingCode, setPairingCode] = useState('');
   const [isRequestingCode, setIsRequestingCode] = useState(false);
 
@@ -267,8 +269,11 @@ const WhatsAppQrCard = ({ showToast, currentPhone, onUpdatePhone, currentSlug = 
   });
 
   useEffect(() => {
-    if (currentPhone) {
-      setInputPhone(currentPhone);
+    if (currentPhone !== undefined && currentPhone !== null) {
+      const clean = String(currentPhone).replace(/^\+?91\s*/, '').replace(/\D/g, '').slice(0, 10);
+      if (clean && !inputPhone) {
+        setInputPhone(clean);
+      }
     }
   }, [currentPhone]);
 
@@ -405,14 +410,27 @@ const WhatsAppQrCard = ({ showToast, currentPhone, onUpdatePhone, currentSlug = 
             <input
               type="text"
               placeholder="e.g. 98765 43210"
-              value={String(inputPhone || '').replace(/^\+?91\s*/, '')}
+              value={inputPhone}
               onChange={(e) => {
                 const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
                 setInputPhone(cleaned);
                 if (onUpdatePhone) onUpdatePhone(cleaned);
               }}
-              className="w-full text-xs font-mono font-bold border border-slate-300 rounded-lg pl-11 pr-3 py-1.5 bg-white focus:ring-1 focus:ring-amber-500 text-slate-900"
+              className="w-full text-xs font-mono font-bold border border-slate-300 rounded-lg pl-11 pr-8 py-1.5 bg-white focus:ring-1 focus:ring-amber-500 text-slate-900"
             />
+            {inputPhone && (
+              <button
+                type="button"
+                onClick={() => {
+                  setInputPhone('');
+                  if (onUpdatePhone) onUpdatePhone('');
+                }}
+                className="absolute right-2.5 top-2 text-slate-400 hover:text-rose-600 text-xs font-bold transition-colors"
+                title="Clear Phone Number"
+              >
+                ✕
+              </button>
+            )}
           </div>
           <p className="text-[10px] text-slate-500">
             This phone number will be registered on your admin dashboard as the restaurant WhatsApp dispatcher.
@@ -681,7 +699,7 @@ export const AdminSettingsPage = () => {
         isKitchenOpen: settings.isKitchenOpen !== undefined ? settings.isKitchenOpen : prev.isKitchenOpen,
         email: settings.email || prev.email,
         phone: settings.phone || prev.phone,
-        whatsappPhone: settings.whatsappPhone || settings.phone || prev.whatsappPhone,
+        whatsappPhone: settings.whatsappPhone !== undefined ? settings.whatsappPhone : (settings.phone || prev.whatsappPhone),
         address: settings.address || prev.address,
         gstin: settings.gstin || prev.gstin,
         upiId: settings.upiId || prev.upiId,
@@ -1712,7 +1730,7 @@ export const AdminSettingsPage = () => {
                   showToast={showToast}
                   currentSlug={currentSlug}
                   adminEmail={currentAdmin?.email || formData.email || 'admin@restaurant.com'}
-                  currentPhone={formData.whatsappPhone || formData.phone}
+                  currentPhone={formData.whatsappPhone !== undefined ? formData.whatsappPhone : (formData.phone || '')}
                   onUpdatePhone={(val) => handleChange('whatsappPhone', val)}
                 />
 
