@@ -70,15 +70,11 @@ export const orderLifecycleNotificationService = {
       const restUpi = settings?.upiId || 'spicegarden@okhdfcbank';
       const eta = Number(etaMinutes || order.etaMinutes || 20);
 
-      const origin = frontendOrigin || process.env.FRONTEND_URL || 'http://localhost:5173';
+      const rawOrigin = frontendOrigin || process.env.FRONTEND_URL || '';
+      const origin = (rawOrigin && !rawOrigin.includes('-projects.vercel.app') && !rawOrigin.includes('localhost'))
+        ? rawOrigin
+        : 'https://resturant-automation-progix.vercel.app';
       const paymentLink = `${origin}/menu/${cleanSlug}/order-status?orderId=${order.orderId}`;
-
-      // Generate dynamic UPI QR buffer
-      let imageBuffer = null;
-      try {
-        const upiUri = `upi://pay?pa=${restUpi.trim()}&pn=${encodeURIComponent(restName)}&am=${order.total}&cu=INR&tn=${encodeURIComponent(`Bill_${order.orderId}`)}`;
-        imageBuffer = await QRCode.toBuffer(upiUri, { errorCorrectionLevel: 'H', margin: 2, width: 450 });
-      } catch (e) {}
 
       const messageText =
         `👨‍🍳 *${restName.toUpperCase()} - ORDER CONFIRMED!* ⏱️\n\n` +
@@ -88,13 +84,12 @@ export const orderLifecycleNotificationService = {
         `💰 *Total Amount:* *₹${order.total}*\n\n` +
         `💳 *Pay Your Bill Online (UPI / GPay / PhonePe / Cards):*\n` +
         `👉 ${paymentLink}\n\n` +
-        `_Or you can also scan the QR attached above, or pay cash at the counter/table._ 🙏`;
+        `_Or you can also pay cash at the counter/table._ 🙏`;
 
       return await whatsappService.sendMessage({
         slug: cleanSlug,
         mobile: order.mobile,
         messageText,
-        imageBuffer,
       });
     } catch (err) {
       console.warn('[ORDER CONFIRMED NOTIF WARNING]:', err.message);
@@ -173,7 +168,10 @@ export const orderLifecycleNotificationService = {
 
       if (!isPaid && order.mobile) {
         // Case A: Customer hasn't paid yet -> send served alert + bill payment reminder
-        const origin = frontendOrigin || process.env.FRONTEND_URL || 'http://localhost:5173';
+        const rawOrigin = frontendOrigin || process.env.FRONTEND_URL || '';
+        const origin = (rawOrigin && !rawOrigin.includes('-projects.vercel.app') && !rawOrigin.includes('localhost'))
+          ? rawOrigin
+          : 'https://resturant-automation-progix.vercel.app';
         const paymentLink = `${origin}/menu/${cleanSlug}/order-status?orderId=${order.orderId}`;
 
         const servedPendingBillMsg =

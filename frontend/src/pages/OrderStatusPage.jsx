@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Clock,
   Utensils,
@@ -24,20 +24,46 @@ import { GoogleRatingCard } from '../components/common/GoogleRatingCard';
 
 export const OrderStatusPage = () => {
   const { restaurantSlug } = useParams();
+  const [searchParams] = useSearchParams();
+  const urlOrderId = searchParams.get('orderId');
   const navigate = useNavigate();
   const { activeOrder, loadOrder, clearActiveOrder } = useOrder();
   const { session, clearSession } = useSession();
   const [isUpdatingPreference, setIsUpdatingPreference] = useState(false);
   const [preferenceFeedback, setPreferenceFeedback] = useState('');
+  const [isLoadingUrlOrder, setIsLoadingUrlOrder] = useState(() => {
+    return Boolean(urlOrderId && (!activeOrder || activeOrder.orderId !== urlOrderId));
+  });
+
+  // Automatically load order if opened directly via WhatsApp link (?orderId=ORD-...)
+  useEffect(() => {
+    if (urlOrderId && (!activeOrder || activeOrder.orderId !== urlOrderId)) {
+      setIsLoadingUrlOrder(true);
+      loadOrder(urlOrderId)
+        .catch((err) => console.warn('Could not load order by URL param:', err.message))
+        .finally(() => setIsLoadingUrlOrder(false));
+    }
+  }, [urlOrderId]);
 
   // Poll backend for real-time order status updates set by Admin/Kitchen
+  const targetOrderId = activeOrder?.orderId || urlOrderId;
   useEffect(() => {
-    if (!activeOrder?.orderId) return;
+    if (!targetOrderId) return;
     const interval = setInterval(() => {
-      loadOrder(activeOrder.orderId).catch(() => {});
+      loadOrder(targetOrderId).catch(() => {});
     }, 3500);
     return () => clearInterval(interval);
-  }, [activeOrder?.orderId]);
+  }, [targetOrderId]);
+
+  if (isLoadingUrlOrder) {
+    return (
+      <div className="py-20 text-center space-y-4">
+        <div className="w-10 h-10 border-4 border-amber-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+        <p className="text-sm font-bold text-charcoal-800">Loading Order #{urlOrderId}...</p>
+        <p className="text-xs text-charcoal-400">Fetching live status from restaurant kitchen...</p>
+      </div>
+    );
+  }
 
   if (!activeOrder) {
     return (
