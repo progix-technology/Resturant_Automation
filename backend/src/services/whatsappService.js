@@ -226,22 +226,33 @@ export const whatsappService = {
 
         if (connection === 'close') {
           const statusCode = lastDisconnect?.error?.output?.statusCode;
+          const errorMessage = lastDisconnect?.error?.message || '';
           const isLoggedOut = statusCode === DisconnectReason.loggedOut || statusCode === 401;
+          const isQrExpired = errorMessage.includes('QR refs attempts ended') || statusCode === 408;
 
-          console.log(`[WhatsApp Tenant ${safeSlug}] Connection closed: ${lastDisconnect?.error?.message || statusCode}. Logged out: ${isLoggedOut}`);
+          console.log(`[WhatsApp Tenant ${safeSlug}] Connection closed: ${errorMessage || statusCode}. Logged out: ${isLoggedOut}`);
 
           if (isLoggedOut) {
             sess.isConnected = false;
             sess.isInitializing = false;
             sess.connectionStatus = 'DISCONNECTED';
             sess.connectedUserPhone = null;
+            sess.qrCodeDataUrl = null;
             this.clearSessionFiles(safeSlug);
             // Delete cloud backup from MongoDB Atlas
             import('../models/WhatsAppSession.js').then(({ WhatsAppSession }) => {
               WhatsAppSession.deleteOne({ slug: safeSlug }).catch(() => {});
             });
+          } else if (isQrExpired && !isRegisteredSession(safeSlug)) {
+            // QR scan timeout (nobody scanned QR within 2.5 minutes). Enter standby mode to avoid endless reconnect loop!
+            sess.isConnected = false;
+            sess.isInitializing = false;
+            sess.connectionStatus = 'DISCONNECTED';
+            sess.qrCodeDataUrl = null;
+            sess.reconnectAttempts = 0;
+            console.log(`ℹ️ [WhatsApp Tenant ${safeSlug}] QR scan timed out after 2.5 minutes. Standby mode active. Will regenerate freshly when Admin opens Settings.`);
           } else {
-            // Transient network drop / 515 restartRequired — KEEP session active on disk & DB
+            // Transient network drop for a registered session / active pair
             if (isRegisteredSession(safeSlug)) {
               sess.isConnected = true;
               sess.connectionStatus = 'CONNECTED';
@@ -251,6 +262,15 @@ export const whatsappService = {
             }
             sess.isInitializing = false;
             sess.reconnectAttempts = (sess.reconnectAttempts || 0) + 1;
+
+            // Cap reconnect attempts for unregistered sessions to avoid infinite loop
+            if (!isRegisteredSession(safeSlug) && sess.reconnectAttempts > 3) {
+              console.log(`ℹ️ [WhatsApp Tenant ${safeSlug}] Reconnect limit reached for unregistered session. Entering standby.`);
+              sess.connectionStatus = 'DISCONNECTED';
+              sess.reconnectAttempts = 0;
+              return;
+            }
+
             const delay = Math.min(2000 * sess.reconnectAttempts, 12000);
 
             console.log(`[WhatsApp Tenant ${safeSlug}] Auto-reconnecting in ${delay}ms (Attempt #${sess.reconnectAttempts})...`);
