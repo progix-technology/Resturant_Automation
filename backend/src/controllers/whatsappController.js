@@ -2,6 +2,28 @@ import { whatsappService } from '../services/whatsappService.js';
 
 const securityOtps = new Map();
 
+/**
+ * Resolves and strictly bounds the restaurant slug to the authenticated admin.
+ * - SuperAdmin can manage any restaurant session.
+ * - Restaurant Admin is STRICTLY locked to their own restaurantSlug (cannot touch others).
+ */
+function resolveTenantSlug(req) {
+  const isSuper = req.user?.role === 'SUPER_ADMIN' || req.user?.role === 'PLATFORM_SUPERADMIN';
+  const paramSlug = (req.body?.slug || req.query?.slug || '').toLowerCase().trim().replace(/_/g, '-');
+  const userSlug = (req.user?.restaurantSlug || '').toLowerCase().trim().replace(/_/g, '-');
+
+  if (!isSuper && userSlug) {
+    if (paramSlug && paramSlug !== userSlug) {
+      const err = new Error("Access Denied: You cannot manage another restaurant's WhatsApp session.");
+      err.statusCode = 403;
+      throw err;
+    }
+    return userSlug;
+  }
+
+  return paramSlug || userSlug || 'spice-garden';
+}
+
 export const whatsappController = {
 
   /**
@@ -10,7 +32,7 @@ export const whatsappController = {
    */
   async getStatus(req, res) {
     try {
-      const slug = req.query.slug || req.body.slug || 'spice-garden';
+      const slug = resolveTenantSlug(req);
       const status = await whatsappService.getStatus(slug);
       return res.json({
         success: true,
@@ -18,7 +40,8 @@ export const whatsappController = {
       });
     } catch (error) {
       console.error('Error fetching WhatsApp status:', error);
-      return res.status(500).json({ success: false, message: error.message });
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({ success: false, message: error.message });
     }
   },
 
@@ -54,7 +77,8 @@ export const whatsappController = {
    */
   async requestPairingCode(req, res) {
     try {
-      const { slug = 'spice-garden', mobile } = req.body;
+      const slug = resolveTenantSlug(req);
+      const { mobile } = req.body;
       if (!mobile) {
         return res.status(400).json({
           success: false,
@@ -66,7 +90,8 @@ export const whatsappController = {
       return res.json(result);
     } catch (error) {
       console.error('Error requesting WhatsApp pairing code:', error);
-      return res.status(500).json({
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
         message: error.message || 'Failed to request pairing code',
       });
@@ -79,12 +104,13 @@ export const whatsappController = {
    */
   async logout(req, res) {
     try {
-      const { slug = 'spice-garden' } = req.body;
+      const slug = resolveTenantSlug(req);
       const result = await whatsappService.logout(slug);
       return res.json(result);
     } catch (error) {
       console.error('Error logging out WhatsApp:', error);
-      return res.status(500).json({ success: false, message: error.message });
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({ success: false, message: error.message });
     }
   },
 
@@ -94,7 +120,8 @@ export const whatsappController = {
    */
   async sendSecurityOtp(req, res) {
     try {
-      const { slug = 'spice-garden', mobile } = req.body;
+      const slug = resolveTenantSlug(req);
+      const { mobile } = req.body;
       if (!mobile) {
         return res.status(400).json({ success: false, message: 'Mobile number is required to receive Security OTP' });
       }
@@ -118,7 +145,8 @@ export const whatsappController = {
       });
     } catch (error) {
       console.error('Error sending security OTP:', error);
-      return res.status(500).json({ success: false, message: error.message || 'Failed to send Security OTP' });
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({ success: false, message: error.message || 'Failed to send Security OTP' });
     }
   },
 
@@ -128,7 +156,8 @@ export const whatsappController = {
    */
   async verifySecurityOtp(req, res) {
     try {
-      const { slug = 'spice-garden', otp } = req.body;
+      const slug = resolveTenantSlug(req);
+      const { otp } = req.body;
       if (!otp) {
         return res.status(400).json({ success: false, message: 'OTP is required' });
       }
@@ -151,7 +180,8 @@ export const whatsappController = {
       return res.json({ success: true, message: 'Security OTP verified successfully!' });
     } catch (error) {
       console.error('Error verifying security OTP:', error);
-      return res.status(500).json({ success: false, message: error.message });
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({ success: false, message: error.message });
     }
   },
 };
