@@ -200,14 +200,19 @@ export const paymentController = {
         });
       }
 
-      // 1. Cryptographic HMAC SHA256 Signature Verification
+      // 1. Cryptographic HMAC SHA256 Signature Verification (Timing-safe)
       const text = `${razorpay_order_id}|${razorpay_payment_id}`;
       const generatedSignature = crypto
         .createHmac('sha256', keySecret)
         .update(text)
         .digest('hex');
 
-      if (generatedSignature !== razorpay_signature) {
+      const isSignatureValid =
+        typeof razorpay_signature === 'string' &&
+        generatedSignature.length === razorpay_signature.length &&
+        crypto.timingSafeEqual(Buffer.from(generatedSignature), Buffer.from(razorpay_signature));
+
+      if (!isSignatureValid) {
         console.error('[RAZORPAY] Signature verification failed:', {
           received: razorpay_signature,
           generated: generatedSignature,
@@ -308,7 +313,12 @@ export const paymentController = {
           .update(rawData)
           .digest('hex');
 
-        if (expectedSignature !== webhookSignature) {
+        const isWebhookValid =
+          typeof webhookSignature === 'string' &&
+          expectedSignature.length === webhookSignature.length &&
+          crypto.timingSafeEqual(Buffer.from(expectedSignature), Buffer.from(webhookSignature));
+
+        if (!isWebhookValid) {
           console.error('[RAZORPAY WEBHOOK] Cryptographic signature mismatch! Potential spoofing attempt.');
           return res.status(400).json({ success: false, message: 'Invalid webhook signature' });
         }

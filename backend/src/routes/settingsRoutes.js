@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import { RestaurantSettings } from '../models/RestaurantSettings.js';
 import { Tenant } from '../models/Tenant.js';
 import { deleteMenuImage } from '../services/cloudinaryService.js';
-import { authenticateToken } from '../middleware/authMiddleware.js';
+import { authenticateToken, permissiveAuthenticateToken } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -107,8 +107,10 @@ async function getRestaurantSettings(slug = DEFAULT_SLUG) {
 /**
  * GET /api/settings/:slug?
  * Fetches restaurant settings (Returns 404 if restaurant does not exist)
+ * 🛡️ Security: Public diners only receive public restaurant info & public razorpayKeyId.
+ * Private credentials (razorpayKeySecret, razorpayWebhookSecret) are stripped for non-admins.
  */
-router.get('/:slug?', async (req, res) => {
+router.get('/:slug?', permissiveAuthenticateToken, async (req, res) => {
   try {
     const slug = req.params.slug || req.query.slug || DEFAULT_SLUG;
     const settings = await getRestaurantSettings(slug);
@@ -120,9 +122,24 @@ router.get('/:slug?', async (req, res) => {
       });
     }
 
+    const cleanSlug = String(slug || DEFAULT_SLUG).toLowerCase().trim().replace(/_/g, '-');
+    const userSlug = String(req.user?.restaurantSlug || '').toLowerCase().trim().replace(/_/g, '-');
+    const isSuperAdmin = req.user?.role === 'SUPER_ADMIN' || req.user?.role === 'PLATFORM_SUPERADMIN';
+    const isAuthorizedRestaurantAdmin = req.user?.role === 'ADMIN' && (!userSlug || userSlug === cleanSlug);
+    const isPrivilegedAdmin = isSuperAdmin || isAuthorizedRestaurantAdmin;
+
+    // Convert Mongoose document or lean object to clean payload
+    const responseSettings = { ...(typeof settings.toObject === 'function' ? settings.toObject() : settings) };
+
+    // 🛡️ SECURITY ENFORCEMENT: Never expose private API secrets to public diners / customers
+    if (!isPrivilegedAdmin) {
+      delete responseSettings.razorpayKeySecret;
+      delete responseSettings.razorpayWebhookSecret;
+    }
+
     res.status(200).json({
       success: true,
-      settings,
+      settings: responseSettings,
     });
   } catch (error) {
     console.error('Error fetching settings:', error);
