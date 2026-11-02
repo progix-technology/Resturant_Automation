@@ -5,13 +5,15 @@ import { orderCreationLimiter } from '../middleware/rateLimiter.js';
 
 const router = Router();
 
-// Customer can place order and get status without requiring staff login
-router.get('/', orderController.getOrders);
+// Customer single order tracking & order creation (Public/Diner)
 router.get('/:id', orderController.getOrderById);
 router.post('/', orderCreationLimiter, orderController.createOrder);
 
 // Customer payment preference update (e.g. Pay at Counter)
 router.patch('/:id/payment-preference', orderController.updatePaymentPreference);
+
+// 🛡️ Data Privacy: Restaurant order listing strictly protected for Admins & SuperAdmins only
+router.get('/', authenticateToken, orderController.getOrders);
 
 // Admin / Staff status updates & payment confirmation (Protected)
 router.patch('/:id/status', authenticateToken, orderController.updateOrderStatus);
